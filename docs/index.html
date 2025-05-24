@@ -2,95 +2,64 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>CAC Utili-Track - Professional Utility Mapping</title>
-    
-    <!-- Leaflet CSS -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
-    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>CAC Utili-Track</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
-        :root {
-            /* Light Mode Colors */
-            --bg-primary: #ffffff;
-            --bg-secondary: #f8f9fa;
-            --bg-tertiary: #e9ecef;
-            --text-primary: #212529;
-            --text-secondary: #6c757d;
-            --text-tertiary: #adb5bd;
-            
-            /* Utility Colors */
-            --water-color: #2196F3;
-            --gas-color: #FFD600;
-            --electric-color: #F44336;
-            --sewer-color: #795548;
-            --telecom-color: #9C27B0;
-            
-            /* UI Colors */
-            --primary: #1976D2;
-            --primary-dark: #0D47A1;
-            --primary-light: #42A5F5;
-            --success: #4CAF50;
-            --warning: #FF9800;
-            --danger: #F44336;
-            --info: #2196F3;
-            
-            /* Shadows */
-            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-            --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-            
-            /* Transitions */
-            --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
-            --transition-normal: 300ms cubic-bezier(0.4, 0, 0.2, 1);
-            --transition-slow: 500ms cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        /* Dark Mode */
-        [data-theme="dark"] {
-            --bg-primary: #121212;
-            --bg-secondary: #1e1e1e;
-            --bg-tertiary: #2d2d2d;
-            --text-primary: #ffffff;
-            --text-secondary: #b0b0b0;
-            --text-tertiary: #757575;
-            --primary: #42A5F5;
-            --primary-dark: #1976D2;
-            --primary-light: #64B5F6;
-        }
-
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            -webkit-tap-highlight-color: transparent;
             -webkit-touch-callout: none;
             -webkit-user-select: none;
             -khtml-user-select: none;
             -moz-user-select: none;
             -ms-user-select: none;
             user-select: none;
+            -webkit-tap-highlight-color: transparent;
         }
 
-        html, body {
-            height: 100%;
-            width: 100%;
-            overflow: hidden;
+        :root {
+            --primary-blue: #0066cc;
+            --water-blue: #1E90FF;
+            --gas-yellow: #FFD700;
+            --electric-red: #DC143C;
+            --sewer-brown: #8B4513;
+            --telephone-purple: #9370DB;
+            --success-green: #4CAF50;
+            --warning-orange: #FF9800;
+            --danger-red: #f44336;
+            --bg-primary: #ffffff;
+            --bg-secondary: #f5f5f5;
+            --bg-tertiary: #e0e0e0;
+            --text-primary: #212121;
+            --text-secondary: #757575;
+            --shadow-sm: 0 2px 4px rgba(0,0,0,0.1);
+            --shadow-md: 0 4px 8px rgba(0,0,0,0.15);
+            --shadow-lg: 0 8px 16px rgba(0,0,0,0.2);
+        }
+
+        body.dark-mode {
+            --bg-primary: #121212;
+            --bg-secondary: #1e1e1e;
+            --bg-tertiary: #2a2a2a;
+            --text-primary: #ffffff;
+            --text-secondary: #b0b0b0;
+            --shadow-sm: 0 2px 4px rgba(0,0,0,0.3);
+            --shadow-md: 0 4px 8px rgba(0,0,0,0.4);
+            --shadow-lg: 0 8px 16px rgba(0,0,0,0.5);
+        }
+
+        body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
             background-color: var(--bg-primary);
             color: var(--text-primary);
+            overflow: hidden;
+            position: fixed;
+            width: 100%;
+            height: 100%;
             touch-action: none;
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
-        }
-
-        /* Prevent zoom on double tap and pinch */
-        body {
-            touch-action: pan-x pan-y;
         }
 
         /* Splash Screen */
@@ -98,253 +67,239 @@
             position: fixed;
             top: 0;
             left: 0;
-            right: 0;
-            bottom: 0;
-            background: linear-gradient(135deg, #0D47A1 0%, #1976D2 100%);
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
             display: flex;
             flex-direction: column;
-            align-items: center;
             justify-content: center;
+            align-items: center;
             z-index: 10000;
-            color: white;
-        }
-
-        .splash-logo-container {
-            position: relative;
-            width: 200px;
-            height: 200px;
-            margin-bottom: 2rem;
+            animation: fadeOut 0.5s ease-out 3.5s forwards;
         }
 
         .splash-logo {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .construction-hat {
-            width: 120px;
-            height: 120px;
             position: relative;
-            animation: constructionBounce 2s ease-in-out infinite;
+            width: 200px;
+            height: 200px;
+            margin-bottom: 30px;
         }
 
-        .construction-hat svg {
-            width: 100%;
-            height: 100%;
-            filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));
-        }
-
-        .utility-icons {
+        .construction-icon {
             position: absolute;
             width: 100%;
             height: 100%;
-            animation: utilityOrbit 8s linear infinite;
+            animation: rotateGear 4s linear infinite;
         }
 
-        .utility-icon {
+        .construction-icon::before {
+            content: '';
             position: absolute;
-            width: 30px;
-            height: 30px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80px;
+            height: 80px;
+            background: #FFD700;
             border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 16px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-            animation: utilityPulse 2s ease-in-out infinite;
+            box-shadow: 0 0 0 10px rgba(255, 215, 0, 0.3);
+            animation: pulse 2s ease-in-out infinite;
         }
 
-        .utility-icon.water {
-            background: var(--water-color);
-            top: 0;
-            left: 50%;
-            transform: translateX(-50%);
-        }
-
-        .utility-icon.gas {
-            background: var(--gas-color);
+        .construction-icon::after {
+            content: '⚙️';
+            position: absolute;
             top: 50%;
-            right: 0;
-            transform: translateY(-50%);
-            color: #333;
-        }
-
-        .utility-icon.electric {
-            background: var(--electric-color);
-            bottom: 0;
             left: 50%;
-            transform: translateX(-50%);
+            transform: translate(-50%, -50%);
+            font-size: 60px;
+            animation: rotateGear 3s linear infinite reverse;
         }
 
-        .utility-icon.sewer {
-            background: var(--sewer-color);
-            top: 50%;
-            left: 0;
-            transform: translateY(-50%);
+        .pipe-animation {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
         }
 
-        .utility-icon.telecom {
-            background: var(--telecom-color);
-            top: 25%;
-            left: 25%;
+        .pipe {
+            position: absolute;
+            height: 8px;
+            background: linear-gradient(90deg, transparent 0%, var(--water-blue) 20%, var(--gas-yellow) 40%, var(--electric-red) 60%, var(--sewer-brown) 80%, transparent 100%);
+            animation: flowPipe 3s linear infinite;
         }
 
-        @keyframes constructionBounce {
-            0%, 100% { transform: translateY(0) rotate(-5deg); }
-            50% { transform: translateY(-20px) rotate(5deg); }
+        .pipe:nth-child(1) {
+            top: 30%;
+            width: 150%;
+            left: -25%;
         }
 
-        @keyframes utilityOrbit {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+        .pipe:nth-child(2) {
+            bottom: 30%;
+            width: 150%;
+            right: -25%;
+            animation-delay: 1.5s;
         }
 
-        @keyframes utilityPulse {
-            0%, 100% { transform: scale(1); opacity: 0.8; }
-            50% { transform: scale(1.2); opacity: 1; }
-        }
-
-        .splash-title {
-            font-size: 2rem;
+        .app-title {
+            font-size: 32px;
             font-weight: 700;
-            margin-bottom: 0.5rem;
+            color: white;
             text-align: center;
-            letter-spacing: -0.02em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            animation: slideInUp 1s ease-out 0.5s both;
         }
 
-        .splash-subtitle {
-            font-size: 1rem;
-            opacity: 0.9;
-            margin-bottom: 3rem;
+        .app-subtitle {
+            font-size: 16px;
+            color: rgba(255,255,255,0.8);
+            animation: slideInUp 1s ease-out 0.7s both;
         }
 
-        .splash-progress {
+        .loading-bar {
             width: 200px;
             height: 4px;
             background: rgba(255,255,255,0.2);
             border-radius: 2px;
+            margin-top: 30px;
             overflow: hidden;
-            position: relative;
+            animation: slideInUp 1s ease-out 0.9s both;
         }
 
-        .splash-progress-bar {
+        .loading-progress {
             height: 100%;
-            background: white;
+            background: linear-gradient(90deg, #4CAF50, #8BC34A);
             border-radius: 2px;
-            animation: progressLoad 2.5s ease-out forwards;
-            box-shadow: 0 0 10px rgba(255,255,255,0.5);
+            animation: loadProgress 3s ease-out forwards;
         }
 
-        @keyframes progressLoad {
-            0% { width: 0%; }
-            100% { width: 100%; }
+        @keyframes fadeOut {
+            to {
+                opacity: 0;
+                visibility: hidden;
+            }
         }
 
-        /* App Container */
+        @keyframes rotateGear {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.2); opacity: 0.7; }
+        }
+
+        @keyframes flowPipe {
+            from { transform: translateX(-100%); }
+            to { transform: translateX(100%); }
+        }
+
+        @keyframes slideInUp {
+            from {
+                transform: translateY(30px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes loadProgress {
+            from { width: 0; }
+            to { width: 100%; }
+        }
+
+        /* Main App Container */
         .app-container {
             position: relative;
             width: 100%;
             height: 100%;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-        }
-
-        /* Map Container */
-        .map-container {
-            flex: 1;
-            position: relative;
-            width: 100%;
             overflow: hidden;
         }
 
         #map {
             width: 100%;
             height: 100%;
-            background-color: var(--bg-secondary);
+            position: absolute;
+            top: 0;
+            left: 0;
         }
 
         /* Top Bar */
         .top-bar {
             position: absolute;
-            top: env(safe-area-inset-top, 0);
+            top: 0;
             left: 0;
             right: 0;
+            background: var(--bg-primary);
+            box-shadow: var(--shadow-md);
+            z-index: 1000;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 12px 16px;
-            background: linear-gradient(to bottom, rgba(0,0,0,0.4) 0%, transparent 100%);
-            z-index: 1000;
-            pointer-events: none;
-        }
-
-        .top-bar > * {
-            pointer-events: auto;
+            padding: 10px 15px;
+            backdrop-filter: blur(10px);
+            background: rgba(var(--bg-primary), 0.95);
         }
 
         .mode-indicator {
-            background: var(--bg-primary);
-            color: var(--text-primary);
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-weight: 600;
-            font-size: 14px;
-            box-shadow: var(--shadow-md);
             display: flex;
             align-items: center;
-            gap: 8px;
-            animation: fadeInDown 0.3s ease-out;
-        }
-
-        .mode-indicator i {
+            gap: 10px;
+            font-weight: 600;
             font-size: 16px;
         }
 
-        .mode-indicator.mapping {
-            background: var(--primary);
-            color: white;
-        }
-
-        .mode-indicator.excavation {
-            background: var(--warning);
-            color: #333;
-            animation: pulse 2s ease-in-out infinite;
-        }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.9; transform: scale(1.05); }
-        }
-
-        .top-controls {
-            display: flex;
-            gap: 8px;
-        }
-
-        .control-button {
-            width: 40px;
-            height: 40px;
+        .mode-icon {
+            width: 30px;
+            height: 30px;
             border-radius: 50%;
-            background: var(--bg-primary);
-            color: var(--text-primary);
-            border: none;
             display: flex;
             align-items: center;
             justify-content: center;
             font-size: 18px;
-            box-shadow: var(--shadow-md);
+            animation: modeIconPulse 2s ease-in-out infinite;
+        }
+
+        .mode-icon.mapping {
+            background: linear-gradient(135deg, #4CAF50, #8BC34A);
+        }
+
+        .mode-icon.excavation {
+            background: linear-gradient(135deg, #FF9800, #FFC107);
+        }
+
+        @keyframes modeIconPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        .top-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .icon-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--bg-secondary);
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             cursor: pointer;
-            transition: all var(--transition-fast);
+            transition: all 0.3s ease;
             position: relative;
             overflow: hidden;
         }
 
-        .control-button::before {
+        .icon-btn::before {
             content: '';
             position: absolute;
             top: 50%;
@@ -352,895 +307,159 @@
             width: 0;
             height: 0;
             border-radius: 50%;
-            background: rgba(0,0,0,0.1);
+            background: rgba(255,255,255,0.3);
             transform: translate(-50%, -50%);
-            transition: all 0.6s;
+            transition: width 0.3s, height 0.3s;
         }
 
-        .control-button:active::before {
+        .icon-btn:active::before {
             width: 100%;
             height: 100%;
         }
 
-        .control-button:active {
-            transform: scale(0.95);
+        .icon-btn:hover {
+            transform: scale(1.05);
+            box-shadow: var(--shadow-md);
         }
 
         /* Bottom Navigation */
-        .bottom-navigation {
+        .bottom-nav {
             position: absolute;
-            bottom: env(safe-area-inset-bottom, 0);
+            bottom: 0;
             left: 0;
             right: 0;
-            padding: 12px 16px 16px;
+            background: var(--bg-primary);
+            box-shadow: 0 -4px 8px rgba(0,0,0,0.1);
             display: flex;
-            justify-content: center;
-            gap: 8px;
+            justify-content: space-around;
+            padding: 10px 0;
             z-index: 1000;
+            backdrop-filter: blur(10px);
+            background: rgba(var(--bg-primary), 0.95);
         }
 
-        .nav-pill {
-            background: var(--bg-primary);
-            border-radius: 25px;
-            padding: 4px;
-            box-shadow: var(--shadow-lg);
+        .nav-item {
+            flex: 1;
             display: flex;
-            gap: 4px;
-            animation: fadeInUp 0.3s ease-out;
-        }
-
-        .nav-button {
-            position: relative;
-            padding: 12px 20px;
-            border: none;
-            background: transparent;
-            color: var(--text-secondary);
-            border-radius: 21px;
-            font-weight: 600;
-            font-size: 14px;
-            cursor: pointer;
-            transition: all var(--transition-normal);
-            display: flex;
+            flex-direction: column;
             align-items: center;
-            gap: 8px;
-        }
-
-        .nav-button.active {
-            background: var(--primary);
-            color: white;
-            box-shadow: 0 2px 8px rgba(25, 118, 210, 0.4);
-        }
-
-        .nav-button i {
-            font-size: 18px;
-        }
-
-        /* Utility Selector */
-        .utility-selector {
-            position: absolute;
-            bottom: calc(env(safe-area-inset-bottom, 0) + 80px);
-            left: 50%;
-            transform: translateX(-50%);
-            background: var(--bg-primary);
-            border-radius: 30px;
-            padding: 8px;
-            box-shadow: var(--shadow-lg);
-            display: flex;
-            gap: 8px;
-            z-index: 999;
-            opacity: 0;
-            visibility: hidden;
-            transition: all var(--transition-normal);
-        }
-
-        .utility-selector.visible {
-            opacity: 1;
-            visibility: visible;
-            animation: fadeInUp 0.3s ease-out;
-        }
-
-        .utility-type-button {
-            width: 48px;
-            height: 48px;
-            border: none;
-            border-radius: 50%;
-            color: white;
-            font-size: 20px;
+            gap: 5px;
+            padding: 10px;
             cursor: pointer;
-            transition: all var(--transition-fast);
+            transition: all 0.3s ease;
             position: relative;
-            overflow: hidden;
         }
 
-        .utility-type-button::after {
+        .nav-item.active {
+            color: var(--primary-blue);
+        }
+
+        .nav-item.active::before {
             content: '';
             position: absolute;
             top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: radial-gradient(circle, rgba(255,255,255,0.3) 0%, transparent 70%);
-            opacity: 0;
-            transition: opacity var(--transition-fast);
+            left: 20%;
+            right: 20%;
+            height: 3px;
+            background: var(--primary-blue);
+            border-radius: 0 0 3px 3px;
+            animation: slideIn 0.3s ease;
         }
 
-        .utility-type-button:active {
+        @keyframes slideIn {
+            from { transform: scaleX(0); }
+            to { transform: scaleX(1); }
+        }
+
+        .nav-icon {
+            font-size: 24px;
+            transition: transform 0.3s ease;
+        }
+
+        .nav-item:active .nav-icon {
             transform: scale(0.9);
         }
 
-        .utility-type-button.active::after {
-            opacity: 1;
-        }
-
-        .utility-type-button.active {
-            box-shadow: 0 0 0 3px var(--bg-primary), 0 0 0 5px currentColor;
-        }
-
-        .utility-type-button.water { background: var(--water-color); }
-        .utility-type-button.gas { background: var(--gas-color); color: #333; }
-        .utility-type-button.electric { background: var(--electric-color); }
-        .utility-type-button.sewer { background: var(--sewer-color); }
-        .utility-type-button.telecom { background: var(--telecom-color); }
-
-        /* Line Type Selector */
-        .line-type-selector {
-            position: absolute;
-            bottom: calc(env(safe-area-inset-bottom, 0) + 140px);
-            left: 50%;
-            transform: translateX(-50%);
-            background: var(--bg-primary);
-            border-radius: 20px;
-            padding: 4px;
-            box-shadow: var(--shadow-md);
-            display: flex;
-            gap: 4px;
-            z-index: 998;
-            opacity: 0;
-            visibility: hidden;
-            transition: all var(--transition-normal);
-        }
-
-        .line-type-selector.visible {
-            opacity: 1;
-            visibility: visible;
-            animation: fadeInUp 0.3s ease-out;
-        }
-
-        .line-type-button {
-            padding: 8px 16px;
-            border: none;
-            background: transparent;
-            color: var(--text-secondary);
-            border-radius: 16px;
+        .nav-label {
+            font-size: 12px;
             font-weight: 500;
-            font-size: 13px;
-            cursor: pointer;
-            transition: all var(--transition-fast);
         }
 
-        .line-type-button.active {
-            background: var(--primary);
-            color: white;
-        }
-
-        /* Floating Action Button */
-        .fab {
+        /* Utility Panel */
+        .utility-panel {
             position: absolute;
-            bottom: calc(env(safe-area-inset-bottom, 0) + 90px);
-            right: 16px;
-            width: 56px;
-            height: 56px;
-            border-radius: 50%;
-            background: var(--primary);
-            color: white;
-            border: none;
-            font-size: 24px;
-            box-shadow: var(--shadow-lg);
-            cursor: pointer;
-            transition: all var(--transition-normal);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 997;
-        }
-
-        .fab:active {
-            transform: scale(0.95);
-            box-shadow: var(--shadow-md);
-        }
-
-        .fab.confirm {
-            background: var(--success);
-            animation: bounceIn 0.5s ease-out;
-        }
-
-        @keyframes bounceIn {
-            0% { transform: scale(0); opacity: 0; }
-            50% { transform: scale(1.1); }
-            100% { transform: scale(1); opacity: 1; }
-        }
-
-        /* Map Controls */
-        .map-controls {
-            position: absolute;
-            right: 16px;
-            top: 50%;
-            transform: translateY(-50%);
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            z-index: 996;
-        }
-
-        .map-control {
-            width: 44px;
-            height: 44px;
-            border-radius: 22px;
-            background: var(--bg-primary);
-            color: var(--text-primary);
-            border: none;
-            font-size: 18px;
-            box-shadow: var(--shadow-md);
-            cursor: pointer;
-            transition: all var(--transition-fast);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .map-control:active {
-            transform: scale(0.95);
-        }
-
-        /* User Location Marker */
-        .user-location-marker {
-            width: 40px;
-            height: 40px;
-            position: relative;
-            pointer-events: none;
-        }
-
-        .location-dot {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 16px;
-            height: 16px;
-            margin: -8px 0 0 -8px;
-            background: #4285F4;
-            border: 3px solid white;
-            border-radius: 50%;
-            box-shadow: 0 2px 8px rgba(66, 133, 244, 0.5);
-            z-index: 3;
-        }
-
-        .location-accuracy {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 40px;
-            height: 40px;
-            margin: -20px 0 0 -20px;
-            background: rgba(66, 133, 244, 0.2);
-            border-radius: 50%;
-            animation: locationPulse 2s ease-out infinite;
-            z-index: 1;
-        }
-
-        .location-direction {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 0;
-            height: 0;
-            margin: -15px 0 0 -8px;
-            border-left: 8px solid transparent;
-            border-right: 8px solid transparent;
-            border-bottom: 20px solid #4285F4;
-            transform-origin: center bottom;
-            transition: transform var(--transition-fast);
-            z-index: 2;
-            filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3));
-        }
-
-        @keyframes locationPulse {
-            0% {
-                transform: scale(1);
-                opacity: 1;
-            }
-            100% {
-                transform: scale(3);
-                opacity: 0;
-            }
-        }
-
-        /* Proximity Alerts */
-        .proximity-alerts {
-            position: absolute;
-            top: calc(env(safe-area-inset-top, 0) + 70px);
-            left: 8px;
-            right: 8px;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            z-index: 995;
-            max-height: 50vh;
-            overflow-y: auto;
-            scrollbar-width: none;
-            -ms-overflow-style: none;
-        }
-
-        .proximity-alerts::-webkit-scrollbar {
-            display: none;
-        }
-
-        .proximity-alert {
+            left: 10px;
+            top: 70px;
             background: var(--bg-primary);
             border-radius: 12px;
-            padding: 12px;
             box-shadow: var(--shadow-lg);
-            border-left: 4px solid;
-            animation: slideInLeft 0.3s ease-out;
-            position: relative;
-            min-height: 80px;
+            padding: 15px;
+            z-index: 999;
+            max-height: calc(100vh - 200px);
+            overflow-y: auto;
+            transition: all 0.3s ease;
+            transform: translateX(0);
         }
 
-        @keyframes slideInLeft {
-            from {
-                transform: translateX(-100%);
-                opacity: 0;
-            }
-            to {
-                transform: translateX(0);
-                opacity: 1;
-            }
+        .utility-panel.hidden {
+            transform: translateX(-120%);
         }
 
-        .proximity-alert.water { border-left-color: var(--water-color); }
-        .proximity-alert.gas { border-left-color: var(--gas-color); }
-        .proximity-alert.electric { border-left-color: var(--electric-color); }
-        .proximity-alert.sewer { border-left-color: var(--sewer-color); }
-        .proximity-alert.telecom { border-left-color: var(--telecom-color); }
-
-        .alert-header {
+        .panel-header {
+            font-weight: 600;
+            margin-bottom: 15px;
             display: flex;
             justify-content: space-between;
             align-items: center;
+        }
+
+        .utility-type {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
             margin-bottom: 8px;
-        }
-
-        .alert-title {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-weight: 600;
-            font-size: 14px;
-        }
-
-        .alert-icon {
-            width: 24px;
-            height: 24px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 14px;
-        }
-
-        .alert-icon.water { background: var(--water-color); }
-        .alert-icon.gas { background: var(--gas-color); color: #333; }
-        .alert-icon.electric { background: var(--electric-color); }
-        .alert-icon.sewer { background: var(--sewer-color); }
-        .alert-icon.telecom { background: var(--telecom-color); }
-
-        .alert-close {
-            width: 24px;
-            height: 24px;
-            border: none;
-            background: transparent;
-            color: var(--text-tertiary);
-            font-size: 16px;
+            background: var(--bg-secondary);
+            border-radius: 8px;
             cursor: pointer;
-            border-radius: 50%;
-            transition: all var(--transition-fast);
-        }
-
-        .alert-close:hover {
-            background: var(--bg-tertiary);
-            color: var(--text-primary);
-        }
-
-        .alert-content {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 8px;
-            font-size: 12px;
-        }
-
-        .alert-item {
-            display: flex;
-            flex-direction: column;
-            gap: 2px;
-        }
-
-        .alert-label {
-            color: var(--text-tertiary);
-            font-weight: 500;
-        }
-
-        .alert-value {
-            color: var(--text-primary);
-            font-weight: 600;
-        }
-
-        .alert-distance {
-            position: absolute;
-            bottom: 8px;
-            right: 12px;
-            background: var(--danger);
-            color: white;
-            padding: 4px 8px;
-            border-radius: 12px;
-            font-size: 11px;
-            font-weight: 600;
-            animation: distancePulse 1s ease-in-out infinite;
-        }
-
-        @keyframes distancePulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.7; }
-        }
-
-        /* Modal Base */
-        .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.5);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            z-index: 2000;
-            display: flex;
-            align-items: flex-end;
-            justify-content: center;
-            opacity: 0;
-            visibility: hidden;
-            transition: all var(--transition-normal);
-        }
-
-        .modal-overlay.visible {
-            opacity: 1;
-            visibility: visible;
-        }
-
-        .modal-content {
-            background: var(--bg-primary);
-            border-radius: 24px 24px 0 0;
-            width: 100%;
-            max-width: 500px;
-            max-height: 80vh;
+            transition: all 0.3s ease;
+            position: relative;
             overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            transform: translateY(100%);
-            transition: transform var(--transition-normal);
         }
 
-        .modal-overlay.visible .modal-content {
-            transform: translateY(0);
-        }
-
-        .modal-handle {
-            width: 36px;
-            height: 4px;
-            background: var(--text-tertiary);
-            border-radius: 2px;
-            margin: 8px auto 12px;
-        }
-
-        .modal-header {
-            padding: 0 20px 16px;
-            border-bottom: 1px solid var(--bg-tertiary);
-        }
-
-        .modal-title {
-            font-size: 18px;
-            font-weight: 700;
-            color: var(--text-primary);
-        }
-
-        .modal-body {
-            flex: 1;
-            padding: 20px;
-            overflow-y: auto;
-        }
-
-        .modal-footer {
-            padding: 16px 20px;
-            border-top: 1px solid var(--bg-tertiary);
-            display: flex;
-            gap: 12px;
-        }
-
-        /* Form Elements */
-        .form-group {
-            margin-bottom: 20px;
-        }
-
-        .form-label {
-            display: block;
-            font-size: 14px;
-            font-weight: 600;
-            color: var(--text-secondary);
-            margin-bottom: 8px;
-        }
-
-        .form-control {
-            width: 100%;
-            padding: 12px 16px;
-            border: 2px solid var(--bg-tertiary);
-            border-radius: 12px;
-            background: var(--bg-secondary);
-            color: var(--text-primary);
-            font-size: 16px;
-            transition: all var(--transition-fast);
-            -webkit-appearance: none;
-        }
-
-        .form-control:focus {
-            outline: none;
-            border-color: var(--primary);
-            background: var(--bg-primary);
-        }
-
-        .select-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 8px;
-        }
-
-        .select-option {
-            padding: 12px;
-            border: 2px solid var(--bg-tertiary);
-            border-radius: 12px;
-            background: var(--bg-secondary);
-            text-align: center;
-            cursor: pointer;
-            transition: all var(--transition-fast);
-            font-size: 14px;
-            font-weight: 500;
-        }
-
-        .select-option.active {
-            border-color: var(--primary);
-            background: var(--primary);
-            color: white;
-        }
-
-        .image-upload {
-            border: 2px dashed var(--bg-tertiary);
-            border-radius: 12px;
-            padding: 24px;
-            text-align: center;
-            cursor: pointer;
-            transition: all var(--transition-fast);
-        }
-
-        .image-upload:hover {
-            border-color: var(--primary);
-            background: var(--bg-secondary);
-        }
-
-        .image-upload i {
-            font-size: 32px;
-            color: var(--text-tertiary);
-            margin-bottom: 8px;
-            display: block;
-        }
-
-        .image-upload span {
-            font-size: 14px;
-            color: var(--text-secondary);
-        }
-
-        /* Buttons */
-        .btn {
-            padding: 12px 24px;
-            border: none;
-            border-radius: 12px;
-            font-weight: 600;
-            font-size: 16px;
-            cursor: pointer;
-            transition: all var(--transition-fast);
-            flex: 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-        }
-
-        .btn:active {
-            transform: scale(0.98);
-        }
-
-        .btn-primary {
-            background: var(--primary);
-            color: white;
-        }
-
-        .btn-secondary {
-            background: var(--bg-tertiary);
-            color: var(--text-primary);
-        }
-
-        /* Utility Lines */
-        .utility-line {
-            stroke-linecap: round;
-            stroke-linejoin: round;
-            cursor: pointer;
-            transition: stroke-width var(--transition-fast);
-        }
-
-        .utility-line:hover {
-            stroke-width: 8px !important;
-        }
-
-        .utility-line.water { stroke: var(--water-color); }
-        .utility-line.gas { stroke: var(--gas-color); }
-        .utility-line.electric { stroke: var(--electric-color); }
-        .utility-line.sewer { stroke: var(--sewer-color); }
-        .utility-line.telecom { stroke: var(--telecom-color); }
-
-        .utility-line.main { stroke-width: 6px; }
-        .utility-line.service { 
-            stroke-width: 4px;
-            stroke-dasharray: 8, 4;
-        }
-
-        /* Control Points */
-        .control-point {
-            width: 16px;
-            height: 16px;
-            background: white;
-            border: 3px solid var(--primary);
-            border-radius: 50%;
-            cursor: move;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-            transition: all var(--transition-fast);
-        }
-
-        .control-point:hover {
-            transform: scale(1.2);
-        }
-
-        .control-point.dragging {
-            transform: scale(1.5);
-            box-shadow: 0 4px 16px rgba(0,0,0,0.3);
-        }
-
-        /* Connection Indicator */
-        .connection-indicator {
-            position: absolute;
-            background: var(--bg-primary);
-            border-radius: 8px;
-            padding: 8px 12px;
-            box-shadow: var(--shadow-lg);
-            font-size: 12px;
-            font-weight: 600;
-            white-space: nowrap;
-            z-index: 1500;
-            pointer-events: none;
-            animation: fadeIn 0.2s ease-out;
-        }
-
-        /* Connection Popup */
-        .connection-popup {
-            position: absolute;
-            background: var(--bg-primary);
-            border-radius: 12px;
-            padding: 16px;
-            box-shadow: var(--shadow-xl);
-            z-index: 1600;
-            min-width: 250px;
-            animation: fadeIn 0.3s ease-out;
-        }
-
-        .connection-popup-title {
-            font-weight: 600;
-            font-size: 16px;
-            margin-bottom: 12px;
-            color: var(--text-primary);
-        }
-
-        .connection-popup-buttons {
-            display: flex;
-            gap: 8px;
-            margin-top: 12px;
-        }
-
-        .connection-popup-button {
-            flex: 1;
-            padding: 8px 16px;
-            border: none;
-            border-radius: 8px;
-            font-weight: 600;
-            font-size: 14px;
-            cursor: pointer;
-            transition: all var(--transition-fast);
-        }
-
-        .connection-popup-button.primary {
-            background: var(--primary);
-            color: white;
-        }
-
-        .connection-popup-button.secondary {
-            background: var(--bg-tertiary);
-            color: var(--text-primary);
-        }
-
-        /* Structure Markers */
-        .structure-marker {
-            width: 32px;
-            height: 32px;
-            background: white;
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+        .utility-type:hover {
+            transform: translateX(5px);
             box-shadow: var(--shadow-md);
-            cursor: pointer;
-            transition: all var(--transition-fast);
         }
 
-        .structure-marker:hover {
-            transform: scale(1.1);
-            box-shadow: var(--shadow-lg);
-        }
-
-        .structure-marker i {
-            font-size: 18px;
-        }
-
-        .structure-marker.water { color: var(--water-color); border: 2px solid var(--water-color); }
-        .structure-marker.gas { color: var(--gas-color); border: 2px solid var(--gas-color); }
-        .structure-marker.electric { color: var(--electric-color); border: 2px solid var(--electric-color); }
-        .structure-marker.sewer { color: var(--sewer-color); border: 2px solid var(--sewer-color); }
-        .structure-marker.telecom { color: var(--telecom-color); border: 2px solid var(--telecom-color); }
-
-        /* Connection Point Marker */
-        .connection-point {
-            width: 12px;
-            height: 12px;
-            background: white;
-            border: 3px solid;
-            border-radius: 50%;
-            position: absolute;
-            transform: translate(-50%, -50%);
-            cursor: pointer;
-            z-index: 500;
-            animation: connectionPulse 2s ease-in-out infinite;
-        }
-
-        .connection-point.water { border-color: var(--water-color); }
-        .connection-point.gas { border-color: var(--gas-color); }
-        .connection-point.electric { border-color: var(--electric-color); }
-        .connection-point.sewer { border-color: var(--sewer-color); }
-        .connection-point.telecom { border-color: var(--telecom-color); }
-
-        @keyframes connectionPulse {
-            0%, 100% { 
-                transform: translate(-50%, -50%) scale(1);
-                box-shadow: 0 0 0 0 currentColor;
-            }
-            50% { 
-                transform: translate(-50%, -50%) scale(1.2);
-                box-shadow: 0 0 0 8px rgba(0,0,0,0);
-            }
-        }
-
-        /* Side Menu */
-        .side-menu {
-            position: fixed;
-            top: 0;
-            left: -280px;
-            width: 280px;
-            height: 100%;
-            background: var(--bg-primary);
-            box-shadow: var(--shadow-xl);
-            z-index: 3000;
-            transition: left var(--transition-normal);
-            display: flex;
-            flex-direction: column;
-        }
-
-        .side-menu.open {
-            left: 0;
-        }
-
-        .menu-header {
-            padding: 20px;
-            background: var(--primary);
+        .utility-type.selected {
+            background: var(--primary-blue);
             color: white;
         }
 
-        .menu-title {
-            font-size: 20px;
-            font-weight: 700;
-            margin-bottom: 4px;
-        }
-
-        .menu-subtitle {
-            font-size: 14px;
-            opacity: 0.9;
-        }
-
-        .menu-content {
-            flex: 1;
-            overflow-y: auto;
-            padding: 8px;
-        }
-
-        .menu-section {
-            margin-bottom: 24px;
-        }
-
-        .menu-section-title {
-            font-size: 12px;
-            font-weight: 600;
-            color: var(--text-tertiary);
-            text-transform: uppercase;
-            padding: 0 12px;
-            margin-bottom: 8px;
-        }
-
-        .menu-item {
-            display: flex;
-            align-items: center;
-            padding: 12px 16px;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all var(--transition-fast);
-            color: var(--text-primary);
-            text-decoration: none;
-        }
-
-        .menu-item:hover {
-            background: var(--bg-secondary);
-        }
-
-        .menu-item i {
+        .utility-color {
             width: 20px;
-            margin-right: 12px;
-            text-align: center;
-            color: var(--text-secondary);
+            height: 20px;
+            border-radius: 4px;
+            flex-shrink: 0;
         }
 
-        .menu-toggle {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        .toggle-switch {
+        .utility-toggle {
+            margin-left: auto;
+            position: relative;
             width: 44px;
             height: 24px;
             background: var(--bg-tertiary);
             border-radius: 12px;
-            position: relative;
             cursor: pointer;
-            transition: background var(--transition-fast);
+            transition: background 0.3s ease;
         }
 
-        .toggle-switch.active {
-            background: var(--primary);
+        .utility-toggle.active {
+            background: var(--success-green);
         }
 
-        .toggle-switch::after {
-            content: '';
+        .toggle-slider {
             position: absolute;
             top: 2px;
             left: 2px;
@@ -1248,1003 +467,1629 @@
             height: 20px;
             background: white;
             border-radius: 50%;
-            transition: left var(--transition-fast);
+            transition: transform 0.3s ease;
             box-shadow: 0 2px 4px rgba(0,0,0,0.2);
         }
 
-        .toggle-switch.active::after {
-            left: 22px;
+        .utility-toggle.active .toggle-slider {
+            transform: translateX(20px);
         }
 
-        /* Structure Button */
-        .structure-button {
+        /* Drawing Controls */
+        .drawing-controls {
             position: absolute;
-            bottom: calc(env(safe-area-inset-bottom, 0) + 90px);
-            right: 80px;
-            width: 48px;
-            height: 48px;
-            border-radius: 50%;
+            right: 10px;
+            top: 70px;
             background: var(--bg-primary);
-            color: var(--text-primary);
+            border-radius: 12px;
+            box-shadow: var(--shadow-lg);
+            padding: 10px;
+            z-index: 999;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            transition: all 0.3s ease;
+            transform: translateX(0);
+        }
+
+        .drawing-controls.hidden {
+            transform: translateX(120%);
+        }
+
+        .control-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 10px;
             border: none;
-            font-size: 20px;
-            box-shadow: var(--shadow-md);
-            cursor: pointer;
-            transition: all var(--transition-normal);
+            background: var(--bg-secondary);
             display: flex;
             align-items: center;
             justify-content: center;
-            z-index: 997;
-        }
-
-        .structure-button:active {
-            transform: scale(0.95);
-        }
-
-        /* Structure Type Selector */
-        .structure-type-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 12px;
-        }
-
-        .structure-type-option {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 16px;
-            border: 2px solid var(--bg-tertiary);
-            border-radius: 12px;
-            background: var(--bg-secondary);
             cursor: pointer;
-            transition: all var(--transition-fast);
+            font-size: 20px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
         }
 
-        .structure-type-option.active {
-            border-color: var(--primary);
-            background: var(--primary);
+        .control-btn:hover {
+            transform: scale(1.05);
+            box-shadow: var(--shadow-md);
+        }
+
+        .control-btn.active {
+            background: var(--primary-blue);
             color: white;
         }
 
-        .structure-type-option i {
-            font-size: 24px;
+        .control-btn.danger {
+            background: var(--danger-red);
+            color: white;
+        }
+
+        /* Service/Main Toggle */
+        .type-toggle {
+            display: flex;
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            padding: 4px;
+            margin-top: 10px;
+        }
+
+        .type-option {
+            flex: 1;
+            padding: 8px;
+            text-align: center;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+        }
+
+        .type-option.active {
+            background: var(--primary-blue);
+            color: white;
+        }
+
+        /* Proximity Warnings */
+        .proximity-warnings {
+            position: absolute;
+            top: 70px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: calc(100% - 20px);
+            max-width: 400px;
+            z-index: 998;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            pointer-events: none;
+        }
+
+        .warning-box {
+            background: var(--bg-primary);
+            border-left: 4px solid var(--warning-orange);
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: var(--shadow-lg);
+            animation: slideInDown 0.3s ease;
+            pointer-events: all;
+            position: relative;
+        }
+
+        @keyframes slideInDown {
+            from {
+                transform: translateY(-20px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .warning-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             margin-bottom: 8px;
         }
 
-        .structure-type-option span {
-            font-size: 12px;
+        .warning-title {
             font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .warning-icon {
+            width: 24px;
+            height: 24px;
+            background: var(--warning-orange);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 14px;
+            animation: warningPulse 2s ease-in-out infinite;
+        }
+
+        @keyframes warningPulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.1); opacity: 0.8; }
+        }
+
+        .close-warning {
+            background: none;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            color: var(--text-secondary);
+            transition: color 0.3s ease;
+        }
+
+        .close-warning:hover {
+            color: var(--danger-red);
+        }
+
+        .warning-details {
+            font-size: 14px;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        .warning-detail {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 4px;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal {
+            background: var(--bg-primary);
+            border-radius: 16px;
+            padding: 20px;
+            width: 90%;
+            max-width: 400px;
+            max-height: 80vh;
+            overflow-y: auto;
+            transform: scale(0.9);
+            transition: transform 0.3s ease;
+        }
+
+        .modal-overlay.active .modal {
+            transform: scale(1);
+        }
+
+        .modal-header {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid var(--bg-tertiary);
+            border-radius: 8px;
+            background: var(--bg-secondary);
+            font-size: 16px;
+            transition: all 0.3s ease;
+            color: var(--text-primary);
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--primary-blue);
+            background: var(--bg-primary);
+        }
+
+        .form-select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid var(--bg-tertiary);
+            border-radius: 8px;
+            background: var(--bg-secondary);
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: var(--text-primary);
+        }
+
+        .image-upload {
+            position: relative;
+            width: 100%;
+            height: 150px;
+            border: 2px dashed var(--bg-tertiary);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            overflow: hidden;
+        }
+
+        .image-upload:hover {
+            border-color: var(--primary-blue);
+            background: var(--bg-secondary);
+        }
+
+        .image-preview {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .upload-placeholder {
             text-align: center;
+            color: var(--text-secondary);
         }
 
-        /* Animations */
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
         }
 
-        @keyframes fadeInUp {
-            from {
+        .btn {
+            flex: 1;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-primary {
+            background: var(--primary-blue);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        /* Structure Icons */
+        .structure-panel {
+            position: absolute;
+            left: 10px;
+            bottom: 80px;
+            background: var(--bg-primary);
+            border-radius: 12px;
+            box-shadow: var(--shadow-lg);
+            padding: 10px;
+            z-index: 999;
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            max-width: 200px;
+            transition: all 0.3s ease;
+            transform: translateY(0);
+        }
+
+        .structure-panel.hidden {
+            transform: translateY(120%);
+        }
+
+        .structure-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            border: none;
+            background: var(--bg-secondary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .structure-btn:hover {
+            transform: scale(1.1);
+            box-shadow: var(--shadow-md);
+        }
+
+        .structure-btn.active {
+            background: var(--primary-blue);
+            color: white;
+        }
+
+        /* Map Controls */
+        .map-controls {
+            position: absolute;
+            right: 10px;
+            bottom: 80px;
+            background: var(--bg-primary);
+            border-radius: 12px;
+            box-shadow: var(--shadow-lg);
+            padding: 10px;
+            z-index: 999;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .map-style-btn {
+            padding: 8px 12px;
+            border: none;
+            border-radius: 8px;
+            background: var(--bg-secondary);
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .map-style-btn:hover {
+            background: var(--bg-tertiary);
+        }
+
+        .map-style-btn.active {
+            background: var(--primary-blue);
+            color: white;
+        }
+
+        /* User Location Marker */
+        .user-location-marker {
+            width: 20px;
+            height: 20px;
+            background: var(--primary-blue);
+            border: 3px solid white;
+            border-radius: 50%;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            position: relative;
+        }
+
+        .user-direction {
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 8px solid transparent;
+            border-right: 8px solid transparent;
+            border-bottom: 15px solid var(--primary-blue);
+            transform-origin: bottom center;
+        }
+
+        .location-pulse {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 40px;
+            height: 40px;
+            background: rgba(0, 102, 204, 0.3);
+            border-radius: 50%;
+            animation: locationPulse 2s ease-out infinite;
+        }
+
+        @keyframes locationPulse {
+            0% {
+                transform: translate(-50%, -50%) scale(0);
+                opacity: 1;
+            }
+            100% {
+                transform: translate(-50%, -50%) scale(2);
                 opacity: 0;
-                transform: translate(-50%, 20px);
+            }
+        }
+
+        /* Utility Line Styles */
+        .utility-line {
+            stroke-width: 4;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            fill: none;
+            cursor: pointer;
+            transition: stroke-width 0.3s ease;
+        }
+
+        .utility-line:hover {
+            stroke-width: 6;
+        }
+
+        .utility-line.water { stroke: var(--water-blue); }
+        .utility-line.gas { stroke: var(--gas-yellow); }
+        .utility-line.electric { stroke: var(--electric-red); }
+        .utility-line.sewer { stroke: var(--sewer-brown); }
+        .utility-line.telephone { stroke: var(--telephone-purple); }
+
+        .utility-line.service {
+            stroke-dasharray: 5, 5;
+        }
+
+        /* Connection Dialog */
+        .connection-dialog {
+            position: absolute;
+            background: var(--bg-primary);
+            border-radius: 12px;
+            padding: 15px;
+            box-shadow: var(--shadow-lg);
+            z-index: 1001;
+            animation: popIn 0.3s ease;
+        }
+
+        @keyframes popIn {
+            from {
+                transform: scale(0.8);
+                opacity: 0;
             }
             to {
-                opacity: 1;
-                transform: translate(-50%, 0);
-            }
-        }
-
-        @keyframes fadeInDown {
-            from {
-                opacity: 0;
-                transform: translateY(-20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        @keyframes slideInLeft {
-            from {
-                transform: translateX(-100%);
-                opacity: 0;
-            }
-            to {
-                transform: translateX(0);
+                transform: scale(1);
                 opacity: 1;
             }
         }
 
-        /* Responsive */
-        @media (max-width: 380px) {
-            .utility-type-button {
-                width: 42px;
-                height: 42px;
-                font-size: 18px;
+        .connection-dialog h4 {
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+
+        .connection-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        /* Refine Points */
+        .refine-point {
+            width: 12px;
+            height: 12px;
+            background: white;
+            border: 2px solid var(--primary-blue);
+            border-radius: 50%;
+            cursor: move;
+            position: absolute;
+            transform: translate(-50%, -50%);
+            z-index: 1000;
+            transition: all 0.3s ease;
+        }
+
+        .refine-point:hover {
+            transform: translate(-50%, -50%) scale(1.5);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+
+        .refine-point.dragging {
+            box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+            transform: translate(-50%, -50%) scale(1.8);
+        }
+
+        /* Settings Panel */
+        .settings-panel {
+            position: fixed;
+            top: 0;
+            right: -300px;
+            width: 300px;
+            height: 100%;
+            background: var(--bg-primary);
+            box-shadow: -4px 0 16px rgba(0,0,0,0.1);
+            z-index: 1002;
+            transition: right 0.3s ease;
+            overflow-y: auto;
+        }
+
+        .settings-panel.active {
+            right: 0;
+        }
+
+        .settings-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--bg-tertiary);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .settings-content {
+            padding: 20px;
+        }
+
+        .setting-item {
+            margin-bottom: 20px;
+        }
+
+        .setting-label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        /* Dark Mode Toggle */
+        .dark-mode-toggle {
+            position: relative;
+            width: 50px;
+            height: 26px;
+            background: var(--bg-tertiary);
+            border-radius: 13px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        .dark-mode-toggle.active {
+            background: var(--primary-blue);
+        }
+
+        .dark-mode-slider {
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            transition: transform 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+        }
+
+        .dark-mode-toggle.active .dark-mode-slider {
+            transform: translateX(24px);
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .utility-panel {
+                max-width: 160px;
             }
             
-            .nav-button {
-                padding: 10px 16px;
-                font-size: 13px;
+            .warning-box {
+                font-size: 14px;
             }
             
-            .proximity-alert {
-                padding: 10px;
-                min-height: 70px;
+            .modal {
+                padding: 15px;
             }
         }
 
-        /* Leaflet Overrides */
+        /* Hide Leaflet attribution */
         .leaflet-control-attribution {
             display: none;
         }
 
-        .leaflet-control-zoom {
+        /* Custom map styles */
+        .leaflet-container {
+            background: var(--bg-secondary);
+        }
+
+        /* Structure Markers */
+        .structure-marker {
+            background: white;
+            border: 2px solid var(--primary-blue);
+            border-radius: 8px;
+            padding: 4px;
+            font-size: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+        }
+
+        .structure-marker:hover {
+            transform: scale(1.1);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+        }
+
+        /* Edit mode overlay */
+        .edit-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.3);
+            z-index: 997;
             display: none;
         }
 
-        /* Force disable text selection on map */
-        .leaflet-container {
-            -webkit-touch-callout: none;
-            -webkit-user-select: none;
-            -khtml-user-select: none;
-            -moz-user-select: none;
-            -ms-user-select: none;
-            user-select: none;
+        .edit-overlay.active {
+            display: block;
+        }
+
+        /* Notification Toast */
+        .notification {
+            position: fixed;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: var(--bg-primary);
+            padding: 15px 20px;
+            border-radius: 8px;
+            box-shadow: var(--shadow-lg);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            z-index: 2001;
+            opacity: 0;
+            transition: all 0.3s ease;
+        }
+
+        .notification.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        .notification.success {
+            border-left: 4px solid var(--success-green);
+        }
+
+        .notification.error {
+            border-left: 4px solid var(--danger-red);
+        }
+
+        .notification.info {
+            border-left: 4px solid var(--primary-blue);
+        }
+
+        /* Loading Spinner */
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid var(--bg-tertiary);
+            border-top: 4px solid var(--primary-blue);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Utility Info Popup */
+        .utility-info-popup {
+            background: var(--bg-primary);
+            border-radius: 12px;
+            padding: 15px;
+            box-shadow: var(--shadow-lg);
+            min-width: 200px;
+        }
+
+        .info-title {
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .info-details {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+        }
+
+        .info-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid var(--bg-tertiary);
+        }
+
+        /* Touch feedback */
+        .touchable {
+            -webkit-tap-highlight-color: rgba(0,0,0,0.1);
+        }
+
+        .touchable:active {
+            opacity: 0.8;
+        }
+
+        /* Prevent zoom */
+        input[type="text"],
+        input[type="number"],
+        select,
+        textarea {
+            font-size: 16px !important;
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-secondary);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--bg-tertiary);
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--text-secondary);
+        }
+
+        /* Excavation mode specific styles */
+        .excavation-mode #map {
+            filter: brightness(1.1) contrast(1.1);
+        }
+
+        .excavation-radius {
+            fill: rgba(255, 152, 0, 0.1);
+            stroke: var(--warning-orange);
+            stroke-width: 2;
+            stroke-dasharray: 5, 5;
+            animation: radiusPulse 2s ease-in-out infinite;
+        }
+
+        @keyframes radiusPulse {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 0.6; }
+        }
+
+        /* Utility segment highlight */
+        .utility-segment-highlight {
+            stroke-width: 8;
+            stroke: rgba(255, 255, 255, 0.5);
+            fill: none;
+            pointer-events: none;
+            animation: segmentGlow 2s ease-in-out infinite;
+        }
+
+        @keyframes segmentGlow {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 0.7; }
+        }
+
+        /* GPS accuracy indicator */
+        .gps-accuracy {
+            position: absolute;
+            top: 120px;
+            right: 10px;
+            background: var(--bg-primary);
+            border-radius: 8px;
+            padding: 8px 12px;
+            box-shadow: var(--shadow-md);
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            z-index: 998;
+        }
+
+        .accuracy-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            animation: accuracyPulse 2s ease-in-out infinite;
+        }
+
+        .accuracy-dot.good {
+            background: var(--success-green);
+        }
+
+        .accuracy-dot.medium {
+            background: var(--warning-orange);
+        }
+
+        .accuracy-dot.poor {
+            background: var(--danger-red);
+        }
+
+        @keyframes accuracyPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.3); }
         }
     </style>
 </head>
 <body>
     <!-- Splash Screen -->
     <div class="splash-screen" id="splashScreen">
-        <div class="splash-logo-container">
-            <div class="utility-icons">
-                <div class="utility-icon water">
-                    <i class="fas fa-tint"></i>
-                </div>
-                <div class="utility-icon gas">
-                    <i class="fas fa-fire"></i>
-                </div>
-                <div class="utility-icon electric">
-                    <i class="fas fa-bolt"></i>
-                </div>
-                <div class="utility-icon sewer">
-                    <i class="fas fa-toilet"></i>
-                </div>
-                <div class="utility-icon telecom">
-                    <i class="fas fa-phone"></i>
-                </div>
-            </div>
-            <div class="splash-logo">
-                <div class="construction-hat">
-                    <svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M20 70 Q20 50 40 40 Q60 30 80 40 Q100 50 100 70 L100 75 Q100 80 95 80 L25 80 Q20 80 20 75 Z" fill="#FFD600" stroke="#FFA000" stroke-width="2"/>
-                        <rect x="45" y="35" width="30" height="45" fill="#FFA000" rx="2"/>
-                        <path d="M20 70 L100 70" stroke="#FFA000" stroke-width="3"/>
-                        <circle cx="60" cy="55" r="8" fill="white" opacity="0.8"/>
-                    </svg>
-                </div>
+        <div class="splash-logo">
+            <div class="construction-icon"></div>
+            <div class="pipe-animation">
+                <div class="pipe"></div>
+                <div class="pipe"></div>
             </div>
         </div>
-        <h1 class="splash-title">CAC Utili-Track</h1>
-        <p class="splash-subtitle">Professional Utility Mapping</p>
-        <div class="splash-progress">
-            <div class="splash-progress-bar"></div>
+        <h1 class="app-title">CAC Utili-Track</h1>
+        <p class="app-subtitle">Professional Utility Mapping System</p>
+        <div class="loading-bar">
+            <div class="loading-progress"></div>
         </div>
     </div>
 
-    <!-- App Container -->
-    <div class="app-container">
-        <!-- Map Container -->
-        <div class="map-container">
-            <div id="map"></div>
-            
-            <!-- Top Bar -->
-            <div class="top-bar">
-                <div class="mode-indicator mapping" id="modeIndicator">
-                    <i class="fas fa-pencil-ruler"></i>
-                    <span>Mapping Mode</span>
-                </div>
-                <div class="top-controls">
-                    <button class="control-button" id="menuBtn">
-                        <i class="fas fa-bars"></i>
-                    </button>
-                    <button class="control-button" id="layersBtn">
-                        <i class="fas fa-layer-group"></i>
-                    </button>
-                    <button class="control-button" id="themeBtn">
-                        <i class="fas fa-moon"></i>
-                    </button>
-                </div>
+    <!-- Main App Container -->
+    <div class="app-container" id="appContainer" style="display: none;">
+        <!-- Map -->
+        <div id="map"></div>
+
+        <!-- Top Bar -->
+        <div class="top-bar">
+            <div class="mode-indicator">
+                <div class="mode-icon mapping" id="modeIcon">🗺️</div>
+                <span id="modeText">Mapping Mode</span>
             </div>
-
-            <!-- Map Controls -->
-            <div class="map-controls">
-                <button class="map-control" id="zoomInBtn">
-                    <i class="fas fa-plus"></i>
-                </button>
-                <button class="map-control" id="zoomOutBtn">
-                    <i class="fas fa-minus"></i>
-                </button>
-                <button class="map-control" id="locateBtn">
-                    <i class="fas fa-crosshairs"></i>
-                </button>
-            </div>
-
-            <!-- Proximity Alerts -->
-            <div class="proximity-alerts" id="proximityAlerts"></div>
-
-            <!-- Utility Selector -->
-            <div class="utility-selector" id="utilitySelector">
-                <button class="utility-type-button water active" data-type="water">
-                    <i class="fas fa-tint"></i>
-                </button>
-                <button class="utility-type-button gas" data-type="gas">
-                    <i class="fas fa-fire"></i>
-                </button>
-                <button class="utility-type-button electric" data-type="electric">
-                    <i class="fas fa-bolt"></i>
-                </button>
-                <button class="utility-type-button sewer" data-type="sewer">
-                    <i class="fas fa-toilet"></i>
-                </button>
-                <button class="utility-type-button telecom" data-type="telecom">
-                    <i class="fas fa-phone"></i>
-                </button>
-            </div>
-
-            <!-- Line Type Selector -->
-            <div class="line-type-selector" id="lineTypeSelector">
-                <button class="line-type-button active" data-type="service">Service</button>
-                <button class="line-type-button" data-type="main">Main</button>
-            </div>
-
-            <!-- Structure Button -->
-            <button class="structure-button" id="structureBtn">
-                <i class="fas fa-cube"></i>
-            </button>
-
-            <!-- Floating Action Button -->
-            <button class="fab" id="fabBtn">
-                <i class="fas fa-plus"></i>
-            </button>
-
-            <!-- Bottom Navigation -->
-            <div class="bottom-navigation">
-                <div class="nav-pill">
-                    <button class="nav-button active" data-mode="mapping" id="mappingModeBtn">
-                        <i class="fas fa-pencil-ruler"></i>
-                        <span>Mapping</span>
-                    </button>
-                    <button class="nav-button" data-mode="excavation" id="excavationModeBtn">
-                        <i class="fas fa-hard-hat"></i>
-                        <span>Excavation</span>
-                    </button>
-                </div>
+            <div class="top-actions">
+                <button class="icon-btn touchable" id="menuBtn">☰</button>
+                <button class="icon-btn touchable" id="settingsBtn">⚙️</button>
             </div>
         </div>
-    </div>
 
-    <!-- Side Menu -->
-    <div class="side-menu" id="sideMenu">
-        <div class="menu-header">
-            <h2 class="menu-title">CAC Utili-Track</h2>
-            <p class="menu-subtitle">Professional Utility Mapping</p>
+        <!-- GPS Accuracy Indicator -->
+        <div class="gps-accuracy" id="gpsAccuracy">
+            <div class="accuracy-dot good" id="accuracyDot"></div>
+            <span id="accuracyText">GPS: Good</span>
         </div>
-        <div class="menu-content">
-            <div class="menu-section">
-                <div class="menu-section-title">Visibility</div>
-                <div class="menu-item menu-toggle">
-                    <i class="fas fa-tint"></i>
-                    <span>Water</span>
-                    <div class="toggle-switch active" data-utility="water"></div>
-                </div>
-                <div class="menu-item menu-toggle">
-                    <i class="fas fa-fire"></i>
-                    <span>Gas</span>
-                    <div class="toggle-switch active" data-utility="gas"></div>
-                </div>
-                <div class="menu-item menu-toggle">
-                    <i class="fas fa-bolt"></i>
-                    <span>Electric</span>
-                    <div class="toggle-switch active" data-utility="electric"></div>
-                </div>
-                <div class="menu-item menu-toggle">
-                    <i class="fas fa-toilet"></i>
-                    <span>Sewer</span>
-                    <div class="toggle-switch active" data-utility="sewer"></div>
-                </div>
-                <div class="menu-item menu-toggle">
-                    <i class="fas fa-phone"></i>
-                    <span>Telecom</span>
-                    <div class="toggle-switch active" data-utility="telecom"></div>
-                </div>
+
+        <!-- Utility Panel -->
+        <div class="utility-panel" id="utilityPanel">
+            <div class="panel-header">
+                <span>Utilities</span>
+                <button class="icon-btn touchable" onclick="togglePanel('utilityPanel')" style="width: 24px; height: 24px; font-size: 16px;">×</button>
             </div>
-            <div class="menu-section">
-                <div class="menu-section-title">Line Types</div>
-                <div class="menu-item menu-toggle">
-                    <i class="fas fa-grip-lines"></i>
-                    <span>Main Lines</span>
-                    <div class="toggle-switch active" data-linetype="main"></div>
-                </div>
-                <div class="menu-item menu-toggle">
-                    <i class="fas fa-code-branch"></i>
-                    <span>Service Lines</span>
-                    <div class="toggle-switch active" data-linetype="service"></div>
-                </div>
-            </div>
-            <div class="menu-section">
-                <div class="menu-section-title">Structure Types</div>
-                <div class="menu-item menu-toggle">
-                    <i class="fas fa-cube"></i>
-                    <span>Show Structures</span>
-                    <div class="toggle-switch active" data-structures="all"></div>
-                </div>
-            </div>
-            <div class="menu-section">
-                <div class="menu-section-title">Data</div>
-                <div class="menu-item" id="exportBtn">
-                    <i class="fas fa-download"></i>
-                    <span>Export Data</span>
-                </div>
-                <div class="menu-item" id="importBtn">
-                    <i class="fas fa-upload"></i>
-                    <span>Import Data</span>
-                </div>
-                <div class="menu-item" id="clearBtn">
-                    <i class="fas fa-trash"></i>
-                    <span>Clear All Data</span>
-                </div>
+            <div id="utilityList"></div>
+        </div>
+
+        <!-- Drawing Controls -->
+        <div class="drawing-controls" id="drawingControls">
+            <button class="control-btn touchable" id="drawBtn" title="Draw Utility">✏️</button>
+            <button class="control-btn touchable" id="selectBtn" title="Select/Edit">👆</button>
+            <button class="control-btn touchable" id="refineBtn" title="Refine Location">📍</button>
+            <button class="control-btn touchable danger" id="deleteBtn" title="Delete">🗑️</button>
+            <div class="type-toggle">
+                <div class="type-option active touchable" id="mainType" onclick="setUtilityType('main')">Main</div>
+                <div class="type-option touchable" id="serviceType" onclick="setUtilityType('service')">Service</div>
             </div>
         </div>
-    </div>
 
-    <!-- Utility Info Modal -->
-    <div class="modal-overlay" id="utilityInfoModal">
-        <div class="modal-content">
-            <div class="modal-handle"></div>
-            <div class="modal-header">
-                <h3 class="modal-title">Utility Information</h3>
-            </div>
-            <div class="modal-body">
-                <div class="form-group">
-                    <label class="form-label">Depth (feet)</label>
-                    <input type="number" class="form-control" id="depthInput" placeholder="3.5">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Size (inches)</label>
-                    <input type="number" class="form-control" id="sizeInput" placeholder="4">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Material</label>
-                    <div class="select-grid">
-                        <div class="select-option" data-material="PVC">PVC</div>
-                        <div class="select-option" data-material="Steel">Steel</div>
-                        <div class="select-option" data-material="Copper">Copper</div>
-                        <div class="select-option" data-material="Concrete">Concrete</div>
-                        <div class="select-option" data-material="Clay">Clay</div>
-                        <div class="select-option" data-material="Other">Other</div>
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Condition</label>
-                    <div class="select-grid">
-                        <div class="select-option" data-condition="Good">Good</div>
-                        <div class="select-option" data-condition="Fair">Fair</div>
-                        <div class="select-option" data-condition="Poor">Poor</div>
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Photo</label>
-                    <div class="image-upload" id="imageUpload">
-                        <input type="file" accept="image/*" style="display: none;" id="photoInput">
-                        <i class="fas fa-camera"></i>
-                        <span>Tap to add photo</span>
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-secondary" id="cancelInfoBtn">Cancel</button>
-                <button class="btn btn-primary" id="saveInfoBtn">
-                    <i class="fas fa-check"></i>
-                    Save
-                </button>
-            </div>
+        <!-- Structure Panel -->
+        <div class="structure-panel" id="structurePanel">
+            <button class="structure-btn touchable" data-structure="electrical-box" title="Electrical Box">⚡</button>
+            <button class="structure-btn touchable" data-structure="catch-basin" title="Catch Basin">🌊</button>
+            <button class="structure-btn touchable" data-structure="sewer-manhole" title="Sewer Manhole">🕳️</button>
+            <button class="structure-btn touchable" data-structure="water-manhole" title="Water Manhole">💧</button>
+            <button class="structure-btn touchable" data-structure="gas-manhole" title="Gas Manhole">🔥</button>
+            <button class="structure-btn touchable" data-structure="gas-valve" title="Gas Valve Box">🔧</button>
+            <button class="structure-btn touchable" data-structure="hydrant-valve" title="Hydrant Valve Box">🚿</button>
         </div>
-    </div>
 
-    <!-- Structure Modal -->
-    <div class="modal-overlay" id="structureModal">
-        <div class="modal-content">
-            <div class="modal-handle"></div>
-            <div class="modal-header">
-                <h3 class="modal-title">Add Structure</h3>
+        <!-- Map Controls -->
+        <div class="map-controls">
+            <button class="map-style-btn touchable active" data-style="street">Street</button>
+            <button class="map-style-btn touchable" data-style="satellite">Satellite</button>
+            <button class="map-style-btn touchable" data-style="hybrid">Hybrid</button>
+        </div>
+
+        <!-- Proximity Warnings -->
+        <div class="proximity-warnings" id="proximityWarnings"></div>
+
+        <!-- Bottom Navigation -->
+        <nav class="bottom-nav">
+            <div class="nav-item active touchable" id="navMapping" onclick="switchMode('mapping')">
+                <span class="nav-icon">🗺️</span>
+                <span class="nav-label">Mapping</span>
             </div>
-            <div class="modal-body">
-                <div class="form-group">
-                    <label class="form-label">Structure Type</label>
-                    <div class="structure-type-grid">
-                        <div class="structure-type-option" data-structure="electricalBox" data-utility="electric">
-                            <i class="fas fa-box"></i>
-                            <span>Electrical Box</span>
-                        </div>
-                        <div class="structure-type-option" data-structure="catchBasin" data-utility="sewer">
-                            <i class="fas fa-water"></i>
-                            <span>Catch Basin</span>
-                        </div>
-                        <div class="structure-type-option" data-structure="sewerManhole" data-utility="sewer">
-                            <i class="fas fa-circle"></i>
-                            <span>Sewer Manhole</span>
-                        </div>
-                        <div class="structure-type-option" data-structure="waterManhole" data-utility="water">
-                            <i class="fas fa-tint"></i>
-                            <span>Water Manhole</span>
-                        </div>
-                        <div class="structure-type-option" data-structure="gasManhole" data-utility="gas">
-                            <i class="fas fa-fire"></i>
-                            <span>Gas Manhole</span>
-                        </div>
-                        <div class="structure-type-option" data-structure="gasValve" data-utility="gas">
-                            <i class="fas fa-valve"></i>
-                            <span>Gas Valve</span>
-                        </div>
-                        <div class="structure-type-option" data-structure="hydrantValve" data-utility="water">
-                            <i class="fas fa-fire-extinguisher"></i>
-                            <span>Hydrant Valve</span>
-                        </div>
-                        <div class="structure-type-option" data-structure="telecomBox" data-utility="telecom">
-                            <i class="fas fa-phone"></i>
-                            <span>Telecom Box</span>
+            <div class="nav-item touchable" id="navExcavation" onclick="switchMode('excavation')">
+                <span class="nav-icon">🚧</span>
+                <span class="nav-label">Excavation</span>
+            </div>
+            <div class="nav-item touchable" id="navUtilities" onclick="togglePanel('utilityPanel')">
+                <span class="nav-icon">🔧</span>
+                <span class="nav-label">Utilities</span>
+            </div>
+            <div class="nav-item touchable" id="navStructures" onclick="togglePanel('structurePanel')">
+                <span class="nav-icon">🏗️</span>
+                <span class="nav-label">Structures</span>
+            </div>
+        </nav>
+
+        <!-- Settings Panel -->
+        <div class="settings-panel" id="settingsPanel">
+            <div class="settings-header">
+                <h3>Settings</h3>
+                <button class="icon-btn touchable" onclick="toggleSettings()">×</button>
+            </div>
+            <div class="settings-content">
+                <div class="setting-item">
+                    <div class="setting-label">
+                        <span>Dark Mode</span>
+                        <div class="dark-mode-toggle touchable" id="darkModeToggle" onclick="toggleDarkMode()">
+                            <div class="dark-mode-slider">
+                                <span id="darkModeIcon">☀️</span>
+                            </div>
                         </div>
                     </div>
                 </div>
-                <div class="form-group">
-                    <label class="form-label">Notes (optional)</label>
-                    <input type="text" class="form-control" id="structureNotes" placeholder="Additional details...">
+                <div class="setting-item">
+                    <div class="setting-label">
+                        <span>High Accuracy GPS</span>
+                        <div class="utility-toggle active touchable" onclick="toggleGPSAccuracy(this)">
+                            <div class="toggle-slider"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="setting-item">
+                    <div class="setting-label">
+                        <span>Auto-Connect Utilities</span>
+                        <div class="utility-toggle active touchable" onclick="toggleAutoConnect(this)">
+                            <div class="toggle-slider"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="setting-item">
+                    <div class="setting-label">
+                        <span>Proximity Alert Distance</span>
+                    </div>
+                    <input type="range" class="form-input" min="5" max="30" value="15" id="proximityRange">
+                    <div style="text-align: center; margin-top: 5px; font-size: 14px;">
+                        <span id="proximityValue">15</span> feet
+                    </div>
                 </div>
             </div>
-            <div class="modal-footer">
-                <button class="btn btn-secondary" id="cancelStructureBtn">Cancel</button>
-                <button class="btn btn-primary" id="saveStructureBtn">
-                    <i class="fas fa-check"></i>
-                    Add Structure
-                </button>
+        </div>
+
+        <!-- Modal for Utility Info -->
+        <div class="modal-overlay" id="modalOverlay">
+            <div class="modal">
+                <div class="modal-header">
+                    <span id="modalTitle">Utility Information</span>
+                    <button class="icon-btn touchable" onclick="closeModal()" style="width: 32px; height: 32px;">×</button>
+                </div>
+                <form id="utilityForm">
+                    <div class="form-group">
+                        <label class="form-label">Depth (feet)</label>
+                        <input type="number" class="form-input" id="utilityDepth" placeholder="Enter depth">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Size (inches)</label>
+                        <input type="number" class="form-input" id="utilitySize" placeholder="Enter size">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Material</label>
+                        <select class="form-select" id="utilityMaterial">
+                            <option value="">Select material</option>
+                            <option value="PVC">PVC</option>
+                            <option value="HDPE">HDPE</option>
+                            <option value="Steel">Steel</option>
+                            <option value="Cast Iron">Cast Iron</option>
+                            <option value="Copper">Copper</option>
+                            <option value="Concrete">Concrete</option>
+                            <option value="Clay">Clay</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Condition</label>
+                        <select class="form-select" id="utilityCondition">
+                            <option value="">Select condition</option>
+                            <option value="Excellent">Excellent</option>
+                            <option value="Good">Good</option>
+                            <option value="Fair">Fair</option>
+                            <option value="Poor">Poor</option>
+                            <option value="Critical">Critical</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Image</label>
+                        <div class="image-upload touchable" onclick="document.getElementById('utilityImage').click()">
+                            <input type="file" id="utilityImage" accept="image/*" style="display: none;" onchange="previewImage(event)">
+                            <div class="upload-placeholder" id="imagePlaceholder">
+                                <div>📷</div>
+                                <div>Tap to upload image</div>
+                            </div>
+                            <img class="image-preview" id="imagePreview" style="display: none;">
+                        </div>
+                    </div>
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-secondary touchable" onclick="closeModal()">Cancel</button>
+                        <button type="button" class="btn btn-primary touchable" onclick="saveUtilityInfo()">Save</button>
+                    </div>
+                </form>
             </div>
         </div>
+
+        <!-- Notification -->
+        <div class="notification" id="notification">
+            <span id="notificationIcon">ℹ️</span>
+            <span id="notificationText"></span>
+        </div>
+
+        <!-- Edit Overlay -->
+        <div class="edit-overlay" id="editOverlay"></div>
     </div>
 
-    <!-- Leaflet JS -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-    
     <script>
-        // App State
-        const App = {
-            mode: 'mapping',
-            map: null,
-            userMarker: null,
-            utilities: [],
-            structures: [],
-            activeUtilityType: 'water',
-            activeLineType: 'service',
-            isDrawing: false,
-            currentDrawing: [],
-            currentPolyline: null,
-            selectedUtility: null,
-            selectedStructure: null,
-            watchId: null,
-            proximityCheckInterval: null,
-            activeAlerts: new Map(),
-            dismissedAlerts: new Map(),
-            theme: 'light',
-            visibility: {
-                utilities: {
-                    water: true,
-                    gas: true,
-                    electric: true,
-                    sewer: true,
-                    telecom: true
-                },
-                lineTypes: {
-                    main: true,
-                    service: true
-                },
-                structures: true
-            },
-            layers: {
-                utilities: L.layerGroup(),
-                structures: L.layerGroup()
-            },
-            pendingConnection: null,
-            isPlacingStructure: false,
-            controlPoints: []
+        // Global variables
+        let map;
+        let userLocationMarker;
+        let userLocationCircle;
+        let currentMode = 'mapping';
+        let drawingMode = false;
+        let selectedUtilityType = 'water';
+        let selectedUtilityClass = 'main';
+        let currentDrawing = [];
+        let utilities = [];
+        let structures = [];
+        let selectedUtility = null;
+        let refineMode = false;
+        let deleteMode = false;
+        let proximityWarnings = new Map();
+        let warningCooldowns = new Map();
+        let gpsWatchId = null;
+        let deviceOrientation = 0;
+        let autoConnect = true;
+        let proximityDistance = 15;
+        let highAccuracyGPS = true;
+
+        // Utility types configuration
+        const utilityTypes = {
+            water: { name: 'Water', color: '#1E90FF', icon: '💧' },
+            gas: { name: 'Gas', color: '#FFD700', icon: '🔥' },
+            electric: { name: 'Electric', color: '#DC143C', icon: '⚡' },
+            sewer: { name: 'Sewer', color: '#8B4513', icon: '💩' },
+            telephone: { name: 'Telephone', color: '#9370DB', icon: '📞' }
         };
 
-        // Initialize App
-        document.addEventListener('DOMContentLoaded', () => {
-            // Hide splash screen after animation
+        // Structure types configuration
+        const structureTypes = {
+            'electrical-box': { name: 'Electrical Box', icon: '⚡', color: '#DC143C' },
+            'catch-basin': { name: 'Catch Basin', icon: '🌊', color: '#1E90FF' },
+            'sewer-manhole': { name: 'Sewer Manhole', icon: '🕳️', color: '#8B4513' },
+            'water-manhole': { name: 'Water Manhole', icon: '💧', color: '#1E90FF' },
+            'gas-manhole': { name: 'Gas Manhole', icon: '🔥', color: '#FFD700' },
+            'gas-valve': { name: 'Gas Valve Box', icon: '🔧', color: '#FFD700' },
+            'hydrant-valve': { name: 'Hydrant Valve Box', icon: '🚿', color: '#1E90FF' }
+        };
+
+        // Initialize app
+        window.addEventListener('load', () => {
             setTimeout(() => {
-                const splash = document.getElementById('splashScreen');
-                splash.style.opacity = '0';
-                setTimeout(() => {
-                    splash.style.display = 'none';
-                    initializeApp();
-                }, 300);
-            }, 2500);
+                document.getElementById('splashScreen').style.display = 'none';
+                document.getElementById('appContainer').style.display = 'block';
+                initializeApp();
+            }, 4000);
         });
 
         function initializeApp() {
             initializeMap();
-            setupEventListeners();
+            initializeGeolocation();
+            initializeDeviceOrientation();
+            populateUtilityPanel();
+            initializeStructures();
+            initializeEventListeners();
             loadSavedData();
-            startLocationTracking();
+            
+            // Check for saved dark mode preference
+            if (localStorage.getItem('darkMode') === 'true') {
+                document.body.classList.add('dark-mode');
+                document.getElementById('darkModeToggle').classList.add('active');
+                document.getElementById('darkModeIcon').textContent = '🌙';
+            }
         }
 
-        // Initialize Map
         function initializeMap() {
-            App.map = L.map('map', {
+            // Initialize Leaflet map
+            map = L.map('map', {
                 zoomControl: false,
-                attributionControl: false,
-                tap: false,
-                touchZoom: true,
-                dragging: true,
-                doubleClickZoom: false
-            }).setView([40.7128, -74.0060], 16);
+                attributionControl: false
+            }).setView([40.7128, -74.0060], 15);
 
-            // Add tile layers
-            const osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                maxZoom: 22,
-                maxNativeZoom: 19
-            });
+            // Add street layer by default
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
-            const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-                maxZoom: 22,
-                maxNativeZoom: 19
-            });
-
-            osmLayer.addTo(App.map);
-            
-            // Add utility layers to map
-            App.layers.utilities.addTo(App.map);
-            App.layers.structures.addTo(App.map);
-
-            // Store layers for switching
-            App.baseLayers = {
-                'Street': osmLayer,
-                'Satellite': satelliteLayer
-            };
-            App.currentBaseLayer = 'Street';
+            // Add custom zoom control
+            L.control.zoom({
+                position: 'topright'
+            }).addTo(map);
 
             // Map click handler
-            App.map.on('click', handleMapClick);
+            map.on('click', handleMapClick);
+            
+            // Long press handler for utilities
+            let pressTimer;
+            map.on('mousedown touchstart', (e) => {
+                pressTimer = setTimeout(() => {
+                    handleLongPress(e);
+                }, 500);
+            });
+            
+            map.on('mouseup touchend mousemove touchmove', () => {
+                clearTimeout(pressTimer);
+            });
         }
 
-        // Setup Event Listeners
-        function setupEventListeners() {
-            // Mode switching
-            document.getElementById('mappingModeBtn').addEventListener('click', () => setMode('mapping'));
-            document.getElementById('excavationModeBtn').addEventListener('click', () => setMode('excavation'));
+        function initializeGeolocation() {
+            if ('geolocation' in navigator) {
+                const options = {
+                    enableHighAccuracy: highAccuracyGPS,
+                    timeout: 5000,
+                    maximumAge: 0
+                };
 
-            // Utility type selection
-            document.querySelectorAll('.utility-type-button').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    document.querySelectorAll('.utility-type-button').forEach(b => b.classList.remove('active'));
-                    btn.classList.add('active');
-                    App.activeUtilityType = btn.dataset.type;
+                gpsWatchId = navigator.geolocation.watchPosition(
+                    updateUserLocation,
+                    handleGeolocationError,
+                    options
+                );
+            } else {
+                showNotification('Geolocation not supported', 'error');
+            }
+        }
+
+        function updateUserLocation(position) {
+            const { latitude, longitude, accuracy } = position.coords;
+            const userLatLng = [latitude, longitude];
+
+            if (!userLocationMarker) {
+                // Create user location marker
+                const locationIcon = L.divIcon({
+                    className: 'user-location-marker',
+                    html: '<div class="location-pulse"></div><div class="user-direction" id="userDirection"></div>',
+                    iconSize: [20, 20],
+                    iconAnchor: [10, 10]
                 });
-            });
 
-            // Line type selection
-            document.querySelectorAll('.line-type-button').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    document.querySelectorAll('.line-type-button').forEach(b => b.classList.remove('active'));
-                    btn.classList.add('active');
-                    App.activeLineType = btn.dataset.type;
+                userLocationMarker = L.marker(userLatLng, { icon: locationIcon }).addTo(map);
+                userLocationCircle = L.circle(userLatLng, {
+                    radius: accuracy,
+                    color: '#0066cc',
+                    fillColor: '#0066cc',
+                    fillOpacity: 0.1,
+                    weight: 2
+                }).addTo(map);
+
+                map.setView(userLatLng, 18);
+            } else {
+                userLocationMarker.setLatLng(userLatLng);
+                userLocationCircle.setLatLng(userLatLng);
+                userLocationCircle.setRadius(accuracy);
+            }
+
+            // Update GPS accuracy indicator
+            updateGPSAccuracy(accuracy);
+
+            // Check proximity in excavation mode
+            if (currentMode === 'excavation') {
+                checkProximityWarnings(userLatLng);
+            }
+        }
+
+        function updateGPSAccuracy(accuracy) {
+            const accuracyDot = document.getElementById('accuracyDot');
+            const accuracyText = document.getElementById('accuracyText');
+            
+            if (accuracy < 5) {
+                accuracyDot.className = 'accuracy-dot good';
+                accuracyText.textContent = 'GPS: Excellent';
+            } else if (accuracy < 15) {
+                accuracyDot.className = 'accuracy-dot medium';
+                accuracyText.textContent = 'GPS: Good';
+            } else {
+                accuracyDot.className = 'accuracy-dot poor';
+                accuracyText.textContent = 'GPS: Poor';
+            }
+        }
+
+        function handleGeolocationError(error) {
+            console.error('Geolocation error:', error);
+            showNotification('Unable to get location', 'error');
+        }
+
+        function initializeDeviceOrientation() {
+            if (window.DeviceOrientationEvent) {
+                window.addEventListener('deviceorientation', (event) => {
+                    if (event.alpha !== null) {
+                        deviceOrientation = event.alpha;
+                        updateUserDirection();
+                    }
                 });
+            }
+        }
+
+        function updateUserDirection() {
+            const directionElement = document.getElementById('userDirection');
+            if (directionElement) {
+                directionElement.style.transform = `translateX(-50%) rotate(${deviceOrientation}deg)`;
+            }
+        }
+
+        function populateUtilityPanel() {
+            const utilityList = document.getElementById('utilityList');
+            utilityList.innerHTML = '';
+
+            Object.entries(utilityTypes).forEach(([key, utility]) => {
+                const utilityDiv = document.createElement('div');
+                utilityDiv.className = 'utility-type touchable';
+                utilityDiv.innerHTML = `
+                    <div class="utility-color" style="background: ${utility.color}"></div>
+                    <span>${utility.icon} ${utility.name}</span>
+                    <div class="utility-toggle active touchable" onclick="toggleUtility(event, '${key}')">
+                        <div class="toggle-slider"></div>
+                    </div>
+                `;
+                utilityDiv.onclick = (e) => {
+                    if (!e.target.closest('.utility-toggle')) {
+                        selectUtilityType(key);
+                    }
+                };
+                utilityList.appendChild(utilityDiv);
             });
+        }
 
-            // FAB button
-            document.getElementById('fabBtn').addEventListener('click', handleFabClick);
-
-            // Structure button
-            document.getElementById('structureBtn').addEventListener('click', handleStructureClick);
-
-            // Map controls
-            document.getElementById('zoomInBtn').addEventListener('click', () => App.map.zoomIn());
-            document.getElementById('zoomOutBtn').addEventListener('click', () => App.map.zoomOut());
-            document.getElementById('locateBtn').addEventListener('click', centerOnUser);
-
-            // Menu
-            document.getElementById('menuBtn').addEventListener('click', () => {
-                document.getElementById('sideMenu').classList.add('open');
+        function selectUtilityType(type) {
+            selectedUtilityType = type;
+            document.querySelectorAll('.utility-type').forEach(el => {
+                el.classList.remove('selected');
             });
+            event.currentTarget.classList.add('selected');
+            
+            if (drawingMode) {
+                showNotification(`Drawing ${utilityTypes[type].name} ${selectedUtilityClass}`, 'info');
+            }
+        }
 
-            // Close menu on outside click
-            document.addEventListener('click', (e) => {
-                const menu = document.getElementById('sideMenu');
-                const menuBtn = document.getElementById('menuBtn');
-                if (!menu.contains(e.target) && !menuBtn.contains(e.target)) {
-                    menu.classList.remove('open');
+        function toggleUtility(event, type) {
+            event.stopPropagation();
+            const toggle = event.currentTarget;
+            toggle.classList.toggle('active');
+            
+            // Toggle visibility of utilities of this type
+            const isVisible = toggle.classList.contains('active');
+            utilities.forEach(utility => {
+                if (utility.type === type && utility.polyline) {
+                    if (isVisible) {
+                        utility.polyline.addTo(map);
+                    } else {
+                        map.removeLayer(utility.polyline);
+                    }
                 }
             });
+        }
 
-            // Layers button
-            document.getElementById('layersBtn').addEventListener('click', toggleBaseLayer);
+        function initializeStructures() {
+            document.querySelectorAll('.structure-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const structureType = e.currentTarget.dataset.structure;
+                    if (e.currentTarget.classList.contains('active')) {
+                        e.currentTarget.classList.remove('active');
+                        // Cancel structure placement
+                    } else {
+                        document.querySelectorAll('.structure-btn').forEach(b => b.classList.remove('active'));
+                        e.currentTarget.classList.add('active');
+                        // Enable structure placement
+                        enableStructurePlacement(structureType);
+                    }
+                });
+            });
+        }
 
-            // Theme toggle
-            document.getElementById('themeBtn').addEventListener('click', toggleTheme);
+        function enableStructurePlacement(type) {
+            map.once('click', (e) => {
+                placeStructure(type, e.latlng);
+                document.querySelectorAll('.structure-btn').forEach(b => b.classList.remove('active'));
+            });
+        }
 
-            // Menu toggles
-            document.querySelectorAll('.toggle-switch').forEach(toggle => {
-                toggle.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    toggle.classList.toggle('active');
-                    handleVisibilityToggle(toggle);
+        function placeStructure(type, latlng) {
+            const structure = structureTypes[type];
+            const marker = L.marker(latlng, {
+                icon: L.divIcon({
+                    className: 'structure-marker',
+                    html: structure.icon,
+                    iconSize: [30, 30],
+                    iconAnchor: [15, 15]
+                })
+            }).addTo(map);
+
+            structures.push({
+                id: Date.now(),
+                type,
+                latlng,
+                marker
+            });
+
+            showNotification(`${structure.name} placed`, 'success');
+        }
+
+        function initializeEventListeners() {
+            // Drawing controls
+            document.getElementById('drawBtn').addEventListener('click', toggleDrawingMode);
+            document.getElementById('selectBtn').addEventListener('click', toggleSelectMode);
+            document.getElementById('refineBtn').addEventListener('click', toggleRefineMode);
+            document.getElementById('deleteBtn').addEventListener('click', toggleDeleteMode);
+
+            // Settings
+            document.getElementById('settingsBtn').addEventListener('click', toggleSettings);
+            
+            // Map style buttons
+            document.querySelectorAll('.map-style-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const style = e.target.dataset.style;
+                    changeMapStyle(style);
+                    document.querySelectorAll('.map-style-btn').forEach(b => b.classList.remove('active'));
+                    e.target.classList.add('active');
                 });
             });
 
-            // Data management
-            document.getElementById('exportBtn').addEventListener('click', exportData);
-            document.getElementById('importBtn').addEventListener('click', importData);
-            document.getElementById('clearBtn').addEventListener('click', clearAllData);
-
-            // Modal controls
-            document.getElementById('imageUpload').addEventListener('click', () => {
-                document.getElementById('photoInput').click();
-            });
-
-            document.getElementById('cancelInfoBtn').addEventListener('click', closeUtilityModal);
-            document.getElementById('saveInfoBtn').addEventListener('click', saveUtilityInfo);
-
-            // Structure modal
-            document.getElementById('cancelStructureBtn').addEventListener('click', closeStructureModal);
-            document.getElementById('saveStructureBtn').addEventListener('click', saveStructure);
-
-            // Material and condition selection
-            document.querySelectorAll('.select-option').forEach(option => {
-                option.addEventListener('click', () => {
-                    const siblings = option.parentElement.querySelectorAll('.select-option');
-                    siblings.forEach(s => s.classList.remove('active'));
-                    option.classList.add('active');
-                });
-            });
-
-            // Structure type selection
-            document.querySelectorAll('.structure-type-option').forEach(option => {
-                option.addEventListener('click', () => {
-                    document.querySelectorAll('.structure-type-option').forEach(o => o.classList.remove('active'));
-                    option.classList.add('active');
-                });
+            // Proximity range slider
+            document.getElementById('proximityRange').addEventListener('input', (e) => {
+                proximityDistance = parseInt(e.target.value);
+                document.getElementById('proximityValue').textContent = proximityDistance;
             });
 
             // Prevent default touch behaviors
-            document.addEventListener('gesturestart', (e) => e.preventDefault());
-            document.addEventListener('gesturechange', (e) => e.preventDefault());
-            document.addEventListener('gestureend', (e) => e.preventDefault());
+            document.addEventListener('touchstart', (e) => {
+                if (e.touches.length > 1) {
+                    e.preventDefault();
+                }
+            }, { passive: false });
+
+            // Prevent context menu
+            document.addEventListener('contextmenu', (e) => e.preventDefault());
         }
 
-        // Mode Management
-        function setMode(mode) {
-            App.mode = mode;
+        function toggleDrawingMode() {
+            drawingMode = !drawingMode;
+            document.getElementById('drawBtn').classList.toggle('active', drawingMode);
             
-            // Update UI
-            document.querySelectorAll('.nav-button').forEach(btn => {
-                btn.classList.toggle('active', btn.dataset.mode === mode);
-            });
-
-            const modeIndicator = document.getElementById('modeIndicator');
-            const utilitySelector = document.getElementById('utilitySelector');
-            const lineTypeSelector = document.getElementById('lineTypeSelector');
-            const fabBtn = document.getElementById('fabBtn');
-            const structureBtn = document.getElementById('structureBtn');
-
-            if (mode === 'mapping') {
-                modeIndicator.className = 'mode-indicator mapping';
-                modeIndicator.innerHTML = '<i class="fas fa-pencil-ruler"></i><span>Mapping Mode</span>';
-                utilitySelector.classList.add('visible');
-                lineTypeSelector.classList.add('visible');
-                fabBtn.style.display = 'flex';
-                structureBtn.style.display = 'flex';
-                stopProximityChecking();
+            if (drawingMode) {
+                currentDrawing = [];
+                showNotification(`Drawing ${utilityTypes[selectedUtilityType].name} ${selectedUtilityClass}`, 'info');
+                map.getContainer().style.cursor = 'crosshair';
             } else {
-                modeIndicator.className = 'mode-indicator excavation';
-                modeIndicator.innerHTML = '<i class="fas fa-hard-hat"></i><span>Excavation Mode</span>';
-                utilitySelector.classList.remove('visible');
-                lineTypeSelector.classList.remove('visible');
-                fabBtn.style.display = 'none';
-                structureBtn.style.display = 'none';
-                startProximityChecking();
-                
-                // Zoom to user location
-                if (App.userMarker) {
-                    App.map.setView(App.userMarker.getLatLng(), 19);
-                }
-            }
-        }
-
-        // Map Click Handler
-        function handleMapClick(e) {
-            if (App.mode === 'mapping') {
-                if (App.isDrawing) {
-                    addDrawingPoint(e.latlng);
-                } else if (App.isPlacingStructure) {
-                    placeStructure(e.latlng);
-                }
-            }
-        }
-
-        // FAB Click Handler
-        function handleFabClick() {
-            const fab = document.getElementById('fabBtn');
-            
-            if (App.isDrawing) {
-                // Finish drawing
                 finishDrawing();
+                map.getContainer().style.cursor = '';
+            }
+        }
+
+        function toggleSelectMode() {
+            // Implementation for select mode
+            document.getElementById('selectBtn').classList.toggle('active');
+        }
+
+        function toggleRefineMode() {
+            refineMode = !refineMode;
+            document.getElementById('refineBtn').classList.toggle('active', refineMode);
+            
+            if (refineMode && selectedUtility) {
+                showRefinePoints(selectedUtility);
             } else {
-                // Start drawing
-                startDrawing();
-                fab.innerHTML = '<i class="fas fa-check"></i>';
-                fab.classList.add('confirm');
+                hideRefinePoints();
             }
         }
 
-        // Structure Button Handler
-        function handleStructureClick() {
-            if (!App.isPlacingStructure) {
-                showStructureModal();
-            }
-        }
-
-        // Drawing Functions
-        function startDrawing() {
-            App.isDrawing = true;
-            App.currentDrawing = [];
+        function toggleDeleteMode() {
+            deleteMode = !deleteMode;
+            document.getElementById('deleteBtn').classList.toggle('active', deleteMode);
             
-            // Change cursor
-            document.getElementById('map').style.cursor = 'crosshair';
-        }
-
-        function addDrawingPoint(latlng) {
-            App.currentDrawing.push(latlng);
-            
-            if (App.currentPolyline) {
-                App.currentPolyline.setLatLngs(App.currentDrawing);
+            if (deleteMode) {
+                showNotification('Select utility to delete', 'info');
+                map.getContainer().style.cursor = 'not-allowed';
             } else {
-                App.currentPolyline = L.polyline(App.currentDrawing, {
-                    color: getUtilityColor(App.activeUtilityType),
-                    weight: App.activeLineType === 'main' ? 6 : 4,
-                    dashArray: App.activeLineType === 'service' ? '8, 4' : null,
-                    className: `utility-line ${App.activeUtilityType} ${App.activeLineType}`
-                }).addTo(App.layers.utilities);
-            }
-
-            // Check for nearby connections
-            if (App.currentDrawing.length > 1) {
-                checkForConnections(latlng);
+                map.getContainer().style.cursor = '';
             }
         }
 
-        function finishDrawing() {
-            if (App.currentDrawing.length < 2) {
-                cancelDrawing();
-                return;
-            }
-
-            // Create utility object
-            const utility = {
-                id: Date.now(),
-                type: App.activeUtilityType,
-                lineType: App.activeLineType,
-                points: App.currentDrawing,
-                polyline: App.currentPolyline,
-                depth: null,
-                size: null,
-                material: null,
-                condition: null,
-                photo: null,
-                connections: []
-            };
-
-            // Check for pending connection
-            if (App.pendingConnection) {
-                createConnection(utility, App.pendingConnection);
-            }
-
-            // Add click handler for editing
-            App.currentPolyline.on('click', () => selectUtility(utility));
-
-            App.utilities.push(utility);
-            
-            // Show info modal
-            App.selectedUtility = utility;
-            showUtilityModal();
-
-            // Reset drawing state
-            resetDrawingState();
-        }
-
-        function cancelDrawing() {
-            if (App.currentPolyline) {
-                App.layers.utilities.removeLayer(App.currentPolyline);
-            }
-            resetDrawingState();
-        }
-
-        function resetDrawingState() {
-            App.isDrawing = false;
-            App.currentDrawing = [];
-            App.currentPolyline = null;
-            App.pendingConnection = null;
-            
-            const fab = document.getElementById('fabBtn');
-            fab.innerHTML = '<i class="fas fa-plus"></i>';
-            fab.classList.remove('confirm');
-            
-            document.getElementById('map').style.cursor = '';
-            
-            // Remove any connection popups
-            removeConnectionPopup();
-        }
-
-        // Connection Detection and Management
-        function checkForConnections(point) {
-            const threshold = 20; // meters
-            let nearestConnection = null;
-            let minDistance = threshold;
-            
-            // Check utilities
-            App.utilities.forEach(utility => {
-                if (utility.type === App.activeUtilityType) {
-                    const polyline = utility.polyline;
-                    const closestPoint = findClosestPointOnPolyline(point, polyline);
-                    
-                    if (closestPoint.distance < minDistance) {
-                        minDistance = closestPoint.distance;
-                        nearestConnection = {
-                            type: 'utility',
-                            target: utility,
-                            point: closestPoint.point,
-                            distance: closestPoint.distance
-                        };
+        function handleMapClick(e) {
+            if (drawingMode) {
+                addPointToDrawing(e.latlng);
+            } else if (deleteMode) {
+                // Check if click is on a utility
+                const clickPoint = map.latLngToContainerPoint(e.latlng);
+                utilities.forEach(utility => {
+                    if (utility.polyline) {
+                        const polylineElement = utility.polyline._path;
+                        const rect = polylineElement.getBoundingClientRect();
+                        // Simple proximity check - could be improved
+                        if (isPointNearPolyline(clickPoint, utility.points)) {
+                            deleteUtility(utility);
+                        }
                     }
-                }
-            });
-            
-            // Check structures
-            App.structures.forEach(structure => {
-                if (structure.utilityType === App.activeUtilityType) {
-                    const distance = App.map.distance(point, structure.location);
-                    
-                    if (distance < minDistance) {
-                        minDistance = distance;
-                        nearestConnection = {
-                            type: 'structure',
-                            target: structure,
-                            point: structure.location,
-                            distance: distance
-                        };
-                    }
-                }
-            });
-            
-            if (nearestConnection) {
-                showConnectionPopup(nearestConnection);
-            }
-        }
-
-        function showConnectionPopup(connection) {
-            removeConnectionPopup();
-            
-            const pixel = App.map.latLngToContainerPoint(connection.point);
-            const popup = document.createElement('div');
-            popup.className = 'connection-popup';
-            popup.id = 'connectionPopup';
-            
-            const targetName = connection.type === 'utility' ? 
-                `${connection.target.type} ${connection.target.lineType}` : 
-                connection.target.name;
-            
-            popup.innerHTML = `
-                <div class="connection-popup-title">Connect to ${targetName}?</div>
-                <div class="connection-popup-buttons">
-                    <button class="connection-popup-button primary" onclick="confirmConnection()">
-                        <i class="fas fa-check"></i> Yes
-                    </button>
-                    <button class="connection-popup-button secondary" onclick="cancelConnection()">
-                        <i class="fas fa-times"></i> No
-                    </button>
-                </div>
-            `;
-            
-            popup.style.left = pixel.x + 'px';
-            popup.style.top = (pixel.y - 120) + 'px';
-            
-            document.querySelector('.map-container').appendChild(popup);
-            
-            // Store pending connection
-            App.pendingConnection = connection;
-        }
-
-        function removeConnectionPopup() {
-            const popup = document.getElementById('connectionPopup');
-            if (popup) {
-                popup.remove();
-            }
-        }
-
-        function confirmConnection() {
-            removeConnectionPopup();
-            // Connection will be created when drawing is finished
-        }
-
-        function cancelConnection() {
-            App.pendingConnection = null;
-            removeConnectionPopup();
-        }
-
-        function createConnection(utility, connection) {
-            // Snap the last point to connection point
-            utility.points[utility.points.length - 1] = connection.point;
-            utility.polyline.setLatLngs(utility.points);
-            
-            // Add connection marker
-            const connectionMarker = L.divIcon({
-                className: `connection-point ${utility.type}`,
-                html: '',
-                iconSize: [12, 12]
-            });
-            
-            L.marker(connection.point, { icon: connectionMarker }).addTo(App.layers.utilities);
-            
-            // Record connection
-            utility.connections.push({
-                type: connection.type,
-                targetId: connection.target.id,
-                point: connection.point
-            });
-            
-            if (connection.type === 'utility') {
-                connection.target.connections = connection.target.connections || [];
-                connection.target.connections.push({
-                    type: 'utility',
-                    targetId: utility.id,
-                    point: connection.point
                 });
             }
         }
 
-        function findClosestPointOnPolyline(point, polyline) {
-            let minDistance = Infinity;
-            let closestPoint = null;
-            const latlngs = polyline.getLatLngs();
+        function addPointToDrawing(latlng) {
+            currentDrawing.push(latlng);
             
-            for (let i = 0; i < latlngs.length - 1; i++) {
-                const start = latlngs[i];
-                const end = latlngs[i + 1];
-                const closest = getClosestPointOnSegment(point, start, end);
-                const distance = App.map.distance(point, closest);
+            if (currentDrawing.length === 1) {
+                // First point - create marker
+                L.circleMarker(latlng, {
+                    radius: 6,
+                    color: utilityTypes[selectedUtilityType].color,
+                    fillColor: utilityTypes[selectedUtilityType].color,
+                    fillOpacity: 0.8
+                }).addTo(map);
+            } else {
+                // Draw line segment
+                if (currentDrawing.length === 2) {
+                    // Create initial polyline
+                    const polyline = L.polyline(currentDrawing, {
+                        color: utilityTypes[selectedUtilityType].color,
+                        weight: 4,
+                        opacity: 0.8,
+                        className: `utility-line ${selectedUtilityType} ${selectedUtilityClass}`
+                    }).addTo(map);
+                    
+                    // Store reference for updating
+                    currentDrawing.polyline = polyline;
+                } else {
+                    // Update existing polyline
+                    currentDrawing.polyline.setLatLngs(currentDrawing);
+                }
                 
-                if (distance < minDistance) {
-                    minDistance = distance;
-                    closestPoint = closest;
+                // Check for auto-connect
+                if (autoConnect) {
+                    checkAutoConnect(latlng);
+                }
+            }
+        }
+
+        function checkAutoConnect(newPoint) {
+            const threshold = 0.00005; // Approximately 5 meters
+            
+            utilities.forEach(utility => {
+                if (utility.type === selectedUtilityType) {
+                    // Check start and end points
+                    const startPoint = utility.points[0];
+                    const endPoint = utility.points[utility.points.length - 1];
+                    
+                    if (getDistance(newPoint, startPoint) < threshold || 
+                        getDistance(newPoint, endPoint) < threshold) {
+                        showConnectionDialog(utility, newPoint);
+                    }
+                }
+            });
+        }
+
+        function getDistance(point1, point2) {
+            const lat1 = point1.lat || point1[0];
+            const lng1 = point1.lng || point1[1];
+            const lat2 = point2.lat || point2[0];
+            const lng2 = point2.lng || point2[1];
+            
+            return Math.sqrt(Math.pow(lat2 - lat1, 2) + Math.pow(lng2 - lng1, 2));
+        }
+
+        function showConnectionDialog(utility, point) {
+            const dialog = document.createElement('div');
+            dialog.className = 'connection-dialog';
+            dialog.style.left = '50%';
+            dialog.style.top = '50%';
+            dialog.style.transform = 'translate(-50%, -50%)';
+            dialog.innerHTML = `
+                <h4>Connect to existing ${utilityTypes[utility.type].name}?</h4>
+                <div class="connection-actions">
+                    <button class="btn btn-secondary touchable" onclick="closeConnectionDialog()">No</button>
+                    <button class="btn btn-primary touchable" onclick="connectUtilities(${utility.id})">Yes</button>
+                </div>
+            `;
+            document.body.appendChild(dialog);
+        }
+
+        function closeConnectionDialog() {
+            document.querySelector('.connection-dialog')?.remove();
+        }
+
+        function connectUtilities(utilityId) {
+            closeConnectionDialog();
+            // Implementation for connecting utilities
+            showNotification('Utilities connected', 'success');
+        }
+
+        function finishDrawing() {
+            if (currentDrawing.length > 1) {
+                const utility = {
+                    id: Date.now(),
+                    type: selectedUtilityType,
+                    class: selectedUtilityClass,
+                    points: currentDrawing.map(p => [p.lat, p.lng]),
+                    polyline: currentDrawing.polyline,
+                    info: {
+                        depth: null,
+                        size: null,
+                        material: null,
+                        condition: null,
+                        image: null
+                    }
+                };
+                
+                utilities.push(utility);
+                showModal(utility);
+            }
+            
+            currentDrawing = [];
+        }
+
+        function handleLongPress(e) {
+            if (currentMode === 'mapping' && !drawingMode) {
+                const clickPoint = map.latLngToContainerPoint(e.latlng);
+                
+                utilities.forEach(utility => {
+                    if (isPointNearPolyline(clickPoint, utility.points)) {
+                        selectedUtility = utility;
+                        showUtilityInfo(utility);
+                    }
+                });
+            }
+        }
+
+        function isPointNearPolyline(point, polylinePoints) {
+            // Simple proximity check - could be improved with proper line-to-point distance calculation
+            const threshold = 20; // pixels
+            
+            for (let i = 0; i < polylinePoints.length - 1; i++) {
+                const p1 = map.latLngToContainerPoint(polylinePoints[i]);
+                const p2 = map.latLngToContainerPoint(polylinePoints[i + 1]);
+                
+                const dist = pointToLineDistance(point, p1, p2);
+                if (dist < threshold) {
+                    return true;
                 }
             }
             
-            return { point: closestPoint, distance: minDistance };
+            return false;
         }
 
-        function getClosestPointOnSegment(point, start, end) {
-            const x = point.lng;
-            const y = point.lat;
-            const x1 = start.lng;
-            const y1 = start.lat;
-            const x2 = end.lng;
-            const y2 = end.lat;
-            
-            const A = x - x1;
-            const B = y - y1;
-            const C = x2 - x1;
-            const D = y2 - y1;
+        function pointToLineDistance(point, lineStart, lineEnd) {
+            const A = point.x - lineStart.x;
+            const B = point.y - lineStart.y;
+            const C = lineEnd.x - lineStart.x;
+            const D = lineEnd.y - lineStart.y;
             
             const dot = A * C + B * D;
             const lenSq = C * C + D * D;
@@ -2257,878 +2102,511 @@
             let xx, yy;
             
             if (param < 0) {
-                xx = x1;
-                yy = y1;
+                xx = lineStart.x;
+                yy = lineStart.y;
             } else if (param > 1) {
-                xx = x2;
-                yy = y2;
+                xx = lineEnd.x;
+                yy = lineEnd.y;
             } else {
-                xx = x1 + param * C;
-                yy = y1 + param * D;
+                xx = lineStart.x + param * C;
+                yy = lineStart.y + param * D;
             }
             
-            return L.latLng(yy, xx);
+            const dx = point.x - xx;
+            const dy = point.y - yy;
+            
+            return Math.sqrt(dx * dx + dy * dy);
         }
 
-        // Utility Selection and Editing
-        function selectUtility(utility) {
-            if (App.mode !== 'mapping') return;
-            
-            App.selectedUtility = utility;
-            
-            // Long press to edit
-            let pressTimer;
-            let pressStart = null;
-            
-            const startPress = (e) => {
-                pressStart = Date.now();
-                pressTimer = setTimeout(() => {
-                    showUtilityModal();
-                }, 500);
-            };
-            
-            const endPress = () => {
-                clearTimeout(pressTimer);
-                const pressDuration = Date.now() - pressStart;
-                
-                // If short press, show refine controls
-                if (pressDuration < 500) {
-                    showRefineControls(utility);
-                }
-            };
-            
-            utility.polyline.on('mousedown', startPress);
-            utility.polyline.on('mouseup', endPress);
-            utility.polyline.on('mouseleave', () => clearTimeout(pressTimer));
+        function showUtilityInfo(utility) {
+            const popup = L.popup()
+                .setLatLng(utility.points[Math.floor(utility.points.length / 2)])
+                .setContent(createUtilityInfoContent(utility))
+                .openOn(map);
         }
 
-        function showRefineControls(utility) {
-            // Remove existing control points
-            removeControlPoints();
+        function createUtilityInfoContent(utility) {
+            const info = utility.info;
+            const utilityConfig = utilityTypes[utility.type];
             
-            // Add control points to each vertex
-            const points = utility.polyline.getLatLngs();
+            return `
+                <div class="utility-info-popup">
+                    <div class="info-title">
+                        <span>${utilityConfig.icon}</span>
+                        <span>${utilityConfig.name} ${utility.class}</span>
+                    </div>
+                    <div class="info-details">
+                        ${info.depth ? `<div class="info-row"><span>Depth:</span><span>${info.depth} ft</span></div>` : ''}
+                        ${info.size ? `<div class="info-row"><span>Size:</span><span>${info.size}"</span></div>` : ''}
+                        ${info.material ? `<div class="info-row"><span>Material:</span><span>${info.material}</span></div>` : ''}
+                        ${info.condition ? `<div class="info-row"><span>Condition:</span><span>${info.condition}</span></div>` : ''}
+                    </div>
+                    <div class="info-actions">
+                        <button class="btn btn-secondary touchable" onclick="editUtility(${utility.id})">Edit</button>
+                        <button class="btn btn-secondary touchable" onclick="refineUtility(${utility.id})">Refine</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function editUtility(id) {
+            const utility = utilities.find(u => u.id === id);
+            if (utility) {
+                map.closePopup();
+                showModal(utility);
+            }
+        }
+
+        function refineUtility(id) {
+            const utility = utilities.find(u => u.id === id);
+            if (utility) {
+                map.closePopup();
+                selectedUtility = utility;
+                toggleRefineMode();
+            }
+        }
+
+        function showRefinePoints(utility) {
+            hideRefinePoints();
             
-            points.forEach((point, index) => {
-                const marker = L.circleMarker(point, {
-                    radius: 8,
-                    fillColor: '#fff',
-                    color: '#1976D2',
-                    weight: 3,
-                    fillOpacity: 1,
-                    className: 'control-point'
-                }).addTo(App.map);
+            utility.refineMarkers = [];
+            
+            utility.points.forEach((point, index) => {
+                const marker = L.marker(point, {
+                    icon: L.divIcon({
+                        className: 'refine-point',
+                        iconSize: [12, 12],
+                        iconAnchor: [6, 6]
+                    }),
+                    draggable: true
+                }).addTo(map);
                 
-                // Make draggable
-                enableDragging(marker, (newLatLng) => {
-                    points[index] = newLatLng;
-                    utility.polyline.setLatLngs(points);
+                marker.on('drag', (e) => {
+                    utility.points[index] = [e.target.getLatLng().lat, e.target.getLatLng().lng];
+                    utility.polyline.setLatLngs(utility.points);
                 });
                 
-                App.controlPoints.push(marker);
+                utility.refineMarkers.push(marker);
             });
-            
-            // Click elsewhere to remove control points
-            App.map.once('click', removeControlPoints);
         }
 
-        function removeControlPoints() {
-            App.controlPoints.forEach(cp => App.map.removeLayer(cp));
-            App.controlPoints = [];
-        }
-
-        function enableDragging(marker, onDrag) {
-            let isDragging = false;
-            
-            marker.on('mousedown', (e) => {
-                isDragging = true;
-                marker._icon.classList.add('dragging');
-                L.DomEvent.stop(e);
-            });
-            
-            App.map.on('mousemove', (e) => {
-                if (isDragging) {
-                    marker.setLatLng(e.latlng);
-                    onDrag(e.latlng);
-                }
-            });
-            
-            App.map.on('mouseup', () => {
-                if (isDragging) {
-                    isDragging = false;
-                    marker._icon.classList.remove('dragging');
-                    saveData();
+        function hideRefinePoints() {
+            utilities.forEach(utility => {
+                if (utility.refineMarkers) {
+                    utility.refineMarkers.forEach(marker => map.removeLayer(marker));
+                    utility.refineMarkers = [];
                 }
             });
         }
 
-        // Structure Management
-        function showStructureModal() {
-            document.getElementById('structureModal').classList.add('visible');
+        function deleteUtility(utility) {
+            if (confirm(`Delete this ${utilityTypes[utility.type].name} ${utility.class}?`)) {
+                // Remove from map
+                if (utility.polyline) {
+                    map.removeLayer(utility.polyline);
+                }
+                
+                // Remove from array
+                const index = utilities.findIndex(u => u.id === utility.id);
+                if (index > -1) {
+                    utilities.splice(index, 1);
+                }
+                
+                showNotification('Utility deleted', 'success');
+                saveData();
+            }
         }
 
-        function closeStructureModal() {
-            document.getElementById('structureModal').classList.remove('visible');
-            App.isPlacingStructure = false;
+        function switchMode(mode) {
+            currentMode = mode;
+            
+            // Update UI
+            document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+            document.getElementById(`nav${mode.charAt(0).toUpperCase() + mode.slice(1)}`).classList.add('active');
+            
+            const modeIcon = document.getElementById('modeIcon');
+            const modeText = document.getElementById('modeText');
+            
+            if (mode === 'mapping') {
+                modeIcon.className = 'mode-icon mapping';
+                modeIcon.textContent = '🗺️';
+                modeText.textContent = 'Mapping Mode';
+                document.getElementById('drawingControls').classList.remove('hidden');
+                clearProximityWarnings();
+            } else {
+                modeIcon.className = 'mode-icon excavation';
+                modeIcon.textContent = '🚧';
+                modeText.textContent = 'Excavation Mode';
+                document.getElementById('drawingControls').classList.add('hidden');
+                
+                // Zoom to user location
+                if (userLocationMarker) {
+                    map.setView(userLocationMarker.getLatLng(), 19);
+                }
+            }
         }
 
-        function saveStructure() {
-            const selectedType = document.querySelector('.structure-type-option.active');
-            if (!selectedType) {
-                alert('Please select a structure type');
+        function checkProximityWarnings(userLatLng) {
+            utilities.forEach(utility => {
+                const distance = getClosestDistanceToUtility(userLatLng, utility);
+                const warningId = `warning-${utility.id}`;
+                
+                if (distance <= proximityDistance / 3280.84) { // Convert feet to degrees (approximate)
+                    if (!proximityWarnings.has(warningId) && !warningCooldowns.has(warningId)) {
+                        createProximityWarning(utility, Math.round(distance * 3280.84));
+                    }
+                } else {
+                    if (proximityWarnings.has(warningId)) {
+                        const warning = proximityWarnings.get(warningId);
+                        if (!warning.manualClose) {
+                            // Start 45 second timer
+                            if (!warning.exitTimer) {
+                                warning.exitTimer = setTimeout(() => {
+                                    removeProximityWarning(warningId);
+                                }, 45000);
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function getClosestDistanceToUtility(point, utility) {
+            let minDistance = Infinity;
+            
+            for (let i = 0; i < utility.points.length - 1; i++) {
+                const segmentDistance = pointToSegmentDistance(
+                    point,
+                    utility.points[i],
+                    utility.points[i + 1]
+                );
+                minDistance = Math.min(minDistance, segmentDistance);
+            }
+            
+            return minDistance;
+        }
+
+        function pointToSegmentDistance(point, segStart, segEnd) {
+            const A = point.lat - segStart[0];
+            const B = point.lng - segStart[1];
+            const C = segEnd[0] - segStart[0];
+            const D = segEnd[1] - segStart[1];
+            
+            const dot = A * C + B * D;
+            const lenSq = C * C + D * D;
+            let param = -1;
+            
+            if (lenSq !== 0) {
+                param = dot / lenSq;
+            }
+            
+            let xx, yy;
+            
+            if (param < 0) {
+                xx = segStart[0];
+                yy = segStart[1];
+            } else if (param > 1) {
+                xx = segEnd[0];
+                yy = segEnd[1];
+            } else {
+                xx = segStart[0] + param * C;
+                yy = segStart[1] + param * D;
+            }
+            
+            const dx = point.lat - xx;
+            const dy = point.lng - yy;
+            
+            return Math.sqrt(dx * dx + dy * dy);
+        }
+
+        function createProximityWarning(utility, distance) {
+            const warningId = `warning-${utility.id}`;
+            const warningsContainer = document.getElementById('proximityWarnings');
+            
+            // Check if we already have 5 warnings
+            if (warningsContainer.children.length >= 5) {
                 return;
             }
             
-            App.isPlacingStructure = true;
-            App.pendingStructure = {
-                type: selectedType.dataset.structure,
-                utilityType: selectedType.dataset.utility,
-                notes: document.getElementById('structureNotes').value
-            };
+            const warningBox = document.createElement('div');
+            warningBox.className = 'warning-box';
+            warningBox.id = warningId;
+            warningBox.innerHTML = `
+                <div class="warning-header">
+                    <div class="warning-title">
+                        <div class="warning-icon">⚠️</div>
+                        <span>${utilityTypes[utility.type].name} ${utility.class}</span>
+                    </div>
+                    <button class="close-warning touchable" onclick="closeWarning('${warningId}')">×</button>
+                </div>
+                <div class="warning-details">
+                    <div class="warning-detail">
+                        <span>Distance:</span>
+                        <span>${distance} ft</span>
+                    </div>
+                    ${utility.info.depth ? `<div class="warning-detail"><span>Depth:</span><span>${utility.info.depth} ft</span></div>` : ''}
+                    ${utility.info.size ? `<div class="warning-detail"><span>Size:</span><span>${utility.info.size}"</span></div>` : ''}
+                    ${utility.info.material ? `<div class="warning-detail"><span>Material:</span><span>${utility.info.material}</span></div>` : ''}
+                </div>
+            `;
             
-            closeStructureModal();
-            document.getElementById('map').style.cursor = 'crosshair';
-        }
-
-        function placeStructure(location) {
-            if (!App.pendingStructure) return;
+            warningsContainer.appendChild(warningBox);
             
-            const structure = {
-                id: Date.now(),
-                type: App.pendingStructure.type,
-                utilityType: App.pendingStructure.utilityType,
-                location: location,
-                notes: App.pendingStructure.notes,
-                name: getStructureName(App.pendingStructure.type),
-                connections: []
-            };
-            
-            // Create marker
-            const icon = L.divIcon({
-                className: `structure-marker ${structure.utilityType}`,
-                html: `<i class="fas fa-${getStructureIcon(structure.type)}"></i>`,
-                iconSize: [32, 32],
-                iconAnchor: [16, 16]
+            proximityWarnings.set(warningId, {
+                utility,
+                element: warningBox,
+                manualClose: false,
+                exitTimer: null
             });
             
-            const marker = L.marker(location, { icon: icon }).addTo(App.layers.structures);
-            
-            marker.on('click', () => selectStructure(structure));
-            
-            structure.marker = marker;
-            App.structures.push(structure);
-            
-            // Reset
-            App.isPlacingStructure = false;
-            App.pendingStructure = null;
-            document.getElementById('map').style.cursor = '';
-            
-            saveData();
+            // Highlight utility on map
+            if (utility.polyline) {
+                utility.polyline.setStyle({ weight: 8, opacity: 1 });
+            }
         }
 
-        function selectStructure(structure) {
-            if (App.mode !== 'mapping') return;
-            
-            App.selectedStructure = structure;
-            // Could show structure info modal here
-        }
-
-        function getStructureName(type) {
-            const names = {
-                electricalBox: 'Electrical Box',
-                catchBasin: 'Catch Basin',
-                sewerManhole: 'Sewer Manhole',
-                waterManhole: 'Water Manhole',
-                gasManhole: 'Gas Manhole',
-                gasValve: 'Gas Valve Box',
-                hydrantValve: 'Hydrant Valve Box',
-                telecomBox: 'Telecom Box'
-            };
-            return names[type] || type;
-        }
-
-        function getStructureIcon(type) {
-            const icons = {
-                electricalBox: 'box',
-                catchBasin: 'water',
-                sewerManhole: 'circle',
-                waterManhole: 'tint',
-                gasManhole: 'fire',
-                gasValve: 'valve',
-                hydrantValve: 'fire-extinguisher',
-                telecomBox: 'phone'
-            };
-            return icons[type] || 'cube';
-        }
-
-        // Utility Info Modal
-        function showUtilityModal() {
-            const modal = document.getElementById('utilityInfoModal');
-            modal.classList.add('visible');
-            
-            // Load existing data if editing
-            if (App.selectedUtility) {
-                document.getElementById('depthInput').value = App.selectedUtility.depth || '';
-                document.getElementById('sizeInput').value = App.selectedUtility.size || '';
+        function closeWarning(warningId) {
+            const warning = proximityWarnings.get(warningId);
+            if (warning) {
+                warning.manualClose = true;
+                removeProximityWarning(warningId);
                 
-                // Clear previous selections
-                document.querySelectorAll('.select-option').forEach(opt => opt.classList.remove('active'));
+                // Set 3 minute cooldown
+                warningCooldowns.set(warningId, true);
+                setTimeout(() => {
+                    warningCooldowns.delete(warningId);
+                }, 180000);
+            }
+        }
+
+        function removeProximityWarning(warningId) {
+            const warning = proximityWarnings.get(warningId);
+            if (warning) {
+                warning.element.remove();
+                proximityWarnings.delete(warningId);
                 
-                // Set material
-                if (App.selectedUtility.material) {
-                    document.querySelector(`[data-material="${App.selectedUtility.material}"]`)?.classList.add('active');
-                }
-                
-                // Set condition
-                if (App.selectedUtility.condition) {
-                    document.querySelector(`[data-condition="${App.selectedUtility.condition}"]`)?.classList.add('active');
+                // Reset utility style
+                if (warning.utility.polyline) {
+                    warning.utility.polyline.setStyle({ weight: 4, opacity: 0.8 });
                 }
             }
         }
 
-        function closeUtilityModal() {
-            document.getElementById('utilityInfoModal').classList.remove('visible');
+        function clearProximityWarnings() {
+            proximityWarnings.forEach((warning, id) => {
+                removeProximityWarning(id);
+            });
+        }
+
+        function togglePanel(panelId) {
+            const panel = document.getElementById(panelId);
+            panel.classList.toggle('hidden');
+        }
+
+        function setUtilityType(type) {
+            selectedUtilityClass = type;
+            document.getElementById('mainType').classList.toggle('active', type === 'main');
+            document.getElementById('serviceType').classList.toggle('active', type === 'service');
+        }
+
+        function toggleSettings() {
+            const panel = document.getElementById('settingsPanel');
+            panel.classList.toggle('active');
+        }
+
+        function toggleDarkMode() {
+            document.body.classList.toggle('dark-mode');
+            const toggle = document.getElementById('darkModeToggle');
+            toggle.classList.toggle('active');
+            
+            const icon = document.getElementById('darkModeIcon');
+            icon.textContent = toggle.classList.contains('active') ? '🌙' : '☀️';
+            
+            // Save preference
+            localStorage.setItem('darkMode', toggle.classList.contains('active'));
+        }
+
+        function toggleGPSAccuracy(toggle) {
+            toggle.classList.toggle('active');
+            highAccuracyGPS = toggle.classList.contains('active');
+            
+            // Restart geolocation with new settings
+            if (gpsWatchId) {
+                navigator.geolocation.clearWatch(gpsWatchId);
+                initializeGeolocation();
+            }
+        }
+
+        function toggleAutoConnect(toggle) {
+            toggle.classList.toggle('active');
+            autoConnect = toggle.classList.contains('active');
+        }
+
+        function changeMapStyle(style) {
+            // Clear existing layers
+            map.eachLayer(layer => {
+                if (layer instanceof L.TileLayer) {
+                    map.removeLayer(layer);
+                }
+            });
+            
+            // Add new layer based on style
+            switch (style) {
+                case 'satellite':
+                    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}').addTo(map);
+                    break;
+                case 'hybrid':
+                    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}').addTo(map);
+                    L.tileLayer('https://stamen-tiles-{s}.a.ssl.fastly.net/toner-hybrid/{z}/{x}/{y}.png').addTo(map);
+                    break;
+                default:
+                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+            }
+        }
+
+        function showModal(utility) {
+            const modal = document.getElementById('modalOverlay');
+            modal.classList.add('active');
+            
+            // Populate form with existing data
+            document.getElementById('utilityDepth').value = utility.info.depth || '';
+            document.getElementById('utilitySize').value = utility.info.size || '';
+            document.getElementById('utilityMaterial').value = utility.info.material || '';
+            document.getElementById('utilityCondition').value = utility.info.condition || '';
+            
+            // Store current utility ID
+            modal.dataset.utilityId = utility.id;
+            
+            // Reset image preview
+            document.getElementById('imagePlaceholder').style.display = 'block';
+            document.getElementById('imagePreview').style.display = 'none';
+            
+            if (utility.info.image) {
+                document.getElementById('imagePreview').src = utility.info.image;
+                document.getElementById('imagePreview').style.display = 'block';
+                document.getElementById('imagePlaceholder').style.display = 'none';
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('modalOverlay').classList.remove('active');
         }
 
         function saveUtilityInfo() {
-            if (!App.selectedUtility) return;
+            const modal = document.getElementById('modalOverlay');
+            const utilityId = parseInt(modal.dataset.utilityId);
+            const utility = utilities.find(u => u.id === utilityId);
             
-            App.selectedUtility.depth = document.getElementById('depthInput').value;
-            App.selectedUtility.size = document.getElementById('sizeInput').value;
-            App.selectedUtility.material = document.querySelector('.select-option[data-material].active')?.dataset.material;
-            App.selectedUtility.condition = document.querySelector('.select-option[data-condition].active')?.dataset.condition;
-            
-            // Handle photo
-            const photoInput = document.getElementById('photoInput');
-            if (photoInput.files.length > 0) {
+            if (utility) {
+                utility.info = {
+                    depth: document.getElementById('utilityDepth').value,
+                    size: document.getElementById('utilitySize').value,
+                    material: document.getElementById('utilityMaterial').value,
+                    condition: document.getElementById('utilityCondition').value,
+                    image: document.getElementById('imagePreview').src !== '' ? 
+                           document.getElementById('imagePreview').src : null
+                };
+                
+                saveData();
+                showNotification('Utility information saved', 'success');
+                closeModal();
+            }
+        }
+
+        function previewImage(event) {
+            const file = event.target.files[0];
+            if (file) {
                 const reader = new FileReader();
                 reader.onload = (e) => {
-                    App.selectedUtility.photo = e.target.result;
+                    document.getElementById('imagePreview').src = e.target.result;
+                    document.getElementById('imagePreview').style.display = 'block';
+                    document.getElementById('imagePlaceholder').style.display = 'none';
                 };
-                reader.readAsDataURL(photoInput.files[0]);
-            }
-            
-            saveData();
-            closeUtilityModal();
-        }
-
-        // Location Tracking
-        function startLocationTracking() {
-            if (!navigator.geolocation) return;
-            
-            App.watchId = navigator.geolocation.watchPosition(
-                updateUserLocation,
-                handleLocationError,
-                {
-                    enableHighAccuracy: true,
-                    maximumAge: 0,
-                    timeout: 5000
-                }
-            );
-            
-            // Also track device orientation for direction
-            if (window.DeviceOrientationEvent) {
-                window.addEventListener('deviceorientation', updateUserDirection);
+                reader.readAsDataURL(file);
             }
         }
 
-        function updateUserLocation(position) {
-            const lat = position.coords.latitude;
-            const lng = position.coords.longitude;
-            const accuracy = position.coords.accuracy;
+        function showNotification(message, type = 'info') {
+            const notification = document.getElementById('notification');
+            const icon = document.getElementById('notificationIcon');
+            const text = document.getElementById('notificationText');
             
-            if (!App.userMarker) {
-                // Create custom user location marker
-                const userIcon = L.divIcon({
-                    className: 'user-location-marker',
-                    html: `
-                        <div class="location-accuracy"></div>
-                        <div class="location-direction" id="locationDirection"></div>
-                        <div class="location-dot"></div>
-                    `,
-                    iconSize: [40, 40],
-                    iconAnchor: [20, 20]
-                });
-                
-                App.userMarker = L.marker([lat, lng], { icon: userIcon }).addTo(App.map);
-            } else {
-                App.userMarker.setLatLng([lat, lng]);
+            notification.className = `notification ${type}`;
+            text.textContent = message;
+            
+            switch (type) {
+                case 'success':
+                    icon.textContent = '✅';
+                    break;
+                case 'error':
+                    icon.textContent = '❌';
+                    break;
+                default:
+                    icon.textContent = 'ℹ️';
             }
             
-            // Update accuracy circle size
-            const accuracyElement = App.userMarker._icon.querySelector('.location-accuracy');
-            if (accuracyElement) {
-                const scale = Math.min(3, Math.max(1, accuracy / 10));
-                accuracyElement.style.transform = `scale(${scale})`;
-            }
-        }
-
-        function updateUserDirection(event) {
-            const heading = event.webkitCompassHeading || event.alpha;
-            if (heading && App.userMarker) {
-                const directionElement = document.getElementById('locationDirection');
-                if (directionElement) {
-                    directionElement.style.transform = `rotate(${heading}deg)`;
-                }
-            }
-        }
-
-        function handleLocationError(error) {
-            console.error('Location error:', error);
-        }
-
-        function centerOnUser() {
-            if (App.userMarker) {
-                App.map.setView(App.userMarker.getLatLng(), 18);
-            }
-        }
-
-        // Proximity Checking (Excavation Mode)
-        function startProximityChecking() {
-            App.proximityCheckInterval = setInterval(checkProximity, 1000);
-        }
-
-        function stopProximityChecking() {
-            if (App.proximityCheckInterval) {
-                clearInterval(App.proximityCheckInterval);
-                App.proximityCheckInterval = null;
-            }
-            clearProximityAlerts();
-        }
-
-        function checkProximity() {
-            if (!App.userMarker) return;
+            notification.classList.add('show');
             
-            const userPos = App.userMarker.getLatLng();
-            const alertRadius = 15; // feet
-            const alertRadiusMeters = alertRadius * 0.3048; // Convert to meters
-            
-            App.utilities.forEach(utility => {
-                // Check if visible
-                if (!App.visibility.utilities[utility.type]) return;
-                if (!App.visibility.lineTypes[utility.lineType]) return;
-                
-                // Check if dismissed
-                const dismissedUntil = App.dismissedAlerts.get(utility.id);
-                if (dismissedUntil && Date.now() < dismissedUntil) return;
-                
-                // Find closest point on utility
-                const closest = findClosestPointOnPolyline(userPos, utility.polyline);
-                
-                if (closest.distance <= alertRadiusMeters) {
-                    if (!App.activeAlerts.has(utility.id)) {
-                        showProximityAlert(utility, closest.distance);
-                    } else {
-                        updateProximityAlert(utility, closest.distance);
-                    }
-                } else {
-                    // Outside radius - start removal timer
-                    const alert = App.activeAlerts.get(utility.id);
-                    if (alert && !alert.removalTimer) {
-                        alert.removalTimer = setTimeout(() => {
-                            removeProximityAlert(utility.id);
-                        }, 45000); // 45 seconds
-                    }
-                }
-            });
-        }
-
-        function showProximityAlert(utility, distance) {
-            const alertsContainer = document.getElementById('proximityAlerts');
-            
-            // Limit to 5 alerts
-            if (alertsContainer.children.length >= 5) {
-                alertsContainer.removeChild(alertsContainer.lastChild);
-            }
-            
-            const alert = document.createElement('div');
-            alert.className = `proximity-alert ${utility.type}`;
-            alert.id = `alert-${utility.id}`;
-            
-            const distanceFeet = Math.round(distance * 3.28084);
-            
-            alert.innerHTML = `
-                <div class="alert-header">
-                    <div class="alert-title">
-                        <div class="alert-icon ${utility.type}">
-                            <i class="fas fa-${getUtilityIcon(utility.type)}"></i>
-                        </div>
-                        <span>${utility.type.charAt(0).toUpperCase() + utility.type.slice(1)} ${utility.lineType}</span>
-                    </div>
-                    <button class="alert-close" onclick="dismissAlert(${utility.id})">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-                <div class="alert-content">
-                    <div class="alert-item">
-                        <div class="alert-label">Depth</div>
-                        <div class="alert-value">${utility.depth || 'Unknown'} ft</div>
-                    </div>
-                    <div class="alert-item">
-                        <div class="alert-label">Size</div>
-                        <div class="alert-value">${utility.size || 'Unknown'} in</div>
-                    </div>
-                    <div class="alert-item">
-                        <div class="alert-label">Material</div>
-                        <div class="alert-value">${utility.material || 'Unknown'}</div>
-                    </div>
-                    <div class="alert-item">
-                        <div class="alert-label">Condition</div>
-                        <div class="alert-value">${utility.condition || 'Unknown'}</div>
-                    </div>
-                </div>
-                <div class="alert-distance">${distanceFeet} ft</div>
-            `;
-            
-            alertsContainer.insertBefore(alert, alertsContainer.firstChild);
-            
-            // Store alert
-            App.activeAlerts.set(utility.id, {
-                element: alert,
-                utility: utility,
-                removalTimer: null
-            });
-            
-            // Vibrate if available
-            if (navigator.vibrate) {
-                navigator.vibrate([200, 100, 200]);
-            }
-        }
-
-        function updateProximityAlert(utility, distance) {
-            const alert = App.activeAlerts.get(utility.id);
-            if (!alert) return;
-            
-            const distanceElement = alert.element.querySelector('.alert-distance');
-            if (distanceElement) {
-                const distanceFeet = Math.round(distance * 3.28084);
-                distanceElement.textContent = `${distanceFeet} ft`;
-            }
-            
-            // Cancel removal timer if back in range
-            if (alert.removalTimer) {
-                clearTimeout(alert.removalTimer);
-                alert.removalTimer = null;
-            }
-        }
-
-        function removeProximityAlert(utilityId) {
-            const alert = App.activeAlerts.get(utilityId);
-            if (!alert) return;
-            
-            alert.element.style.animation = 'slideInLeft 0.3s ease-out reverse';
             setTimeout(() => {
-                alert.element.remove();
-                App.activeAlerts.delete(utilityId);
-            }, 300);
+                notification.classList.remove('show');
+            }, 3000);
         }
 
-        function dismissAlert(utilityId) {
-            // Set 3-minute cooldown
-            App.dismissedAlerts.set(utilityId, Date.now() + 180000);
-            removeProximityAlert(utilityId);
-        }
-
-        function clearProximityAlerts() {
-            App.activeAlerts.forEach((alert, id) => {
-                removeProximityAlert(id);
-            });
-        }
-
-        // Utility Helpers
-        function getUtilityColor(type) {
-            const colors = {
-                water: '#2196F3',
-                gas: '#FFD600',
-                electric: '#F44336',
-                sewer: '#795548',
-                telecom: '#9C27B0'
-            };
-            return colors[type] || '#000';
-        }
-
-        function getUtilityIcon(type) {
-            const icons = {
-                water: 'tint',
-                gas: 'fire',
-                electric: 'bolt',
-                sewer: 'toilet',
-                telecom: 'phone'
-            };
-            return icons[type] || 'question';
-        }
-
-        // Theme Management
-        function toggleTheme() {
-            App.theme = App.theme === 'light' ? 'dark' : 'light';
-            document.body.setAttribute('data-theme', App.theme);
-            
-            const themeBtn = document.getElementById('themeBtn');
-            themeBtn.innerHTML = App.theme === 'light' ? 
-                '<i class="fas fa-moon"></i>' : 
-                '<i class="fas fa-sun"></i>';
-            
-            saveData();
-        }
-
-        // Layer Management
-        function toggleBaseLayer() {
-            App.currentBaseLayer = App.currentBaseLayer === 'Street' ? 'Satellite' : 'Street';
-            
-            Object.values(App.baseLayers).forEach(layer => {
-                App.map.removeLayer(layer);
-            });
-            
-            App.baseLayers[App.currentBaseLayer].addTo(App.map);
-        }
-
-        // Visibility Management
-        function handleVisibilityToggle(toggle) {
-            const isActive = toggle.classList.contains('active');
-            
-            if (toggle.dataset.utility) {
-                App.visibility.utilities[toggle.dataset.utility] = isActive;
-            } else if (toggle.dataset.linetype) {
-                App.visibility.lineTypes[toggle.dataset.linetype] = isActive;
-            } else if (toggle.dataset.structures) {
-                App.visibility.structures = isActive;
-            }
-            
-            updateVisibility();
-            saveData();
-        }
-
-        function updateVisibility() {
-            // Update utilities
-            App.utilities.forEach(utility => {
-                const isVisible = App.visibility.utilities[utility.type] && 
-                                App.visibility.lineTypes[utility.lineType];
-                
-                if (isVisible) {
-                    if (!App.layers.utilities.hasLayer(utility.polyline)) {
-                        App.layers.utilities.addLayer(utility.polyline);
-                    }
-                } else {
-                    if (App.layers.utilities.hasLayer(utility.polyline)) {
-                        App.layers.utilities.removeLayer(utility.polyline);
-                    }
-                }
-            });
-            
-            // Update structures
-            if (App.visibility.structures) {
-                if (!App.map.hasLayer(App.layers.structures)) {
-                    App.map.addLayer(App.layers.structures);
-                }
-            } else {
-                if (App.map.hasLayer(App.layers.structures)) {
-                    App.map.removeLayer(App.layers.structures);
-                }
-            }
-        }
-
-        // Data Management
         function saveData() {
             const data = {
-                utilities: App.utilities.map(u => ({
+                utilities: utilities.map(u => ({
                     id: u.id,
                     type: u.type,
-                    lineType: u.lineType,
+                    class: u.class,
                     points: u.points,
-                    depth: u.depth,
-                    size: u.size,
-                    material: u.material,
-                    condition: u.condition,
-                    photo: u.photo,
-                    connections: u.connections
+                    info: u.info
                 })),
-                structures: App.structures.map(s => ({
+                structures: structures.map(s => ({
                     id: s.id,
                     type: s.type,
-                    utilityType: s.utilityType,
-                    location: s.location,
-                    notes: s.notes,
-                    name: s.name,
-                    connections: s.connections
-                })),
-                theme: App.theme,
-                visibility: App.visibility
+                    latlng: s.latlng
+                }))
             };
             
             localStorage.setItem('cacUtiliTrackData', JSON.stringify(data));
         }
 
         function loadSavedData() {
-            const savedData = localStorage.getItem('cacUtiliTrackData');
-            if (!savedData) return;
-            
-            try {
-                const data = JSON.parse(savedData);
-                
-                // Load theme
-                if (data.theme) {
-                    App.theme = data.theme;
-                    document.body.setAttribute('data-theme', App.theme);
-                    const themeBtn = document.getElementById('themeBtn');
-                    themeBtn.innerHTML = App.theme === 'light' ? 
-                        '<i class="fas fa-moon"></i>' : 
-                        '<i class="fas fa-sun"></i>';
-                }
-                
-                // Load visibility settings
-                if (data.visibility) {
-                    App.visibility = data.visibility;
-                    updateVisibilityToggles();
-                }
-                
-                // Load utilities
-                if (data.utilities) {
-                    data.utilities.forEach(utilityData => {
+            const saved = localStorage.getItem('cacUtiliTrackData');
+            if (saved) {
+                try {
+                    const data = JSON.parse(saved);
+                    
+                    // Load utilities
+                    data.utilities?.forEach(utilityData => {
                         const polyline = L.polyline(utilityData.points, {
-                            color: getUtilityColor(utilityData.type),
-                            weight: utilityData.lineType === 'main' ? 6 : 4,
-                            dashArray: utilityData.lineType === 'service' ? '8, 4' : null,
-                            className: `utility-line ${utilityData.type} ${utilityData.lineType}`
-                        }).addTo(App.layers.utilities);
+                            color: utilityTypes[utilityData.type].color,
+                            weight: 4,
+                            opacity: 0.8,
+                            className: `utility-line ${utilityData.type} ${utilityData.class}`
+                        }).addTo(map);
                         
-                        const utility = {
+                        utilities.push({
                             ...utilityData,
-                            polyline: polyline
-                        };
-                        
-                        polyline.on('click', () => selectUtility(utility));
-                        
-                        App.utilities.push(utility);
-                        
-                        // Add connection markers
-                        if (utility.connections) {
-                            utility.connections.forEach(conn => {
-                                const connectionMarker = L.divIcon({
-                                    className: `connection-point ${utility.type}`,
-                                    html: '',
-                                    iconSize: [12, 12]
-                                });
-                                
-                                L.marker(conn.point, { icon: connectionMarker }).addTo(App.layers.utilities);
-                            });
-                        }
-                    });
-                }
-                
-                // Load structures
-                if (data.structures) {
-                    data.structures.forEach(structureData => {
-                        const icon = L.divIcon({
-                            className: `structure-marker ${structureData.utilityType}`,
-                            html: `<i class="fas fa-${getStructureIcon(structureData.type)}"></i>`,
-                            iconSize: [32, 32],
-                            iconAnchor: [16, 16]
+                            polyline
                         });
-                        
-                        const marker = L.marker(structureData.location, { icon: icon }).addTo(App.layers.structures);
-                        
-                        const structure = {
-                            ...structureData,
-                            marker: marker
-                        };
-                        
-                        marker.on('click', () => selectStructure(structure));
-                        
-                        App.structures.push(structure);
                     });
+                    
+                    // Load structures
+                    data.structures?.forEach(structureData => {
+                        placeStructure(structureData.type, structureData.latlng);
+                    });
+                    
+                } catch (error) {
+                    console.error('Error loading saved data:', error);
                 }
-                
-                updateVisibility();
-            } catch (error) {
-                console.error('Error loading saved data:', error);
             }
         }
 
-        function updateVisibilityToggles() {
-            // Update utility toggles
-            Object.entries(App.visibility.utilities).forEach(([type, visible]) => {
-                const toggle = document.querySelector(`.toggle-switch[data-utility="${type}"]`);
-                if (toggle) {
-                    toggle.classList.toggle('active', visible);
-                }
-            });
-            
-            // Update line type toggles
-            Object.entries(App.visibility.lineTypes).forEach(([type, visible]) => {
-                const toggle = document.querySelector(`.toggle-switch[data-linetype="${type}"]`);
-                if (toggle) {
-                    toggle.classList.toggle('active', visible);
-                }
-            });
-            
-            // Update structures toggle
-            const structureToggle = document.querySelector('.toggle-switch[data-structures="all"]');
-            if (structureToggle) {
-                structureToggle.classList.toggle('active', App.visibility.structures);
-            }
-        }
-
-        function exportData() {
-            const data = {
-                version: '2.0',
-                exportDate: new Date().toISOString(),
-                utilities: App.utilities.map(u => ({
-                    id: u.id,
-                    type: u.type,
-                    lineType: u.lineType,
-                    points: u.points,
-                    depth: u.depth,
-                    size: u.size,
-                    material: u.material,
-                    condition: u.condition,
-                    photo: u.photo,
-                    connections: u.connections
-                })),
-                structures: App.structures.map(s => ({
-                    id: s.id,
-                    type: s.type,
-                    utilityType: s.utilityType,
-                    location: s.location,
-                    notes: s.notes,
-                    name: s.name,
-                    connections: s.connections
-                }))
-            };
-            
-            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `cac-utilitrack-export-${new Date().toISOString().split('T')[0]}.json`;
-            a.click();
-            URL.revokeObjectURL(url);
-        }
-
-        function importData() {
-            const input = document.createElement('input');
-            input.type = 'file';
-            input.accept = 'application/json';
-            
-            input.onchange = (e) => {
-                const file = e.target.files[0];
-                if (!file) return;
-                
-                const reader = new FileReader();
-                reader.onload = (event) => {
-                    try {
-                        const data = JSON.parse(event.target.result);
-                        
-                        // Clear existing data
-                        clearAllData(false);
-                        
-                        // Import utilities
-                        if (data.utilities) {
-                            data.utilities.forEach(utilityData => {
-                                const polyline = L.polyline(utilityData.points, {
-                                    color: getUtilityColor(utilityData.type),
-                                    weight: utilityData.lineType === 'main' ? 6 : 4,
-                                    dashArray: utilityData.lineType === 'service' ? '8, 4' : null,
-                                    className: `utility-line ${utilityData.type} ${utilityData.lineType}`
-                                }).addTo(App.layers.utilities);
-                                
-                                const utility = {
-                                    ...utilityData,
-                                    polyline: polyline
-                                };
-                                
-                                polyline.on('click', () => selectUtility(utility));
-                                
-                                App.utilities.push(utility);
-                                
-                                // Add connection markers
-                                if (utility.connections) {
-                                    utility.connections.forEach(conn => {
-                                        const connectionMarker = L.divIcon({
-                                            className: `connection-point ${utility.type}`,
-                                            html: '',
-                                            iconSize: [12, 12]
-                                        });
-                                        
-                                        L.marker(conn.point, { icon: connectionMarker }).addTo(App.layers.utilities);
-                                    });
-                                }
-                            });
-                        }
-                        
-                        // Import structures
-                        if (data.structures) {
-                            data.structures.forEach(structureData => {
-                                const icon = L.divIcon({
-                                    className: `structure-marker ${structureData.utilityType}`,
-                                    html: `<i class="fas fa-${getStructureIcon(structureData.type)}"></i>`,
-                                    iconSize: [32, 32],
-                                    iconAnchor: [16, 16]
-                                });
-                                
-                                const marker = L.marker(structureData.location, { icon: icon }).addTo(App.layers.structures);
-                                
-                                const structure = {
-                                    ...structureData,
-                                    marker: marker
-                                };
-                                
-                                marker.on('click', () => selectStructure(structure));
-                                
-                                App.structures.push(structure);
-                            });
-                        }
-                        
-                        saveData();
-                        alert('Data imported successfully!');
-                    } catch (error) {
-                        alert('Error importing data. Please check the file format.');
-                        console.error('Import error:', error);
-                    }
-                };
-                
-                reader.readAsText(file);
-            };
-            
-            input.click();
-        }
-
-        function clearAllData(confirm = true) {
-            if (confirm && !window.confirm('Are you sure you want to clear all data? This cannot be undone.')) {
-                return;
-            }
-            
-            // Clear utilities
-            App.utilities.forEach(utility => {
-                if (utility.polyline) {
-                    App.layers.utilities.removeLayer(utility.polyline);
-                }
-            });
-            
-            // Clear structures
-            App.structures.forEach(structure => {
-                if (structure.marker) {
-                    App.layers.structures.removeLayer(structure.marker);
-                }
-            });
-            
-            // Clear control points
-            removeControlPoints();
-            
-            App.utilities = [];
-            App.structures = [];
-            
-            // Clear local storage
-            localStorage.removeItem('cacUtiliTrackData');
-            
-            if (confirm) {
-                alert('All data has been cleared.');
-            }
-        }
-
-        // Make functions global for inline onclick handlers
-        window.dismissAlert = dismissAlert;
-        window.confirmConnection = confirmConnection;
-        window.cancelConnection = cancelConnection;
+        // Prevent pinch zoom
+        document.addEventListener('gesturestart', (e) => e.preventDefault());
+        document.addEventListener('gesturechange', (e) => e.preventDefault());
+        document.addEventListener('gestureend', (e) => e.preventDefault());
     </script>
 </body>
 </html>
