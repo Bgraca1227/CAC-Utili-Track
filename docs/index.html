@@ -4203,6 +4203,9 @@ const db = firebase.firestore();
             }
         }
 
+        // Initialize Firestore collections first
+        initializeFirestore();
+
         // Check authentication state
         auth.onAuthStateChanged(async (user) => {
             if (user) {
@@ -4216,22 +4219,26 @@ const db = firebase.firestore();
                         const userData = userDoc.data();
                         AppState.userRole = userData.role || 'pending';
                         
+                        console.log('👤 User role from Firestore:', AppState.userRole);
+                        
+                        // Check if this is the first user and make them admin
                         if (AppState.userRole === 'pending') {
-                            showToast('Your account is pending admin approval', 'warning');
-                            showLoginError('Account pending approval. Please contact an admin.');
-                            auth.signOut();
-                            return;
+                            const isFirstAdmin = await checkAndMakeFirstAdmin(user.uid);
+                            if (isFirstAdmin) {
+                                AppState.userRole = 'admin';
+                                console.log('👑 First user promoted to admin');
+                                showToast('Welcome! You are now the system administrator.', 'success');
+                            } else {
+                                showToast('Your account is pending admin approval', 'warning');
+                                showLoginError('Account pending approval. Please contact an admin.');
+                                setTimeout(() => auth.signOut(), 2000);
+                                return;
+                            }
                         }
                     } else {
-                        // New user - create profile with pending status
-                        await db.collection('users').doc(user.uid).set({
-                            email: user.email,
-                            displayName: user.displayName || '',
-                            role: 'pending',
-                            createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                        });
-                        showLoginError('Account created successfully! Awaiting admin approval.');
-                        auth.signOut();
+                        console.warn('⚠️ User authenticated but no Firestore document found');
+                        showLoginError('Account setup incomplete. Please contact admin.');
+                        setTimeout(() => auth.signOut(), 2000);
                         return;
                     }
                     
@@ -4250,7 +4257,7 @@ const db = firebase.firestore();
                 } catch (error) {
                     console.error('❌ Error checking user role:', error);
                     showLoginError('Error verifying account. Please try again.');
-                    auth.signOut();
+                    setTimeout(() => auth.signOut(), 2000);
                 }
                 
             } else {
@@ -4442,16 +4449,33 @@ const db = firebase.firestore();
         requestLocationPermissions();
 
         // Premium GPS system initialized
-        console.log('🚀 Premium GPS System Initialized');
-        console.log('📍 Available debug commands:');
-        console.log('  - demoPremiumGPS() : Quick demo of premium features');
-        console.log('  - debugLocation() : Detailed GPS state info');
-        console.log('  - testPremiumGPS() : Run GPS accuracy tests');
-        console.log('  - testRefineWorkflow() : Test utility refining');
-        console.log('  - createTestUtilityForRefining() : Create test utility');
-        console.log('  - testMobileTouch() : Test mobile touch functionality');
-        console.log('✨ Try: demoPremiumGPS() to see the system in action!');
-        console.log('📱 For mobile touch issues, try: testMobileTouch()');
+        console.log('🚀 CAC UTILI-TRACK SHARED MAP SYSTEM READY! 🚀');
+        console.log('');
+        console.log('🔥 NEW SHARED MAP FEATURES:');
+        console.log('  ✅ Everyone sees the same map');
+        console.log('  ✅ Admin approval system');
+        console.log('  ✅ Real-time updates');
+        console.log('  ✅ User role management');
+        console.log('');
+        console.log('👑 YOUR ROLE:', AppState.userRole?.toUpperCase() || 'UNKNOWN');
+        if (AppState.userRole === 'admin') {
+            console.log('  🎯 You can approve changes and manage users');
+            console.log('  🎯 Click the admin button (⚙️) in the top right');
+        } else {
+            console.log('  📝 Your changes need admin approval');
+            console.log('  📝 Draw utilities - they appear as dashed lines until approved');
+        }
+        console.log('');
+        console.log('🔧 DEBUG COMMANDS:');
+        console.log('  - debugAccountStatus() : Check your account status');
+        console.log('  - demoPremiumGPS() : Test GPS features');
+        console.log('  - testMobileTouch() : Test mobile touch');
+        console.log('');
+        console.log('❓ HAVING ISSUES?');
+        console.log('  1. Run: debugAccountStatus()');
+        console.log('  2. Check your role and Firestore document');
+        console.log('  3. Sign out and back in if needed');
+        console.log('');
 
         // Enhanced touch event prevention - only prevent double-tap zoom and pull-to-refresh
         let touchStartY = 0;
@@ -4530,13 +4554,90 @@ const db = firebase.firestore();
 
     // ========== FIREBASE AUTHENTICATION & ADMIN SYSTEM ==========
 
+    async function initializeFirestore() {
+        console.log('🔄 Initializing Firestore collections...');
+        
+        try {
+            // Create required collections by adding a temporary document, then removing it
+            const collections = ['users', 'utilities', 'structures', 'pendingChanges'];
+            
+            for (const collectionName of collections) {
+                try {
+                    // Check if collection exists by trying to get documents
+                    const snapshot = await db.collection(collectionName).limit(1).get();
+                    
+                    if (snapshot.empty) {
+                        console.log(`📁 Creating ${collectionName} collection...`);
+                        // Create a temporary document to initialize the collection
+                        const tempDoc = await db.collection(collectionName).add({
+                            _temp: true,
+                            created: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                        
+                        // Immediately delete the temporary document
+                        await tempDoc.delete();
+                        console.log(`✅ ${collectionName} collection created`);
+                    } else {
+                        console.log(`✅ ${collectionName} collection already exists`);
+                    }
+                } catch (error) {
+                    // If there's an error, the collection might not exist, so we'll try to create it
+                    console.log(`📁 Creating ${collectionName} collection (fallback)...`);
+                    try {
+                        const tempDoc = await db.collection(collectionName).add({
+                            _temp: true,
+                            created: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                        await tempDoc.delete();
+                        console.log(`✅ ${collectionName} collection created (fallback)`);
+                    } catch (createError) {
+                        console.log(`⚠️ Could not create ${collectionName} collection:`, createError.message);
+                    }
+                }
+            }
+            
+            console.log('🎉 Firestore initialization complete');
+            
+        } catch (error) {
+            console.error('❌ Error initializing Firestore:', error);
+            // Don't block the app if collection creation fails
+        }
+    }
+
+    async function checkAndMakeFirstAdmin(userId) {
+        console.log('👑 Checking if first admin should be created...');
+        
+        try {
+            // Check if any admin users exist
+            const adminSnapshot = await db.collection('users')
+                .where('role', '==', 'admin')
+                .limit(1)
+                .get();
+            
+            if (adminSnapshot.empty) {
+                // No admins exist, make this user an admin
+                console.log('🎯 No admins found, promoting first user to admin');
+                
+                await db.collection('users').doc(userId).update({
+                    role: 'admin',
+                    promotedToAdmin: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                
+                console.log('✅ First user promoted to admin successfully');
+                return true;
+            } else {
+                console.log('👥 Admin users already exist, keeping user as pending');
+                return false;
+            }
+            
+        } catch (error) {
+            console.error('❌ Error checking for first admin:', error);
+            return false;
+        }
+    }
+
     function setupLoginHandlers() {
         console.log('🔑 Setting up login handlers');
-        
-        // Email/Password Login
-        document.getElementById('loginBtn').addEventListener('click', handleEmailLogin);
-        document.getElementById('signupBtn').addEventListener('click', handleEmailSignup);
-        document.getElementById('googleBtn').addEventListener('click', handleGoogleLogin);
         
         // Allow Enter key to submit
         document.getElementById('loginPassword').addEventListener('keypress', (e) => {
@@ -4544,94 +4645,147 @@ const db = firebase.firestore();
                 handleEmailLogin();
             }
         });
-    }
-
-    async function handleEmailLogin() {
-        const email = document.getElementById('loginEmail').value.trim();
-        const password = document.getElementById('loginPassword').value;
         
-        if (!email || !password) {
-            showLoginError('Please enter both email and password');
-            return;
-        }
-        
-        try {
-            showLoginError(''); // Clear any previous errors
-            await auth.signInWithEmailAndPassword(email, password);
-            // Auth state change will handle the rest
-        } catch (error) {
-            console.error('Login error:', error);
-            let message = 'Login failed';
-            switch (error.code) {
-                case 'auth/user-not-found':
-                    message = 'No account found with this email';
-                    break;
-                case 'auth/wrong-password':
-                    message = 'Incorrect password';
-                    break;
-                case 'auth/invalid-email':
-                    message = 'Invalid email address';
-                    break;
-                case 'auth/too-many-requests':
-                    message = 'Too many failed attempts. Please try again later';
-                    break;
-                default:
-                    message = error.message || 'Login failed';
+        // Sign In
+        document.getElementById('loginBtn').addEventListener('click', async () => {
+            const email = document.getElementById('loginEmail').value.trim();
+            const password = document.getElementById('loginPassword').value;
+            
+            if (!email || !password) {
+                showLoginError('Please enter both email and password');
+                return;
             }
-            showLoginError(message);
-        }
-    }
-
-    async function handleEmailSignup() {
-        const email = document.getElementById('loginEmail').value.trim();
-        const password = document.getElementById('loginPassword').value;
-        
-        if (!email || !password) {
-            showLoginError('Please enter both email and password');
-            return;
-        }
-        
-        if (password.length < 6) {
-            showLoginError('Password must be at least 6 characters');
-            return;
-        }
-        
-        try {
-            showLoginError(''); // Clear any previous errors
-            await auth.createUserWithEmailAndPassword(email, password);
-            // Auth state change will handle creating user profile
-        } catch (error) {
-            console.error('Signup error:', error);
-            let message = 'Signup failed';
-            switch (error.code) {
-                case 'auth/email-already-in-use':
-                    message = 'Account already exists with this email';
-                    break;
-                case 'auth/invalid-email':
-                    message = 'Invalid email address';
-                    break;
-                case 'auth/weak-password':
-                    message = 'Password is too weak';
-                    break;
-                default:
-                    message = error.message || 'Signup failed';
+            
+            try {
+                showLoginError('');
+                const result = await auth.signInWithEmailAndPassword(email, password);
+                
+                // Check if user document exists in Firestore
+                const userDoc = await db.collection('users').doc(result.user.uid).get();
+                if (!userDoc.exists) {
+                    console.log('👤 Creating missing user document for existing user');
+                    // Create user document if it doesn't exist (for existing auth users)
+                    await db.collection('users').doc(result.user.uid).set({
+                        email: result.user.email,
+                        uid: result.user.uid,
+                        role: 'pending', // New users start as pending
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                    showLoginError('Account created in database. Awaiting admin approval.');
+                    await auth.signOut();
+                    return;
+                }
+                
+                showLoginError('');
+            } catch (error) {
+                console.error('Login error:', error);
+                let message = 'Login failed';
+                switch (error.code) {
+                    case 'auth/user-not-found':
+                        message = 'No account found with this email';
+                        break;
+                    case 'auth/wrong-password':
+                        message = 'Incorrect password';
+                        break;
+                    case 'auth/invalid-email':
+                        message = 'Invalid email address';
+                        break;
+                    case 'auth/too-many-requests':
+                        message = 'Too many failed attempts. Please try again later';
+                        break;
+                    default:
+                        message = error.message || 'Login failed';
+                }
+                showLoginError(message);
             }
-            showLoginError(message);
-        }
-    }
-
-    async function handleGoogleLogin() {
-        try {
-            showLoginError(''); // Clear any previous errors
+        });
+        
+        // Sign Up
+        document.getElementById('signupBtn').addEventListener('click', async () => {
+            const email = document.getElementById('loginEmail').value.trim();
+            const password = document.getElementById('loginPassword').value;
+            
+            if (!email || !password) {
+                showLoginError('Please enter email and password');
+                return;
+            }
+            
+            if (password.length < 6) {
+                showLoginError('Password must be at least 6 characters');
+                return;
+            }
+            
+            try {
+                showLoginError('');
+                const result = await auth.createUserWithEmailAndPassword(email, password);
+                
+                console.log('👤 Creating user document for new signup');
+                // Create user document in Firestore
+                await db.collection('users').doc(result.user.uid).set({
+                    email: result.user.email,
+                    uid: result.user.uid,
+                    role: 'pending',
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                
+                showLoginError('✅ Account created successfully! Awaiting admin approval.');
+                
+                // Sign out immediately since they're pending
+                await auth.signOut();
+                
+            } catch (error) {
+                console.error('Signup error:', error);
+                let message = 'Signup failed';
+                switch (error.code) {
+                    case 'auth/email-already-in-use':
+                        message = 'Email already registered';
+                        break;
+                    case 'auth/invalid-email':
+                        message = 'Invalid email address';
+                        break;
+                    case 'auth/weak-password':
+                        message = 'Password is too weak';
+                        break;
+                    default:
+                        message = error.message || 'Signup failed';
+                }
+                showLoginError(message);
+            }
+        });
+        
+        // Google Sign In
+        document.getElementById('googleBtn').addEventListener('click', async () => {
             const provider = new firebase.auth.GoogleAuthProvider();
-            await auth.signInWithPopup(provider);
-            // Auth state change will handle the rest
-        } catch (error) {
-            console.error('Google login error:', error);
-            if (error.code !== 'auth/popup-closed-by-user') {
-                showLoginError('Google sign-in failed. Please try again.');
+            try {
+                showLoginError('');
+                const result = await auth.signInWithPopup(provider);
+                
+                // Check if user document exists
+                const userDoc = await db.collection('users').doc(result.user.uid).get();
+                if (!userDoc.exists) {
+                    console.log('👤 Creating user document for new Google user');
+                    // Create user document for Google users
+                    await db.collection('users').doc(result.user.uid).set({
+                        email: result.user.email,
+                        uid: result.user.uid,
+                        displayName: result.user.displayName || '',
+                        role: 'pending',
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                    
+                    showLoginError('✅ Google account created! Awaiting admin approval.');
+                    await auth.signOut();
+                    return;
+                }
+                
+                showLoginError('');
+            } catch (error) {
+                console.error('Google login error:', error);
+                if (error.code !== 'auth/popup-closed-by-user') {
+                    showLoginError('Google sign-in failed. Please try again.');
+                }
             }
-        }
+        });
     }
 
     function showLoginError(message) {
@@ -8615,6 +8769,61 @@ const db = firebase.firestore();
     
     // Make it available globally for testing
     window.testMobileTouch = testMobileTouch;
+    
+    // Debug function for account status
+    async function debugAccountStatus() {
+        if (!auth.currentUser) {
+            console.log('❌ No user logged in');
+            return;
+        }
+        
+        console.log('🔍 Account Status Debug:');
+        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        console.log('👤 Firebase Auth User:');
+        console.log('  UID:', auth.currentUser.uid);
+        console.log('  Email:', auth.currentUser.email);
+        console.log('  Display Name:', auth.currentUser.displayName);
+        console.log('');
+        
+        try {
+            const userDoc = await db.collection('users').doc(auth.currentUser.uid).get();
+            if (userDoc.exists) {
+                console.log('✅ Firestore User Document:');
+                const userData = userDoc.data();
+                console.log('  Role:', userData.role);
+                console.log('  Created:', userData.createdAt?.toDate());
+                console.log('  Promoted to Admin:', userData.promotedToAdmin?.toDate());
+                console.log('  Document Data:', userData);
+            } else {
+                console.log('❌ No Firestore User Document Found');
+                console.log('  This is the problem! User exists in Auth but not in Firestore.');
+                console.log('  Try signing out and signing back in to create the document.');
+            }
+        } catch (error) {
+            console.error('❌ Error fetching user document:', error);
+        }
+        
+        try {
+            const adminSnapshot = await db.collection('users').where('role', '==', 'admin').get();
+            console.log('');
+            console.log('👑 Admin Users in System:');
+            if (adminSnapshot.empty) {
+                console.log('  No admin users found - next user will become admin');
+            } else {
+                adminSnapshot.forEach(doc => {
+                    const data = doc.data();
+                    console.log(`  - ${data.email} (${doc.id})`);
+                });
+            }
+        } catch (error) {
+            console.error('❌ Error fetching admin users:', error);
+        }
+        
+        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    }
+    
+    // Make debug function available globally
+    window.debugAccountStatus = debugAccountStatus;
     
     // Premium GPS Debug System
     function debugLocation() {
