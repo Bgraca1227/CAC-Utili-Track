@@ -3637,8 +3637,8 @@ const db = firebase.firestore();
         <div id="usersList" class="users-list">
             <p style="color: var(--text-tertiary); text-align: center;">Loading...</p>
         </div>
+        </div>
     </div>
-</div>
 
 <!-- Main App Container -->
 <div class="app-container">
@@ -4411,7 +4411,7 @@ const db = firebase.firestore();
     // New function to initialize the main app after authentication
     function initializeMainApp() {
         console.log('🚀 Initializing main app for user:', AppState.currentUser.email);
-        
+
         // Initialize core systems
         initializeMap();
         initializeDOMCache();
@@ -4952,14 +4952,24 @@ const db = firebase.firestore();
 
         // Map events
         AppState.map.on('click', handleMapClick);
-        AppState.map.on('contextmenu', e => e.preventDefault());
+        AppState.map.on('contextmenu', function(e) {
+            if (e && e.originalEvent) {
+                e.originalEvent.preventDefault();
+            }
+            return false;
+        });
         AppState.map.on('zoomend', handleZoomChange);
         AppState.map.on('zoom', handleZoomChange); // For smooth transitions during zoom
     }
 
     function initializeEventListeners() {
         // Prevent all context menus
-        document.addEventListener('contextmenu', e => e.preventDefault());
+        document.addEventListener('contextmenu', function(e) {
+            if (e && e.preventDefault) {
+                e.preventDefault();
+            }
+            return false;
+        });
 
         // Utility selection
         document.querySelectorAll('.utility-btn').forEach(btn => {
@@ -6610,11 +6620,11 @@ const db = firebase.firestore();
             await saveUtilities();
             
             // Exit edit mode and refresh display only if save succeeded
-            exitEditMode();
-            showInfoModal(AppState.selectedUtilityData);
-            
+        exitEditMode();
+        showInfoModal(AppState.selectedUtilityData);
+        
             // Don't show duplicate toast - saveUtilities already shows one
-            hapticFeedback(50);
+        hapticFeedback(50);
         } catch (error) {
             console.error('Error saving edits:', error);
             showToast('Error saving changes', 'error');
@@ -8074,19 +8084,49 @@ const db = firebase.firestore();
             let loadedCount = 0;
             snapshot.forEach((doc) => {
                 const utilityData = doc.data();
-                // Convert points back to LatLng objects
-                utilityData.points = utilityData.points.map(p => L.latLng(p.lat, p.lng));
-                utilityData.isApproved = true;
                 
-                // Avoid duplicates
-                if (!AppState.utilities.find(u => u.id === utilityData.id)) {
-                    AppState.utilities.push(utilityData);
-                    createUtilityLine(utilityData);
-                    loadedCount++;
+                // Skip placeholder documents
+                if (utilityData.isPlaceholder) {
+                    console.log('🗑️ Skipping placeholder utility:', doc.id);
+                    return;
+                }
+                
+                // Validate required data exists
+                if (!utilityData.points || !Array.isArray(utilityData.points)) {
+                    console.warn('⚠️ Skipping utility with invalid points:', doc.id);
+                    return;
+                }
+                
+                try {
+                    // Safely convert points with validation
+                    utilityData.points = utilityData.points.map(p => {
+                        if (p && typeof p.lat === 'number' && typeof p.lng === 'number') {
+                            return L.latLng(p.lat, p.lng);
+                        } else {
+                            console.warn('⚠️ Invalid point in utility:', p);
+                            return null;
+                        }
+                    }).filter(p => p !== null); // Remove invalid points
+                    
+                    // Only add if we have at least 2 valid points
+                    if (utilityData.points.length >= 2) {
+                        utilityData.isApproved = true;
+                        
+                        // Avoid duplicates
+                        if (!AppState.utilities.find(u => u.id === utilityData.id)) {
+                            AppState.utilities.push(utilityData);
+                            createUtilityLine(utilityData);
+                            loadedCount++;
+                        }
+                    } else {
+                        console.warn('⚠️ Skipping utility with insufficient points:', doc.id);
+                    }
+                } catch (pointError) {
+                    console.error('❌ Error processing utility points:', doc.id, pointError);
                 }
             });
             
-            console.log(`✅ Loaded ${loadedCount} utilities from Firestore`);
+            console.log(`✅ Loaded ${loadedCount} valid utilities from Firestore`);
             if (loadedCount > 0) {
                 showToast(`Loaded ${loadedCount} utilities from shared map`, 'success');
             }
@@ -8118,18 +8158,47 @@ const db = firebase.firestore();
             let loadedCount = 0;
             snapshot.forEach((doc) => {
                 const structureData = doc.data();
-                structureData.latlng = L.latLng(structureData.latlng.lat, structureData.latlng.lng);
-                structureData.isApproved = true;
                 
-                // Avoid duplicates
-                if (!AppState.structures.find(s => s.id === structureData.id)) {
-                    AppState.structures.push(structureData);
-                    createStructureMarker(structureData);
-                    loadedCount++;
+                // Skip placeholder documents
+                if (structureData.isPlaceholder) {
+                    console.log('🗑️ Skipping placeholder structure:', doc.id);
+                    return;
+                }
+                
+                // Validate required data exists
+                if (!structureData.latlng) {
+                    console.warn('⚠️ Skipping structure with no location:', doc.id);
+                    return;
+                }
+                
+                try {
+                    // Safely convert latlng with validation
+                    if (structureData.latlng.lat !== undefined && 
+                        structureData.latlng.lng !== undefined &&
+                        typeof structureData.latlng.lat === 'number' &&
+                        typeof structureData.latlng.lng === 'number') {
+                        
+                        structureData.latlng = L.latLng(
+                            structureData.latlng.lat, 
+                            structureData.latlng.lng
+                        );
+                        structureData.isApproved = true;
+                        
+                        // Avoid duplicates
+                        if (!AppState.structures.find(s => s.id === structureData.id)) {
+                            AppState.structures.push(structureData);
+                            createStructureMarker(structureData);
+                            loadedCount++;
+                        }
+                    } else {
+                        console.warn('⚠️ Invalid latlng in structure:', doc.id, structureData.latlng);
+                    }
+                } catch (latlngError) {
+                    console.error('❌ Error processing structure location:', doc.id, latlngError);
                 }
             });
             
-            console.log(`✅ Loaded ${loadedCount} structures from Firestore`);
+            console.log(`✅ Loaded ${loadedCount} valid structures from Firestore`);
         } catch (error) {
             console.error('❌ Error loading structures:', error);
             // Only show error if it's a real permission issue
@@ -8810,6 +8879,141 @@ const db = firebase.firestore();
     
     // Make debug function available globally
     window.debugAccountStatus = debugAccountStatus;
+    
+    // Cleanup function for bad Firestore data
+    async function cleanupBadData() {
+        if (AppState.userRole !== 'admin') {
+            console.log('❌ Only admins can clean up data');
+            showToast('Admin access required', 'error');
+            return;
+        }
+        
+        console.log('🧹 Starting cleanup of bad Firestore data...');
+        let deletedUtilities = 0;
+        let deletedStructures = 0;
+        
+        try {
+            // Clean utilities collection
+            console.log('🔍 Checking utilities collection...');
+            const utilitiesSnapshot = await db.collection('utilities').get();
+            
+            for (const doc of utilitiesSnapshot.docs) {
+                const data = doc.data();
+                let shouldDelete = false;
+                let reason = '';
+                
+                if (data.isPlaceholder) {
+                    shouldDelete = true;
+                    reason = 'placeholder document';
+                } else if (!data.points || !Array.isArray(data.points)) {
+                    shouldDelete = true;
+                    reason = 'missing or invalid points array';
+                } else if (data.points.length < 2) {
+                    shouldDelete = true;
+                    reason = 'insufficient points';
+                } else {
+                    // Check if points have valid lat/lng
+                    const invalidPoints = data.points.filter(p => 
+                        !p || typeof p.lat !== 'number' || typeof p.lng !== 'number'
+                    );
+                    if (invalidPoints.length > 0) {
+                        shouldDelete = true;
+                        reason = 'invalid point coordinates';
+                    }
+                }
+                
+                if (shouldDelete) {
+                    console.log(`🗑️ Deleting bad utility ${doc.id}: ${reason}`);
+                    await doc.ref.delete();
+                    deletedUtilities++;
+                }
+            }
+            
+            // Clean structures collection
+            console.log('🔍 Checking structures collection...');
+            const structuresSnapshot = await db.collection('structures').get();
+            
+            for (const doc of structuresSnapshot.docs) {
+                const data = doc.data();
+                let shouldDelete = false;
+                let reason = '';
+                
+                if (data.isPlaceholder) {
+                    shouldDelete = true;
+                    reason = 'placeholder document';
+                } else if (!data.latlng) {
+                    shouldDelete = true;
+                    reason = 'missing latlng';
+                } else if (typeof data.latlng.lat !== 'number' || typeof data.latlng.lng !== 'number') {
+                    shouldDelete = true;
+                    reason = 'invalid latlng coordinates';
+                }
+                
+                if (shouldDelete) {
+                    console.log(`🗑️ Deleting bad structure ${doc.id}: ${reason}`);
+                    await doc.ref.delete();
+                    deletedStructures++;
+                }
+            }
+            
+            // Clean pending changes collection
+            console.log('🔍 Checking pendingChanges collection...');
+            const pendingSnapshot = await db.collection('pendingChanges').get();
+            let deletedPending = 0;
+            
+            for (const doc of pendingSnapshot.docs) {
+                const data = doc.data();
+                let shouldDelete = false;
+                let reason = '';
+                
+                if (data.isPlaceholder) {
+                    shouldDelete = true;
+                    reason = 'placeholder document';
+                } else if (data.type === 'utility' && data.data) {
+                    if (!data.data.points || !Array.isArray(data.data.points)) {
+                        shouldDelete = true;
+                        reason = 'invalid utility data';
+                    }
+                } else if (data.type === 'structure' && data.data) {
+                    if (!data.data.latlng) {
+                        shouldDelete = true;
+                        reason = 'invalid structure data';
+                    }
+                }
+                
+                if (shouldDelete) {
+                    console.log(`🗑️ Deleting bad pending change ${doc.id}: ${reason}`);
+                    await doc.ref.delete();
+                    deletedPending++;
+                }
+            }
+            
+            console.log(`✅ Cleanup complete!`);
+            console.log(`  🗑️ Deleted ${deletedUtilities} bad utilities`);
+            console.log(`  🗑️ Deleted ${deletedStructures} bad structures`);
+            console.log(`  🗑️ Deleted ${deletedPending} bad pending changes`);
+            
+            const totalDeleted = deletedUtilities + deletedStructures + deletedPending;
+            if (totalDeleted > 0) {
+                showToast(`Cleanup complete! Deleted ${totalDeleted} corrupted documents`, 'success');
+                
+                // Reload the app to refresh data
+                setTimeout(() => {
+                    console.log('🔄 Reloading app to refresh data...');
+                    location.reload();
+                }, 2000);
+            } else {
+                showToast('No corrupted data found - database is clean!', 'info');
+            }
+            
+        } catch (error) {
+            console.error('❌ Error during cleanup:', error);
+            showToast('Error during cleanup - check console', 'error');
+        }
+    }
+    
+    // Make cleanup function available globally for admin use
+    window.cleanupBadData = cleanupBadData;
     
     // Premium GPS Debug System
     function debugLocation() {
