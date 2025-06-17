@@ -3215,10 +3215,16 @@ const db = firebase.firestore();
         background: rgba(0, 180, 216, 0.1);
     }
 
-    .role-badge.pending {
+    .role-badge.supervisor {
         border: 2px solid var(--warning-color);
         color: var(--warning-color);
         background: rgba(255, 214, 10, 0.1);
+    }
+
+    .role-badge.pitman {
+        border: 2px solid #ff6b35;
+        color: #ff6b35;
+        background: rgba(255, 107, 53, 0.1);
     }
 
     /* Admin Panel */
@@ -3463,9 +3469,14 @@ const db = firebase.firestore();
         color: var(--info-color);
     }
 
-    .user-role.pending {
+    .user-role.supervisor {
         background: rgba(255, 214, 10, 0.2);
         color: var(--warning-color);
+    }
+
+    .user-role.pitman {
+        background: rgba(255, 107, 53, 0.2);
+        color: #ff6b35;
     }
 
     .approve-user-btn {
@@ -4219,17 +4230,16 @@ const db = firebase.firestore();
                         console.log('👤 User role from Firestore:', AppState.userRole);
                         
                         // Check if this is the first user and make them admin
-                        if (AppState.userRole === 'pending') {
+                        if (AppState.userRole === 'pending' || !AppState.userRole) {
                             const isFirstAdmin = await checkAndMakeFirstAdmin(user.uid);
                             if (isFirstAdmin) {
                                 AppState.userRole = 'admin';
                                 console.log('👑 First user promoted to admin');
                                 showToast('Welcome! You are now the system administrator.', 'success');
                             } else {
-                                showToast('Your account is pending admin approval', 'warning');
-                                showLoginError('Account pending approval. Please contact an admin.');
-                                setTimeout(() => auth.signOut(), 2000);
-                                return;
+                                AppState.userRole = 'pitman';
+                                console.log('👤 User set as pitman');
+                                showToast('Welcome! You have been assigned as Pitman/MO.', 'success');
                             }
                         }
                     } else {
@@ -4650,7 +4660,11 @@ const db = firebase.firestore();
                 console.log('✅ First user promoted to admin successfully');
                 return true;
             } else {
-                console.log('👥 Admin users already exist, keeping user as pending');
+                // Set new users as pitman by default
+                console.log('👥 Admin users already exist, setting user as pitman');
+                await db.collection('users').doc(userId).update({
+                    role: 'pitman'
+                });
                 return false;
             }
             
@@ -4829,17 +4843,30 @@ const db = firebase.firestore();
         if (existingBadge) existingBadge.remove();
         if (existingAdminBtn) existingAdminBtn.remove();
         
+        // Role icons and names
+        const roleIcons = {
+            admin: 'fa-user-shield',
+            supervisor: 'fa-user-tie',
+            pitman: 'fa-hard-hat'
+        };
+        
+        const roleNames = {
+            admin: 'ADMIN',
+            supervisor: 'SUPERVISOR',
+            pitman: 'PITMAN/MO'
+        };
+        
         // Add role badge
         const badge = document.createElement('div');
         badge.className = `role-badge ${AppState.userRole}`;
         badge.innerHTML = `
-            <i class="fas ${AppState.userRole === 'admin' ? 'fa-user-shield' : 'fa-user'}"></i>
-            ${AppState.userRole.toUpperCase()}
+            <i class="fas ${roleIcons[AppState.userRole] || 'fa-user'}"></i>
+            ${roleNames[AppState.userRole] || AppState.userRole.toUpperCase()}
         `;
         document.body.appendChild(badge);
         
-        // Add admin button if admin
-        if (AppState.userRole === 'admin') {
+        // Show admin panel button for admins and supervisors
+        if (AppState.userRole === 'admin' || AppState.userRole === 'supervisor') {
             const adminBtn = document.createElement('button');
             adminBtn.className = 'admin-btn';
             adminBtn.innerHTML = '<i class="fas fa-cog"></i>';
@@ -4852,22 +4879,12 @@ const db = firebase.firestore();
 
 
     function setupAdminListeners() {
-        if (AppState.userRole !== 'admin') {
-            console.log('⚠️ Not admin, skipping admin listeners');
+        if (AppState.userRole !== 'admin' && AppState.userRole !== 'supervisor') {
+            console.log('⚠️ Not admin or supervisor, skipping admin listeners');
             return;
         }
         
         console.log('🔄 Setting up admin real-time listeners...');
-        
-        // Listen for pending changes
-        const pendingListener = AppState.safeCollection('pendingChanges')
-            .orderBy('timestamp', 'desc')
-            .onSnapshot((snapshot) => {
-                console.log(`📋 ${snapshot.docs.length} pending changes found`);
-                updatePendingChangesList(snapshot.docs);
-            }, (error) => {
-                console.error('❌ Error listening to pending changes:', error);
-            });
         
         // Listen for user changes
         const usersListener = AppState.safeCollection('users')
@@ -4879,7 +4896,7 @@ const db = firebase.firestore();
                 console.error('❌ Error listening to users:', error);
             });
         
-        AppState.realtimeListeners = [pendingListener, usersListener];
+        AppState.realtimeListeners = [usersListener];
         console.log('✅ Admin listeners setup complete');
     }
 
@@ -6007,7 +6024,7 @@ const db = firebase.firestore();
             return;
         }
 
-        // Create utility data with pending status
+        // Create utility data - save directly without approval
         const utilityData = {
             id: generateId(),
             type: AppState.selectedUtility,
@@ -6021,8 +6038,7 @@ const db = firebase.firestore();
             dateAdded: new Date().toISOString(),
             connections: [],
             notes: [],
-            isLocal: true, // Mark as pending approval
-            isApproved: false
+            isModified: true // Mark for saving
         };
 
         // Add connection info if connected
@@ -6040,7 +6056,7 @@ const db = firebase.firestore();
         // Create the utility line on map
         createUtilityLine(utilityData);
 
-        // Save to Firebase for admin approval
+        // Save directly to Firestore
         saveUtilities();
 
         // Show info modal for editing
@@ -6049,7 +6065,6 @@ const db = firebase.firestore();
         // Reset drawing state
         cancelDrawing();
 
-        // Don't show duplicate toast - saveUtilities() already shows one
         hapticFeedback(100);
     }
 
@@ -6432,8 +6447,7 @@ const db = firebase.firestore();
             utilityType: AppState.structureToAdd.utilityType,
             latlng: latlng,
             dateAdded: new Date().toISOString(),
-            isLocal: true, // Mark as pending approval
-            isApproved: false
+            isModified: true // Mark for saving
         };
 
         // Add to state
@@ -6442,7 +6456,7 @@ const db = firebase.firestore();
         // Create marker
         createStructureMarker(structureData);
 
-        // Save to Firebase for admin approval
+        // Save directly to Firestore
         saveStructures();
 
         // Reset cursor and state
@@ -6452,7 +6466,7 @@ const db = firebase.firestore();
         AppState.structureToAdd = null;
 
         const structureName = getStructureName(structureData.type);
-        showToast(`${structureName} submitted for admin approval`, 'info');
+        showToast(`${structureName} created successfully`, 'success');
         hapticFeedback(100);
         
         console.log('✅ Structure submitted for approval:', structureData);
@@ -8030,62 +8044,56 @@ const db = firebase.firestore();
         console.log('💾 Saving utilities to Firestore...');
         
         try {
-            // Save only new local utilities as pending changes
             for (const utility of AppState.utilities) {
-                if (utility.isLocal && !utility.pendingId && !utility.isApproved) {
-                    console.log('📤 Creating pending change for utility:', utility.id);
+                // Save directly to utilities collection
+                if (!utility.isSaved || utility.isModified) {
+                    console.log('💾 Saving utility:', utility.id);
                     
-                    // Create pending change document
-                    const pendingChange = {
-                        type: 'utility',
-                        action: 'add',
-                        data: {
-                            id: utility.id,
-                            type: utility.type,
-                            lineType: utility.lineType,
-                            points: utility.points.map(p => ({ lat: p.lat, lng: p.lng })),
-                            size: utility.size || '',
-                            depth: utility.depth || '',
-                            material: utility.material || '',
-                            condition: utility.condition || '',
-                            curbDistance: utility.curbDistance || '',
-                            dateAdded: utility.dateAdded,
-                            connections: utility.connections || [],
-                            notes: utility.notes || []
-                        },
-                        userId: AppState.currentUser.uid,
-                        userEmail: AppState.currentUser.email,
-                        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                    const utilityData = {
+                        id: utility.id,
+                        type: utility.type,
+                        lineType: utility.lineType,
+                        points: utility.points.map(p => ({ lat: p.lat, lng: p.lng })),
+                        size: utility.size || '',
+                        depth: utility.depth || '',
+                        material: utility.material || '',
+                        condition: utility.condition || '',
+                        curbDistance: utility.curbDistance || '',
+                        dateAdded: utility.dateAdded,
+                        connections: utility.connections || [],
+                        notes: utility.notes || [],
+                        createdBy: AppState.currentUser.uid,
+                        createdByEmail: AppState.currentUser.email,
+                        lastModified: firebase.firestore.FieldValue.serverTimestamp()
                     };
                     
-                    const docRef = await db.collection('pendingChanges').add(pendingChange);
-                    utility.pendingId = docRef.id;
+                    await db.collection('utilities').doc(utility.id).set(utilityData);
+                    utility.isSaved = true;
+                    utility.isModified = false;
                     
-                    // Visual feedback - make line dashed to show it's pending
+                    // Update visual appearance - no more dashed lines
                     if (utility.lineLayer) {
                         utility.lineLayer.setStyle({
-                            dashArray: '10, 5',
-                            opacity: 0.6
+                            dashArray: null,
+                            opacity: 1
                         });
                         
-                        // Add pending class
+                        // Remove pending class
                         const currentClasses = utility.lineLayer.options.className || '';
-                        if (!currentClasses.includes('pending')) {
-                            utility.lineLayer.setStyle({
-                                className: currentClasses + ' pending'
-                            });
-                        }
+                        utility.lineLayer.setStyle({
+                            className: currentClasses.replace(' pending', '')
+                        });
                     }
                     
-                    showToast('Change submitted for admin approval', 'info');
-                    console.log('✅ Pending change created with ID:', docRef.id);
+                    console.log('✅ Utility saved:', utility.id);
                 }
             }
             
-            console.log('✅ All new utilities submitted for approval');
+            showToast('Utilities saved successfully', 'success');
+            console.log('✅ All utilities saved');
         } catch (error) {
             console.error('❌ Error saving utilities:', error);
-            showToast('Error submitting changes', 'error');
+            showToast('Error saving utilities', 'error');
         }
     }
 
@@ -8105,6 +8113,8 @@ const db = firebase.firestore();
             }
             
             let loadedCount = 0;
+            let filteredCount = 0;
+            
             snapshot.forEach((doc) => {
                 const utilityData = doc.data();
                 
@@ -8133,13 +8143,18 @@ const db = firebase.firestore();
                     
                     // Only add if we have at least 2 valid points
                     if (utilityData.points.length >= 2) {
-                        utilityData.isApproved = true;
+                        utilityData.isSaved = true;
                         
-                        // Avoid duplicates
-                        if (!AppState.utilities.find(u => u.id === utilityData.id)) {
-                            AppState.utilities.push(utilityData);
-                            createUtilityLine(utilityData);
-                            loadedCount++;
+                        // Check if user can see this utility based on role and distance
+                        if (canUserSeeUtility(utilityData)) {
+                            // Avoid duplicates
+                            if (!AppState.utilities.find(u => u.id === utilityData.id)) {
+                                AppState.utilities.push(utilityData);
+                                createUtilityLine(utilityData);
+                                loadedCount++;
+                            }
+                        } else {
+                            filteredCount++;
                         }
                     } else {
                         console.warn('⚠️ Skipping utility with insufficient points:', doc.id);
@@ -8150,8 +8165,11 @@ const db = firebase.firestore();
             });
             
             console.log(`✅ Loaded ${loadedCount} valid utilities from Firestore`);
-            if (loadedCount > 0) {
-                showToast(`Loaded ${loadedCount} utilities from shared map`, 'success');
+            if (AppState.userRole === 'pitman' && filteredCount > 0) {
+                console.log(`🚫 Filtered out ${filteredCount} utilities (>150ft away)`);
+                showToast(`Loaded ${loadedCount} utilities (${filteredCount} filtered by distance)`, 'info');
+            } else if (loadedCount > 0) {
+                showToast(`Loaded ${loadedCount} utilities`, 'success');
             }
         } catch (error) {
             console.error('❌ Error loading utilities:', error);
@@ -8205,12 +8223,12 @@ const db = firebase.firestore();
                             structureData.latlng.lat, 
                             structureData.latlng.lng
                         );
-                        structureData.isApproved = true;
+                        structureData.isSaved = true;
                         
                         // Avoid duplicates
                         if (!AppState.structures.find(s => s.id === structureData.id)) {
-                            AppState.structures.push(structureData);
-                            createStructureMarker(structureData);
+                    AppState.structures.push(structureData);
+                    createStructureMarker(structureData);
                             loadedCount++;
                         }
                     } else {
@@ -8239,45 +8257,42 @@ const db = firebase.firestore();
         }
         
         try {
-            // Save only pending/local structures to Firebase
             for (const structure of AppState.structures) {
-                if (structure.isLocal && !structure.pendingId && !structure.isApproved) {
-                    console.log('💾 Creating pending change for structure:', structure.id);
+                if (!structure.isSaved || structure.isModified) {
+                    console.log('💾 Saving structure:', structure.id);
                     
-                    // Create pending change document
-                    const pendingChange = {
-                        type: 'structure',
-                        action: 'add',
-                        data: {
-                            id: structure.id,
-                            type: structure.type,
-                            utilityType: structure.utilityType,
-                            latlng: {
-                                lat: structure.latlng.lat,
-                                lng: structure.latlng.lng
-                            },
-                            dateAdded: structure.dateAdded
+                    const structureData = {
+                        id: structure.id,
+                        type: structure.type,
+                        utilityType: structure.utilityType,
+                        latlng: {
+                            lat: structure.latlng.lat,
+                            lng: structure.latlng.lng
                         },
-                        userId: AppState.currentUser.uid,
-                        userEmail: AppState.currentUser.email,
-                        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                        dateAdded: structure.dateAdded,
+                        createdBy: AppState.currentUser.uid,
+                        createdByEmail: AppState.currentUser.email,
+                        lastModified: firebase.firestore.FieldValue.serverTimestamp()
                     };
                     
-                    const docRef = await db.collection('pendingChanges').add(pendingChange);
-                    structure.pendingId = docRef.id;
+                    await db.collection('structures').doc(structure.id).set(structureData);
+                    structure.isSaved = true;
+                    structure.isModified = false;
                     
-                    // Mark as pending on map with visual indicator
+                    // Update visual appearance
                     if (structure.marker && structure.marker._icon) {
-                        structure.marker._icon.classList.add('pending');
+                        structure.marker._icon.classList.remove('pending');
                     }
                     
-                    showToast('Structure submitted for admin approval', 'info');
-                    console.log('✅ Pending structure change created:', docRef.id);
+                    console.log('✅ Structure saved:', structure.id);
                 }
             }
+            
+            showToast('Structures saved successfully', 'success');
+            console.log('✅ All structures saved');
         } catch (error) {
             console.error('❌ Error saving structures:', error);
-            showToast('Error submitting structure changes', 'error');
+            showToast('Error saving structures', 'error');
         }
     }
 
@@ -8286,29 +8301,16 @@ const db = firebase.firestore();
     // ========== ADMIN PANEL FUNCTIONS ==========
 
     async function loadPendingChanges() {
-        if (AppState.userRole !== 'admin') {
-            console.warn('⚠️ Only admins can load pending changes');
-            return;
-        }
-        
-        console.log('📥 Loading pending changes...');
-        try {
-            const snapshot = await AppState.safeCollection('pendingChanges')
-                .orderBy('timestamp', 'desc')
-                .get();
-            
-            console.log(`📋 Found ${snapshot.docs.length} pending changes`);
-            updatePendingChangesList(snapshot.docs);
-        } catch (error) {
-            console.error('❌ Error loading pending changes:', error);
-            const listEl = document.getElementById('pendingChangesList');
-            if (listEl) {
-                if (error.code === 'failed-precondition') {
-                    listEl.innerHTML = '<p style="color: var(--text-tertiary);">📝 No pending changes yet</p>';
-                } else {
-                    listEl.innerHTML = '<p style="color: var(--danger-color);">Error loading pending changes</p>';
-                }
-            }
+        console.log('📥 Pending changes system disabled - all users can save directly');
+        const listEl = document.getElementById('pendingChangesList');
+        if (listEl) {
+            listEl.innerHTML = `
+                <div style="text-align: center; padding: 20px; color: var(--text-secondary);">
+                    <i class="fas fa-check-circle" style="font-size: 48px; color: var(--success-color); margin-bottom: 16px;"></i>
+                    <h3 style="margin: 0 0 8px 0; color: var(--text-primary);">Direct Save Enabled</h3>
+                    <p style="margin: 0; font-size: 14px;">All roles can create and save utilities directly.<br/>No approval process required.</p>
+                </div>
+            `;
         }
     }
 
@@ -8457,8 +8459,8 @@ const db = firebase.firestore();
     }
 
     async function loadUsers() {
-        if (AppState.userRole !== 'admin') {
-            console.warn('⚠️ Only admins can load users');
+        if (AppState.userRole !== 'admin' && AppState.userRole !== 'supervisor') {
+            console.warn('⚠️ Only admins and supervisors can load users');
             return;
         }
         
@@ -8482,10 +8484,12 @@ const db = firebase.firestore();
                         <div class="user-email">${user.email}</div>
                         <div class="user-role ${user.role}">${user.role}</div>
                     </div>
-                    ${user.role === 'pending' ? 
-                        `<button class="approve-user-btn" onclick="approveUser('${doc.id}')">
-                            <i class="fas fa-check"></i> Approve
-                        </button>` : ''}
+                    <select class="role-select" onchange="updateUserRole('${doc.id}', this.value)" style="padding: 4px 8px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary); font-size: 12px;">
+                        <option value="pitman" ${user.role === 'pitman' ? 'selected' : ''}>Pitman/MO</option>
+                        <option value="supervisor" ${user.role === 'supervisor' ? 'selected' : ''}>Supervisor</option>
+                        ${AppState.userRole === 'admin' ? 
+                            `<option value="admin" ${user.role === 'admin' ? 'selected' : ''}>Admin</option>` : ''}
+                    </select>
                 `;
                 usersList.appendChild(userEl);
             });
@@ -8525,8 +8529,8 @@ const db = firebase.firestore();
     }
 
     function openAdminPanel() {
-        if (AppState.userRole !== 'admin') {
-            showToast('Admin access required', 'error');
+        if (AppState.userRole !== 'admin' && AppState.userRole !== 'supervisor') {
+            showToast('Admin or supervisor access required', 'error');
             return;
         }
         
@@ -8902,6 +8906,79 @@ const db = firebase.firestore();
     
     // Make debug function available globally
     window.debugAccountStatus = debugAccountStatus;
+
+    // ========== ROLE MANAGEMENT FUNCTIONS ==========
+
+    // Role management functions
+    async function updateUserRole(userId, newRole) {
+        if (AppState.userRole !== 'admin' && AppState.userRole !== 'supervisor') {
+            showToast('Only admins and supervisors can change roles', 'error');
+            return;
+        }
+        
+        const validRoles = ['admin', 'supervisor', 'pitman'];
+        if (!validRoles.includes(newRole)) {
+            showToast('Invalid role', 'error');
+            return;
+        }
+        
+        try {
+            await db.collection('users').doc(userId).update({ 
+                role: newRole,
+                roleUpdatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            
+            showToast(`User role updated to ${newRole}`, 'success');
+            loadUsers(); // Refresh user list
+        } catch (error) {
+            console.error('Error updating user role:', error);
+            showToast('Error updating user role', 'error');
+        }
+    }
+
+    // Check if user can see utility based on role and distance
+    function canUserSeeUtility(utility) {
+        // Admins and Supervisors can see everything
+        if (AppState.userRole === 'admin' || AppState.userRole === 'supervisor') {
+            return true;
+        }
+        
+        // Pitman can only see utilities within 150 feet
+        if (AppState.userRole === 'pitman' && AppState.userLocation) {
+            // Check distance to each point in the utility line
+            for (const point of utility.points) {
+                const distance = calculateDistanceInFeet(
+                    AppState.userLocation,
+                    [point.lat || point[0], point.lng || point[1]]
+                );
+                if (distance <= 150) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        
+        return true; // Default allow
+    }
+
+    // Calculate distance in feet
+    function calculateDistanceInFeet(point1, point2) {
+        const R = 20902231; // Earth's radius in feet
+        const lat1 = point1[0] * Math.PI / 180;
+        const lat2 = point2[0] * Math.PI / 180;
+        const deltaLat = (point2[0] - point1[0]) * Math.PI / 180;
+        const deltaLng = (point2[1] - point1[1]) * Math.PI / 180;
+        
+        const a = Math.sin(deltaLat / 2) * Math.sin(deltaLat / 2) +
+                  Math.cos(lat1) * Math.cos(lat2) *
+                  Math.sin(deltaLng / 2) * Math.sin(deltaLng / 2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        
+        return R * c;
+    }
+
+    // Make role management functions available globally
+    window.updateUserRole = updateUserRole;
     
     // Cleanup function for bad Firestore data
     async function cleanupBadData() {
