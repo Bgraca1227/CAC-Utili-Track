@@ -1066,9 +1066,15 @@ const db = firebase.firestore();
     /* Ultra Premium GPS Location System */
     .user-location-marker {
         pointer-events: none;
-        z-index: 1000;
+        z-index: 1000 !important;
         transform-origin: center center;
         will-change: transform;
+        opacity: 1.0 !important; /* Always visible regardless of zoom */
+    }
+    
+    /* Ensure all child elements of location marker are visible */
+    .user-location-marker * {
+        opacity: inherit !important;
     }
     
     .location-container {
@@ -3227,6 +3233,12 @@ const db = firebase.firestore();
         background: rgba(255, 107, 53, 0.1);
     }
 
+    .role-badge.restricted {
+        border: 2px solid var(--danger-color);
+        color: var(--danger-color);
+        background: rgba(255, 0, 84, 0.1);
+    }
+
     /* Admin Panel */
     .admin-panel {
         position: fixed;
@@ -3477,6 +3489,11 @@ const db = firebase.firestore();
     .user-role.pitman {
         background: rgba(255, 107, 53, 0.2);
         color: #ff6b35;
+    }
+
+    .user-role.restricted {
+        background: rgba(255, 0, 84, 0.2);
+        color: var(--danger-color);
     }
 
     .approve-user-btn {
@@ -4095,7 +4112,7 @@ const db = firebase.firestore();
     // Premium App State
     const AppState = {
         map: null,
-        theme: 'dark',
+        theme: 'light',
         selectedUtility: 'water',
         lineType: 'service',
         isDrawing: false,
@@ -4162,7 +4179,7 @@ const db = firebase.firestore();
             terrain: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
             dark: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png'
         },
-        currentMapStyle: 'dark',
+        currentMapStyle: 'streets',
         cloudSync: {
             enabled: false,
             lastSync: null,
@@ -4229,7 +4246,7 @@ const db = firebase.firestore();
                         
                         console.log('👤 User role from Firestore:', AppState.userRole);
                         
-                        // Check if this is the first user and make them admin
+                        // Check if this is the first user and make them admin, or convert old pending users
                         if (AppState.userRole === 'pending' || !AppState.userRole) {
                             const isFirstAdmin = await checkAndMakeFirstAdmin(user.uid);
                             if (isFirstAdmin) {
@@ -4237,15 +4254,23 @@ const db = firebase.firestore();
                                 console.log('👑 First user promoted to admin');
                                 showToast('Welcome! You are now the system administrator.', 'success');
                             } else {
-                                AppState.userRole = 'pitman';
-                                console.log('👤 User set as pitman');
-                                showToast('Welcome! You have been assigned as Pitman/MO.', 'success');
+                                AppState.userRole = 'restricted';
+                                console.log('🚫 User set as restricted');
+                                showToast('Account created with restricted access. Please contact admin.', 'info');
                             }
                         }
                     } else {
                         console.warn('⚠️ User authenticated but no Firestore document found');
                         showLoginError('Account setup incomplete. Please contact admin.');
                         setTimeout(() => auth.signOut(), 2000);
+                        return;
+                    }
+                    
+                    // Check if user has restricted role
+                    if (AppState.userRole === 'restricted') {
+                        console.log('🚫 User has restricted role - no access to utilities');
+                        document.getElementById('loginScreen').classList.remove('active');
+                        showRestrictedScreen();
                         return;
                     }
                     
@@ -4502,8 +4527,8 @@ const db = firebase.firestore();
         initializeDOMCache();
         initializeEventListeners();
 
-        // Enhanced theme management
-        const savedTheme = localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'dark');
+        // Enhanced theme management - default to light mode
+        const savedTheme = localStorage.getItem('theme') || 'light';
         setTheme(savedTheme);
 
         // Watch for system theme changes
@@ -4543,9 +4568,12 @@ const db = firebase.firestore();
         if (AppState.userRole === 'admin') {
             console.log('  🎯 You can approve changes and manage users');
             console.log('  🎯 Click the admin button (⚙️) in the top right');
+        } else if (AppState.userRole === 'restricted') {
+            console.log('  🚫 Your account has restricted access');
+            console.log('  🚫 Contact an administrator to gain access');
         } else {
-            console.log('  📝 Your changes need admin approval');
-            console.log('  📝 Draw utilities - they appear as dashed lines until approved');
+            console.log('  📝 Direct save enabled - create utilities freely');
+            console.log('  📝 No approval process required');
         }
         console.log('');
         console.log('🔧 DEBUG COMMANDS:');
@@ -4660,10 +4688,10 @@ const db = firebase.firestore();
                 console.log('✅ First user promoted to admin successfully');
                 return true;
             } else {
-                // Set new users as pitman by default
-                console.log('👥 Admin users already exist, setting user as pitman');
+                // Set new users as restricted by default
+                console.log('🚫 Admin users already exist, setting user as restricted');
                 await db.collection('users').doc(userId).update({
-                    role: 'pitman'
+                    role: 'restricted'
                 });
                 return false;
             }
@@ -4762,7 +4790,7 @@ const db = firebase.firestore();
                 await db.collection('users').doc(result.user.uid).set({
                     email: result.user.email,
                     uid: result.user.uid,
-                    role: 'pending',
+                    role: 'restricted',
                     createdAt: firebase.firestore.FieldValue.serverTimestamp()
                 });
                 
@@ -4807,7 +4835,7 @@ const db = firebase.firestore();
                         email: result.user.email,
                         uid: result.user.uid,
                         displayName: result.user.displayName || '',
-                        role: 'pending',
+                        role: 'restricted',
                         createdAt: firebase.firestore.FieldValue.serverTimestamp()
                     });
                     
@@ -4836,6 +4864,59 @@ const db = firebase.firestore();
         }
     }
 
+    function showRestrictedScreen() {
+        // Hide main app UI elements
+        const elementsToHide = [
+            '.top-bar',
+            '.bottom-controls',
+            '.right-controls',
+            '.measurement-tools',
+            '.structure-container'
+        ];
+        
+        elementsToHide.forEach(selector => {
+            const element = document.querySelector(selector);
+            if (element) {
+                element.style.display = 'none';
+            }
+        });
+        
+        // Show role badge
+        showRoleBadge();
+        
+        // Show restricted message on map
+        const restrictedMessage = document.createElement('div');
+        restrictedMessage.id = 'restrictedMessage';
+        restrictedMessage.style.cssText = `
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: var(--bg-glass);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            padding: var(--spacing-2xl);
+            border-radius: var(--radius-xl);
+            text-align: center;
+            z-index: 1000;
+            box-shadow: var(--shadow-xl);
+            max-width: 400px;
+            border: 1px solid var(--border-color);
+        `;
+        restrictedMessage.innerHTML = `
+            <i class="fas fa-lock" style="font-size: 48px; color: var(--danger-color); margin-bottom: 16px; display: block;"></i>
+            <h2 style="margin-bottom: 16px; color: var(--text-primary);">Access Restricted</h2>
+            <p style="color: var(--text-secondary); margin-bottom: 24px; line-height: 1.5;">
+                Your account is pending approval. Please contact an administrator to gain access to the utility mapping system.
+            </p>
+            <button class="signout-btn" onclick="signOut()" style="width: 100%; margin-top: 0;">
+                <i class="fas fa-sign-out-alt"></i>
+                Sign Out
+            </button>
+        `;
+        document.body.appendChild(restrictedMessage);
+    }
+
     function showRoleBadge() {
         // Remove existing badge/button
         const existingBadge = document.querySelector('.role-badge');
@@ -4847,13 +4928,15 @@ const db = firebase.firestore();
         const roleIcons = {
             admin: 'fa-user-shield',
             supervisor: 'fa-user-tie',
-            pitman: 'fa-hard-hat'
+            pitman: 'fa-hard-hat',
+            restricted: 'fa-lock'
         };
         
         const roleNames = {
             admin: 'ADMIN',
             supervisor: 'SUPERVISOR',
-            pitman: 'PITMAN/MO'
+            pitman: 'PITMAN/MO',
+            restricted: 'RESTRICTED'
         };
         
         // Add role badge
@@ -4865,7 +4948,7 @@ const db = firebase.firestore();
         `;
         document.body.appendChild(badge);
         
-        // Show admin panel button for admins and supervisors
+        // Show admin panel button for admins and supervisors (not for restricted)
         if (AppState.userRole === 'admin' || AppState.userRole === 'supervisor') {
             const adminBtn = document.createElement('button');
             adminBtn.className = 'admin-btn';
@@ -5400,6 +5483,13 @@ const db = firebase.firestore();
                 zIndexOffset: 1000
             }).addTo(AppState.map);
         
+        // Ensure marker element is always visible
+        const markerElement = AppState.userMarker.getElement();
+        if (markerElement) {
+            markerElement.style.opacity = '1.0';
+            markerElement.style.zIndex = '1000';
+        }
+        
                  // Apply initial scaling
         setTimeout(() => {
             applyPremiumLocationTransform();
@@ -5427,11 +5517,18 @@ const db = firebase.firestore();
         // Use smooth animation for position updates
         animateMarkerToPosition(AppState.userMarker, currentLatLng, newLatLng, 800);
         
-        // Update marker attributes for visual states
-        const container = AppState.userMarker.getElement()?.querySelector('.location-container');
+        // Update marker attributes for visual states and ensure visibility
+        const markerElement = AppState.userMarker.getElement();
+        if (markerElement) {
+            // Ensure marker stays visible
+            markerElement.style.opacity = '1.0';
+            markerElement.style.zIndex = '1000';
+            
+            const container = markerElement.querySelector('.location-container');
         if (container) {
             container.setAttribute('data-gps-quality', AppState.gps.quality);
             container.setAttribute('data-moving', AppState.gps.isMoving.toString());
+            }
         }
         
         // Update accuracy visualization
@@ -5556,14 +5653,27 @@ const db = firebase.firestore();
         if (!AppState.userMarker) return;
         
         const zoom = AppState.map.getZoom();
-        const scale = calculateZoomScale(zoom);
+        const scale = calculateUserLocationScale(zoom);
         const markerElement = AppState.userMarker.getElement();
         
         if (markerElement) {
-            // Apply scale to the entire marker container (not individual elements)
+            // Apply scale to the entire marker container and ensure it's always visible
             markerElement.style.transform = `scale(${scale})`;
             markerElement.style.transformOrigin = 'center center';
+            markerElement.style.opacity = '1.0'; // Always fully visible
+            markerElement.style.zIndex = '1000'; // Always on top
         }
+    }
+
+    // Separate scaling function for user location marker - more conservative scaling
+    function calculateUserLocationScale(zoom) {
+        // More conservative scaling that keeps the marker visible at all zoom levels
+        if (zoom >= 18) return 1.0;     // Full size at close zoom
+        if (zoom >= 16) return 0.9;     // 90% size
+        if (zoom >= 14) return 0.8;     // 80% size
+        if (zoom >= 12) return 0.7;     // 70% size
+        if (zoom >= 10) return 0.6;     // 60% size - still clearly visible
+        return 0.5;                     // Minimum 50% size - never disappears
     }
 
     // ========== UTILITY FUNCTIONS ==========
@@ -5705,9 +5815,16 @@ const db = firebase.firestore();
             }
         });
         
-        // Scale user location marker with premium transforms
+        // Scale user location marker with premium transforms (always visible)
         if (AppState.userMarker) {
             applyPremiumLocationTransform();
+            
+            // Double-check marker visibility after zoom change
+            const markerElement = AppState.userMarker.getElement();
+            if (markerElement) {
+                markerElement.style.opacity = '1.0';
+                markerElement.style.zIndex = '1000';
+            }
         }
         
         // Ensure refine markers are always fully visible
@@ -8149,8 +8266,8 @@ const db = firebase.firestore();
                         if (canUserSeeUtility(utilityData)) {
                             // Avoid duplicates
                             if (!AppState.utilities.find(u => u.id === utilityData.id)) {
-                                AppState.utilities.push(utilityData);
-                                createUtilityLine(utilityData);
+                    AppState.utilities.push(utilityData);
+                    createUtilityLine(utilityData);
                                 loadedCount++;
                             }
                         } else {
@@ -8485,6 +8602,7 @@ const db = firebase.firestore();
                         <div class="user-role ${user.role}">${user.role}</div>
                     </div>
                     <select class="role-select" onchange="updateUserRole('${doc.id}', this.value)" style="padding: 4px 8px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary); font-size: 12px;">
+                        <option value="restricted" ${user.role === 'restricted' ? 'selected' : ''}>Restricted</option>
                         <option value="pitman" ${user.role === 'pitman' ? 'selected' : ''}>Pitman/MO</option>
                         <option value="supervisor" ${user.role === 'supervisor' ? 'selected' : ''}>Supervisor</option>
                         ${AppState.userRole === 'admin' ? 
@@ -8916,7 +9034,7 @@ const db = firebase.firestore();
             return;
         }
         
-        const validRoles = ['admin', 'supervisor', 'pitman'];
+        const validRoles = ['admin', 'supervisor', 'pitman', 'restricted'];
         if (!validRoles.includes(newRole)) {
             showToast('Invalid role', 'error');
             return;
@@ -8938,6 +9056,11 @@ const db = firebase.firestore();
 
     // Check if user can see utility based on role and distance
     function canUserSeeUtility(utility) {
+        // Restricted users cannot see any utilities
+        if (AppState.userRole === 'restricted') {
+            return false;
+        }
+        
         // Admins and Supervisors can see everything
         if (AppState.userRole === 'admin' || AppState.userRole === 'supervisor') {
             return true;
@@ -9295,6 +9418,54 @@ const db = firebase.firestore();
     window.debugLocation = debugLocation;
     window.testPremiumGPS = testPremiumGPS;
     window.demoPremiumGPS = demoPremiumGPS;
+
+    // Debug function to fix invisible location marker
+    function fixLocationMarker() {
+        console.log('🔧 Fixing location marker visibility...');
+        
+        if (!AppState.userMarker) {
+            console.log('❌ No user marker found');
+            showToast('No location marker found. Enable location first.', 'warning');
+            return;
+        }
+        
+        const markerElement = AppState.userMarker.getElement();
+        if (!markerElement) {
+            console.log('❌ No marker element found');
+            showToast('Location marker element not found', 'error');
+            return;
+        }
+        
+        // Force visibility
+        markerElement.style.opacity = '1.0';
+        markerElement.style.visibility = 'visible';
+        markerElement.style.display = 'block';
+        markerElement.style.zIndex = '1000';
+        
+        // Apply current zoom scaling
+        const zoom = AppState.map.getZoom();
+        const scale = calculateUserLocationScale(zoom);
+        markerElement.style.transform = `scale(${scale})`;
+        markerElement.style.transformOrigin = 'center center';
+        
+        console.log('✅ Location marker visibility fixed');
+        console.log('Current properties:', {
+            opacity: markerElement.style.opacity,
+            zIndex: markerElement.style.zIndex,
+            transform: markerElement.style.transform,
+            zoom: zoom,
+            scale: scale
+        });
+        
+        showToast('Location marker visibility fixed!', 'success');
+        
+        // Center on location to make it visible
+        if (AppState.userLocation) {
+            AppState.map.setView(AppState.userLocation, Math.max(AppState.map.getZoom(), 16));
+        }
+    }
+    
+    window.fixLocationMarker = fixLocationMarker;
     
     // Enhanced cleanup function for memory management
     function cleanup() {
