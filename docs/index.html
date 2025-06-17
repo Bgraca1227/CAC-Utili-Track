@@ -4428,16 +4428,13 @@ const db = firebase.firestore();
             }
         });
 
-        // Setup real-time Firebase listeners
-        setupRealtimeListeners();
+        // Load data from Firestore
+        loadUtilities();
+        loadStructures();
 
-        // Load approved data from Firebase
-        loadApprovedUtilities();
-        loadApprovedStructures();
-
-        // Load pending changes if admin
+        // Setup admin listeners if admin
         if (AppState.userRole === 'admin') {
-            loadPendingChanges();
+            setupAdminListeners();
         }
 
         // Apply initial zoom-based opacity
@@ -4825,104 +4822,42 @@ const db = firebase.firestore();
         }
     }
 
-    function setupRealtimeListeners() {
-        console.log('🔄 Setting up real-time listeners');
-        
-        // Listen for approved utilities
-        const utilitiesListener = db.collection('utilities')
-            .onSnapshot((snapshot) => {
-                snapshot.docChanges().forEach((change) => {
-                    if (change.type === 'added') {
-                        const data = change.doc.data();
-                        // Check if we already have this utility
-                        if (!AppState.utilities.find(u => u.id === data.id)) {
-                            // Convert points back to LatLng objects
-                            data.points = data.points.map(p => L.latLng(p.lat, p.lng));
-                            data.isApproved = true;
-                            AppState.utilities.push(data);
-                            createUtilityLine(data);
-                            console.log('✅ Added utility from Firebase:', data.id);
-                        }
-                    }
-                    if (change.type === 'modified') {
-                        const data = change.doc.data();
-                        const existingIndex = AppState.utilities.findIndex(u => u.id === data.id);
-                        if (existingIndex > -1) {
-                            // Update existing utility
-                            data.points = data.points.map(p => L.latLng(p.lat, p.lng));
-                            data.isApproved = true;
-                            
-                            // Remove old line from map
-                            if (AppState.utilities[existingIndex].lineLayer) {
-                                AppState.map.removeLayer(AppState.utilities[existingIndex].lineLayer);
-                            }
-                            
-                            // Update and recreate
-                            AppState.utilities[existingIndex] = data;
-                            createUtilityLine(data);
-                            console.log('🔄 Updated utility from Firebase:', data.id);
-                        }
-                    }
-                    if (change.type === 'removed') {
-                        removeUtilityFromMap(change.doc.id);
-                        console.log('🗑️ Removed utility:', change.doc.id);
-                    }
-                });
-            }, (error) => {
-                console.error('❌ Error listening to utilities:', error);
-            });
-        
-        AppState.realtimeListeners.push(utilitiesListener);
-        
-        // Listen for structures
-        const structuresListener = db.collection('structures')
-            .onSnapshot((snapshot) => {
-                snapshot.docChanges().forEach((change) => {
-                    if (change.type === 'added') {
-                        const data = change.doc.data();
-                        if (!AppState.structures.find(s => s.id === data.id)) {
-                            data.latlng = L.latLng(data.latlng.lat, data.latlng.lng);
-                            data.isApproved = true;
-                            AppState.structures.push(data);
-                            createStructureMarker(data);
-                            console.log('✅ Added structure from Firebase:', data.id);
-                        }
-                    }
-                    if (change.type === 'removed') {
-                        removeStructureFromMap(change.doc.id);
-                        console.log('🗑️ Removed structure:', change.doc.id);
-                    }
-                });
-            }, (error) => {
-                console.error('❌ Error listening to structures:', error);
-            });
-        
-        AppState.realtimeListeners.push(structuresListener);
-        
-        // Listen for pending changes if admin
-        if (AppState.userRole === 'admin') {
-            const pendingListener = db.collection('pendingChanges')
-                .orderBy('timestamp', 'desc')
-                .onSnapshot((snapshot) => {
-                    updatePendingChangesList(snapshot.docs);
-                }, (error) => {
-                    console.error('❌ Error listening to pending changes:', error);
-                });
-            
-            AppState.realtimeListeners.push(pendingListener);
-            
-            // Listen for user changes
-            const usersListener = db.collection('users')
-                .onSnapshot((snapshot) => {
-                    if (document.getElementById('adminPanel').classList.contains('active')) {
-                        loadUsers(); // Refresh user list if admin panel is open
-                    }
-                }, (error) => {
-                    console.error('❌ Error listening to users:', error);
-                });
-            
-            AppState.realtimeListeners.push(usersListener);
+
+
+    function setupAdminListeners() {
+        if (AppState.userRole !== 'admin') {
+            console.log('⚠️ Not admin, skipping admin listeners');
+            return;
         }
+        
+        console.log('🔄 Setting up admin real-time listeners...');
+        
+        // Listen for pending changes
+        const pendingListener = db.collection('pendingChanges')
+            .orderBy('timestamp', 'desc')
+            .onSnapshot((snapshot) => {
+                console.log(`📋 ${snapshot.docs.length} pending changes found`);
+                updatePendingChangesList(snapshot.docs);
+            }, (error) => {
+                console.error('❌ Error listening to pending changes:', error);
+                // Don't show error if collection doesn't exist yet
+                if (error.code !== 'not-found') {
+                    showToast('Error loading pending changes', 'error');
+                }
+            });
+        
+        // Listen for user changes
+        const usersListener = db.collection('users')
+            .onSnapshot((snapshot) => {
+                if (document.getElementById('adminPanel').classList.contains('active')) {
+                    loadUsers(); // Refresh user list if admin panel is open
+                }
+            }, (error) => {
+                console.error('❌ Error listening to users:', error);
+            });
+        
+        AppState.realtimeListeners = [pendingListener, usersListener];
+        console.log('✅ Admin listeners setup complete');
     }
 
     function cleanupRealtimeListeners() {
@@ -4937,55 +4872,7 @@ const db = firebase.firestore();
         AppState.realtimeListeners = [];
     }
 
-    async function loadApprovedUtilities() {
-        console.log('📥 Loading approved utilities from Firebase...');
-        try {
-            const snapshot = await db.collection('utilities').get();
-            let loadedCount = 0;
-            
-            snapshot.forEach((doc) => {
-                const utilityData = doc.data();
-                // Convert points back to LatLng objects
-                utilityData.points = utilityData.points.map(p => L.latLng(p.lat, p.lng));
-                utilityData.isApproved = true;
-                
-                AppState.utilities.push(utilityData);
-                createUtilityLine(utilityData);
-                loadedCount++;
-            });
-            
-            console.log(`✅ Loaded ${loadedCount} approved utilities`);
-            if (loadedCount > 0) {
-                showToast(`Loaded ${loadedCount} utilities from shared map`, 'success');
-            }
-        } catch (error) {
-            console.error('❌ Error loading utilities:', error);
-            showToast('Error loading utilities from server', 'error');
-        }
-    }
 
-    async function loadApprovedStructures() {
-        console.log('📥 Loading approved structures from Firebase...');
-        try {
-            const snapshot = await db.collection('structures').get();
-            let loadedCount = 0;
-            
-            snapshot.forEach((doc) => {
-                const structureData = doc.data();
-                structureData.latlng = L.latLng(structureData.latlng.lat, structureData.latlng.lng);
-                structureData.isApproved = true;
-                
-                AppState.structures.push(structureData);
-                createStructureMarker(structureData);
-                loadedCount++;
-            });
-            
-            console.log(`✅ Loaded ${loadedCount} approved structures`);
-        } catch (error) {
-            console.error('❌ Error loading structures:', error);
-            showToast('Error loading structures from server', 'error');
-        }
-    }
 
     function removeUtilityFromMap(utilityId) {
         const index = AppState.utilities.findIndex(u => u.id === utilityId);
@@ -8109,11 +7996,13 @@ const db = firebase.firestore();
             return;
         }
         
+        console.log('💾 Saving utilities to Firestore...');
+        
         try {
-            // Save only pending/local utilities to Firebase
+            // Save only new local utilities as pending changes
             for (const utility of AppState.utilities) {
                 if (utility.isLocal && !utility.pendingId && !utility.isApproved) {
-                    console.log('💾 Creating pending change for utility:', utility.id);
+                    console.log('📤 Creating pending change for utility:', utility.id);
                     
                     // Create pending change document
                     const pendingChange = {
@@ -8124,13 +8013,13 @@ const db = firebase.firestore();
                             type: utility.type,
                             lineType: utility.lineType,
                             points: utility.points.map(p => ({ lat: p.lat, lng: p.lng })),
-                            size: utility.size,
-                            depth: utility.depth,
-                            material: utility.material,
-                            condition: utility.condition,
-                            curbDistance: utility.curbDistance,
+                            size: utility.size || '',
+                            depth: utility.depth || '',
+                            material: utility.material || '',
+                            condition: utility.condition || '',
+                            curbDistance: utility.curbDistance || '',
                             dateAdded: utility.dateAdded,
-                            connections: utility.connections,
+                            connections: utility.connections || [],
                             notes: utility.notes || []
                         },
                         userId: AppState.currentUser.uid,
@@ -8141,25 +8030,108 @@ const db = firebase.firestore();
                     const docRef = await db.collection('pendingChanges').add(pendingChange);
                     utility.pendingId = docRef.id;
                     
-                    // Mark as pending on map with visual indicator
+                    // Visual feedback - make line dashed to show it's pending
                     if (utility.lineLayer) {
-                        const currentClasses = utility.lineLayer.options.className || '';
                         utility.lineLayer.setStyle({
-                            className: currentClasses + ' pending'
+                            dashArray: '10, 5',
+                            opacity: 0.6
                         });
+                        
+                        // Add pending class
+                        const currentClasses = utility.lineLayer.options.className || '';
+                        if (!currentClasses.includes('pending')) {
+                            utility.lineLayer.setStyle({
+                                className: currentClasses + ' pending'
+                            });
+                        }
                     }
                     
                     showToast('Change submitted for admin approval', 'info');
-                    console.log('✅ Pending change created:', docRef.id);
+                    console.log('✅ Pending change created with ID:', docRef.id);
                 }
             }
+            
+            console.log('✅ All new utilities submitted for approval');
         } catch (error) {
             console.error('❌ Error saving utilities:', error);
             showToast('Error submitting changes', 'error');
         }
     }
 
-    // Note: Utilities and structures are now loaded from Firebase instead of localStorage
+    async function loadUtilities() {
+        if (!AppState.currentUser) {
+            console.log('⚠️ No user logged in, skipping utilities load');
+            return;
+        }
+        
+        try {
+            console.log('📥 Loading utilities from Firestore...');
+            const snapshot = await db.collection('utilities').get();
+            
+            let loadedCount = 0;
+            snapshot.forEach((doc) => {
+                const utilityData = doc.data();
+                // Convert points back to LatLng objects
+                utilityData.points = utilityData.points.map(p => L.latLng(p.lat, p.lng));
+                utilityData.isApproved = true;
+                
+                // Avoid duplicates
+                if (!AppState.utilities.find(u => u.id === utilityData.id)) {
+                    AppState.utilities.push(utilityData);
+                    createUtilityLine(utilityData);
+                    loadedCount++;
+                }
+            });
+            
+            console.log(`✅ Loaded ${loadedCount} utilities from Firestore`);
+            if (loadedCount > 0) {
+                showToast(`Loaded ${loadedCount} utilities from shared map`, 'success');
+            }
+        } catch (error) {
+            console.error('❌ Error loading utilities:', error);
+            // Don't show error toast if it's just an empty collection
+            if (error.code !== 'permission-denied' && error.message !== 'Missing or insufficient permissions.') {
+                showToast('Error loading utilities from server', 'error');
+            } else {
+                console.log('📝 No utilities collection yet - this is normal for new systems');
+            }
+        }
+    }
+
+    async function loadStructures() {
+        if (!AppState.currentUser) {
+            console.log('⚠️ No user logged in, skipping structures load');
+            return;
+        }
+        
+        try {
+            console.log('📥 Loading structures from Firestore...');
+            const snapshot = await db.collection('structures').get();
+            
+            let loadedCount = 0;
+            snapshot.forEach((doc) => {
+                const structureData = doc.data();
+                structureData.latlng = L.latLng(structureData.latlng.lat, structureData.latlng.lng);
+                structureData.isApproved = true;
+                
+                // Avoid duplicates
+                if (!AppState.structures.find(s => s.id === structureData.id)) {
+                    AppState.structures.push(structureData);
+                    createStructureMarker(structureData);
+                    loadedCount++;
+                }
+            });
+            
+            console.log(`✅ Loaded ${loadedCount} structures from Firestore`);
+        } catch (error) {
+            console.error('❌ Error loading structures:', error);
+            if (error.code !== 'permission-denied' && error.message !== 'Missing or insufficient permissions.') {
+                showToast('Error loading structures from server', 'error');
+            } else {
+                console.log('📝 No structures collection yet - this is normal for new systems');
+            }
+        }
+    }
 
     async function saveStructures() {
         if (!AppState.currentUser) {
@@ -8210,7 +8182,7 @@ const db = firebase.firestore();
         }
     }
 
-    // Structures are now loaded from Firebase - see loadApprovedStructures()
+
 
     // ========== ADMIN PANEL FUNCTIONS ==========
 
@@ -8226,11 +8198,18 @@ const db = firebase.firestore();
                 .orderBy('timestamp', 'desc')
                 .get();
             
+            console.log(`📋 Found ${snapshot.docs.length} pending changes`);
             updatePendingChangesList(snapshot.docs);
         } catch (error) {
             console.error('❌ Error loading pending changes:', error);
             const listEl = document.getElementById('pendingChangesList');
-            listEl.innerHTML = '<p style="color: var(--danger-color);">Error loading pending changes</p>';
+            if (listEl) {
+                if (error.code === 'failed-precondition') {
+                    listEl.innerHTML = '<p style="color: var(--text-tertiary);">📝 No pending changes yet</p>';
+                } else {
+                    listEl.innerHTML = '<p style="color: var(--danger-color);">Error loading pending changes</p>';
+                }
+            }
         }
     }
 
