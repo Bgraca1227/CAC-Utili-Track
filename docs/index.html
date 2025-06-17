@@ -5951,7 +5951,6 @@ const db = firebase.firestore();
 
         // Save
         saveUtilities();
-        syncToCloud();
 
         // Show info modal for editing
         showInfoModal(utilityData);
@@ -6017,7 +6016,7 @@ const db = firebase.firestore();
         // Reset drawing state
         cancelDrawing();
 
-        showToast('Utility submitted for admin approval', 'info');
+        // Don't show duplicate toast - saveUtilities() already shows one
         hapticFeedback(100);
     }
 
@@ -6575,7 +6574,7 @@ const db = firebase.firestore();
         document.getElementById('editMode').classList.remove('active');
     }
 
-    function saveEdit() {
+    async function saveEdit() {
         if (!AppState.selectedUtilityData) return;
 
         // Get and validate input values
@@ -6606,16 +6605,20 @@ const db = firebase.firestore();
         AppState.selectedUtilityData.condition = condition;
         AppState.selectedUtilityData.curbDistance = curbDistance;
 
-        // Save
-        saveUtilities();
-        syncToCloud();
-
-        // Exit edit mode and refresh display
-        exitEditMode();
-        showInfoModal(AppState.selectedUtilityData);
-        
-        showToast('Utility information updated', 'success');
-        hapticFeedback(50);
+        try {
+            // Save changes - saveUtilities() will show its own success/error message
+            await saveUtilities();
+            
+            // Exit edit mode and refresh display only if save succeeded
+            exitEditMode();
+            showInfoModal(AppState.selectedUtilityData);
+            
+            // Don't show duplicate toast - saveUtilities already shows one
+            hapticFeedback(50);
+        } catch (error) {
+            console.error('Error saving edits:', error);
+            showToast('Error saving changes', 'error');
+        }
     }
 
     // Notes functions
@@ -6679,7 +6682,6 @@ const db = firebase.firestore();
         });
         
         saveUtilities();
-        syncToCloud();
         loadNotes(AppState.selectedUtilityData);
         hideNoteInput();
         showToast('Note added', 'success');
@@ -6691,7 +6693,6 @@ const db = firebase.firestore();
         
         AppState.selectedUtilityData.notes.splice(index, 1);
         saveUtilities();
-        syncToCloud();
         loadNotes(AppState.selectedUtilityData);
         showToast('Note deleted', 'success');
     }
@@ -7022,9 +7023,6 @@ const db = firebase.firestore();
 
             // Save changes
         saveUtilities();
-            if (AppState.cloudSync.enabled) {
-        syncToCloud();
-            }
 
             showToast('✅ Location refined and saved!', 'success');
             hapticFeedback(200);
@@ -8068,6 +8066,11 @@ const db = firebase.firestore();
             console.log('📥 Loading utilities from Firestore...');
             const snapshot = await db.collection('utilities').get();
             
+            if (snapshot.empty) {
+                console.log('📝 No utilities found (this is normal for new setups)');
+                return; // Don't show error for empty collection
+            }
+            
             let loadedCount = 0;
             snapshot.forEach((doc) => {
                 const utilityData = doc.data();
@@ -8089,12 +8092,11 @@ const db = firebase.firestore();
             }
         } catch (error) {
             console.error('❌ Error loading utilities:', error);
-            // Don't show error toast if it's just an empty collection
-            if (error.code !== 'permission-denied' && error.message !== 'Missing or insufficient permissions.') {
-                showToast('Error loading utilities from server', 'error');
-            } else {
-                console.log('📝 No utilities collection yet - this is normal for new systems');
+            // Only show error if it's a real permission issue
+            if (error.code === 'permission-denied') {
+                showToast('Permission denied loading utilities', 'error');
             }
+            // Don't show error for missing collections or other normal cases
         }
     }
 
@@ -8107,6 +8109,11 @@ const db = firebase.firestore();
         try {
             console.log('📥 Loading structures from Firestore...');
             const snapshot = await db.collection('structures').get();
+            
+            if (snapshot.empty) {
+                console.log('📝 No structures found (this is normal for new setups)');
+                return; // Don't show error for empty collection
+            }
             
             let loadedCount = 0;
             snapshot.forEach((doc) => {
@@ -8125,11 +8132,11 @@ const db = firebase.firestore();
             console.log(`✅ Loaded ${loadedCount} structures from Firestore`);
         } catch (error) {
             console.error('❌ Error loading structures:', error);
-            if (error.code !== 'permission-denied' && error.message !== 'Missing or insufficient permissions.') {
-                showToast('Error loading structures from server', 'error');
-            } else {
-                console.log('📝 No structures collection yet - this is normal for new systems');
+            // Only show error if it's a real permission issue
+            if (error.code === 'permission-denied') {
+                showToast('Permission denied loading structures', 'error');
             }
+            // Don't show error for missing collections
         }
     }
 
