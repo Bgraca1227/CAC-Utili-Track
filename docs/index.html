@@ -4203,9 +4203,6 @@ const db = firebase.firestore();
             }
         }
 
-        // Initialize Firestore collections first
-        initializeFirestore();
-
         // Check authentication state
         auth.onAuthStateChanged(async (user) => {
             if (user) {
@@ -4408,9 +4405,87 @@ const db = firebase.firestore();
         }, 1500);
     }
 
+    // Graceful Firestore collection handling - no placeholder documents needed
+    function setupGracefulFirestoreHandling() {
+        console.log('🔧 Setting up graceful Firestore collection handling...');
+        
+        // Override Firestore collection methods to handle missing collections gracefully
+        const originalGet = db.collection;
+        
+        // Add global error handler for Firestore operations
+        AppState.firestoreErrorHandler = (collectionName, operation, error) => {
+            const isCollectionNotFound = error.code === 'not-found' || 
+                                        error.code === 'failed-precondition' ||
+                                        error.message.includes('Collection') ||
+                                        error.message.includes('Missing or insufficient permissions');
+            
+            if (isCollectionNotFound) {
+                console.log(`📝 Collection '${collectionName}' doesn't exist yet - this is normal for new systems`);
+                return { empty: true, docs: [], size: 0 };
+            } else {
+                console.error(`❌ Real Firestore error in ${collectionName}.${operation}:`, error);
+                throw error; // Re-throw real errors
+            }
+        };
+        
+        // Enhanced collection reference with built-in error handling
+        AppState.safeCollection = (collectionName) => {
+            const originalRef = db.collection(collectionName);
+            
+            // Override get method to handle missing collections
+            const originalGetMethod = originalRef.get;
+            originalRef.get = async function() {
+                try {
+                    const result = await originalGetMethod.call(this);
+                    return result;
+                } catch (error) {
+                    return AppState.firestoreErrorHandler(collectionName, 'get', error);
+                }
+            };
+            
+            // Override onSnapshot to handle missing collections
+            const originalOnSnapshot = originalRef.onSnapshot;
+            originalRef.onSnapshot = function(successCallback, errorCallback) {
+                const wrappedSuccessCallback = (snapshot) => {
+                    successCallback(snapshot);
+                };
+                
+                const wrappedErrorCallback = (error) => {
+                    const isCollectionNotFound = error.code === 'not-found' || 
+                                               error.code === 'failed-precondition';
+                    
+                    if (isCollectionNotFound) {
+                        console.log(`📝 Real-time listener: Collection '${collectionName}' doesn't exist yet`);
+                        // Create empty snapshot-like object
+                        const emptySnapshot = {
+                            empty: true,
+                            docs: [],
+                            size: 0,
+                            docChanges: () => []
+                        };
+                        successCallback(emptySnapshot);
+                    } else if (errorCallback) {
+                        errorCallback(error);
+                    } else {
+                        console.error(`❌ Real-time listener error in ${collectionName}:`, error);
+                    }
+                };
+                
+                return originalOnSnapshot.call(this, wrappedSuccessCallback, wrappedErrorCallback);
+            };
+            
+            return originalRef;
+        };
+        
+        console.log('✅ Graceful Firestore handling setup complete');
+    }
+
     // New function to initialize the main app after authentication
     function initializeMainApp() {
         console.log('🚀 Initializing main app for user:', AppState.currentUser.email);
+
+        // Setup graceful Firestore collection handling
+        setupGracefulFirestoreHandling();
 
         // Initialize core systems
         initializeMap();
@@ -4551,55 +4626,7 @@ const db = firebase.firestore();
 
     // ========== FIREBASE AUTHENTICATION & ADMIN SYSTEM ==========
 
-    async function initializeFirestore() {
-        console.log('🔄 Initializing Firestore collections...');
-        
-        try {
-            // Create required collections by adding a temporary document, then removing it
-            const collections = ['users', 'utilities', 'structures', 'pendingChanges'];
-            
-            for (const collectionName of collections) {
-                try {
-                    // Check if collection exists by trying to get documents
-                    const snapshot = await db.collection(collectionName).limit(1).get();
-                    
-                    if (snapshot.empty) {
-                        console.log(`📁 Creating ${collectionName} collection...`);
-                        // Create a temporary document to initialize the collection
-                        const tempDoc = await db.collection(collectionName).add({
-                            _temp: true,
-                            created: firebase.firestore.FieldValue.serverTimestamp()
-                        });
-                        
-                        // Immediately delete the temporary document
-                        await tempDoc.delete();
-                        console.log(`✅ ${collectionName} collection created`);
-                    } else {
-                        console.log(`✅ ${collectionName} collection already exists`);
-                    }
-                } catch (error) {
-                    // If there's an error, the collection might not exist, so we'll try to create it
-                    console.log(`📁 Creating ${collectionName} collection (fallback)...`);
-                    try {
-                        const tempDoc = await db.collection(collectionName).add({
-                            _temp: true,
-                            created: firebase.firestore.FieldValue.serverTimestamp()
-                        });
-                        await tempDoc.delete();
-                        console.log(`✅ ${collectionName} collection created (fallback)`);
-                    } catch (createError) {
-                        console.log(`⚠️ Could not create ${collectionName} collection:`, createError.message);
-                    }
-                }
-            }
-            
-            console.log('🎉 Firestore initialization complete');
-            
-        } catch (error) {
-            console.error('❌ Error initializing Firestore:', error);
-            // Don't block the app if collection creation fails
-        }
-    }
+
 
     async function checkAndMakeFirstAdmin(userId) {
         console.log('👑 Checking if first admin should be created...');
@@ -4833,21 +4860,17 @@ const db = firebase.firestore();
         console.log('🔄 Setting up admin real-time listeners...');
         
         // Listen for pending changes
-        const pendingListener = db.collection('pendingChanges')
+        const pendingListener = AppState.safeCollection('pendingChanges')
             .orderBy('timestamp', 'desc')
             .onSnapshot((snapshot) => {
                 console.log(`📋 ${snapshot.docs.length} pending changes found`);
                 updatePendingChangesList(snapshot.docs);
             }, (error) => {
                 console.error('❌ Error listening to pending changes:', error);
-                // Don't show error if collection doesn't exist yet
-                if (error.code !== 'not-found') {
-                    showToast('Error loading pending changes', 'error');
-                }
             });
         
         // Listen for user changes
-        const usersListener = db.collection('users')
+        const usersListener = AppState.safeCollection('users')
             .onSnapshot((snapshot) => {
                 if (document.getElementById('adminPanel').classList.contains('active')) {
                     loadUsers(); // Refresh user list if admin panel is open
@@ -8074,7 +8097,7 @@ const db = firebase.firestore();
         
         try {
             console.log('📥 Loading utilities from Firestore...');
-            const snapshot = await db.collection('utilities').get();
+            const snapshot = await AppState.safeCollection('utilities').get();
             
             if (snapshot.empty) {
                 console.log('📝 No utilities found (this is normal for new setups)');
@@ -8148,7 +8171,7 @@ const db = firebase.firestore();
         
         try {
             console.log('📥 Loading structures from Firestore...');
-            const snapshot = await db.collection('structures').get();
+            const snapshot = await AppState.safeCollection('structures').get();
             
             if (snapshot.empty) {
                 console.log('📝 No structures found (this is normal for new setups)');
@@ -8270,7 +8293,7 @@ const db = firebase.firestore();
         
         console.log('📥 Loading pending changes...');
         try {
-            const snapshot = await db.collection('pendingChanges')
+            const snapshot = await AppState.safeCollection('pendingChanges')
                 .orderBy('timestamp', 'desc')
                 .get();
             
@@ -8441,7 +8464,7 @@ const db = firebase.firestore();
         
         console.log('👥 Loading users...');
         try {
-            const snapshot = await db.collection('users').orderBy('createdAt', 'desc').get();
+            const snapshot = await AppState.safeCollection('users').orderBy('createdAt', 'desc').get();
             const usersList = document.getElementById('usersList');
             usersList.innerHTML = '';
             
@@ -8895,7 +8918,7 @@ const db = firebase.firestore();
         try {
             // Clean utilities collection
             console.log('🔍 Checking utilities collection...');
-            const utilitiesSnapshot = await db.collection('utilities').get();
+            const utilitiesSnapshot = await AppState.safeCollection('utilities').get();
             
             for (const doc of utilitiesSnapshot.docs) {
                 const data = doc.data();
@@ -8931,7 +8954,7 @@ const db = firebase.firestore();
             
             // Clean structures collection
             console.log('🔍 Checking structures collection...');
-            const structuresSnapshot = await db.collection('structures').get();
+            const structuresSnapshot = await AppState.safeCollection('structures').get();
             
             for (const doc of structuresSnapshot.docs) {
                 const data = doc.data();
@@ -8958,7 +8981,7 @@ const db = firebase.firestore();
             
             // Clean pending changes collection
             console.log('🔍 Checking pendingChanges collection...');
-            const pendingSnapshot = await db.collection('pendingChanges').get();
+            const pendingSnapshot = await AppState.safeCollection('pendingChanges').get();
             let deletedPending = 0;
             
             for (const doc of pendingSnapshot.docs) {
