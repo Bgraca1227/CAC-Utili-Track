@@ -3,21 +3,12 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, minimal-ui">
-    
-    <!-- iOS Fullscreen Configuration -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, shrink-to-fit=no">
+    <meta name="format-detection" content="telephone=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-touch-fullscreen" content="yes">
-    <meta name="apple-mobile-web-app-title" content="CAC Utili-Track">
-    
-    <!-- PWA Configuration -->
     <meta name="mobile-web-app-capable" content="yes">
-    <meta name="format-detection" content="telephone=no">
-    
-    <!-- Prevent iOS Safari UI -->
-    <meta name="msapplication-tap-highlight" content="no">
-    <meta name="apple-mobile-web-app-orientations" content="portrait">
     <title>CAC Utili-Track</title>
 
     <!-- Favicon and App Icons -->
@@ -57,6 +48,7 @@
     <meta name="theme-color" content="#0a0a0f">
 
     <!-- iOS Specific Meta Tags for Better Home Screen Experience -->
+    <meta name="apple-mobile-web-app-title" content="CAC Utili-Track">
     <meta name="application-name" content="CAC Utili-Track">
 
 <!-- Firebase Scripts -->
@@ -183,7 +175,16 @@ const db = firebase.firestore();
         user-select: none;
     }
     
-    html, body {
+    html {
+        position: fixed;
+        height: 100%;
+        width: 100%;
+        overflow: hidden;
+        -webkit-overflow-scrolling: auto;
+    }
+
+    body {
+        position: fixed;
         height: 100%;
         width: 100%;
         overflow: hidden;
@@ -193,18 +194,10 @@ const db = firebase.firestore();
         touch-action: manipulation;
         -webkit-text-size-adjust: 100%;
         overscroll-behavior: none;
-        
-        /* iOS Fullscreen Fixes */
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        
-        /* Prevent iOS Safari bars */
-        -webkit-overflow-scrolling: touch;
-        -webkit-transform: translate3d(0, 0, 0);
-        transform: translate3d(0, 0, 0);
+        -webkit-overflow-scrolling: auto;
+        overscroll-behavior-y: none;
+        -webkit-touch-callout: none;
+        -webkit-tap-highlight-color: transparent;
     }
     
     /* Prevent all zooming */
@@ -215,39 +208,19 @@ const db = firebase.firestore();
     
     /* App Container */
     .app-container {
-        position: relative;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
         width: 100%;
-        height: 100vh;
-        height: 100dvh;
+        height: 100%;
         overflow: hidden;
         background: var(--bg-primary);
-        
-        /* iOS Fullscreen App Support */
-        min-height: 100vh;
-        min-height: 100dvh;
-        -webkit-overflow-scrolling: touch;
-    }
-    
-    /* iOS Standalone Mode (Home Screen App) */
-    @media all and (display-mode: standalone) {
-        .app-container {
-            height: 100vh;
-            min-height: 100vh;
-            padding-top: 0;
-        }
-        
-        body {
-            padding-top: 0 !important;
-            margin-top: 0 !important;
-        }
-    }
-    
-    /* iOS Safari in standalone mode */
-    @supports (-webkit-touch-callout: none) {
-        .app-container {
-            height: -webkit-fill-available;
-            min-height: -webkit-fill-available;
-        }
+        padding-top: env(safe-area-inset-top);
+        padding-bottom: env(safe-area-inset-bottom);
+        padding-left: env(safe-area-inset-left);
+        padding-right: env(safe-area-inset-right);
     }
     
     /* Map Container */
@@ -4300,56 +4273,37 @@ const db = firebase.firestore();
         const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
         const isAndroid = /Android/.test(navigator.userAgent);
         const isMobile = isIOS || isAndroid || window.innerWidth <= 768;
-        const isStandalone = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
         
         if (isMobile) {
-            document.body.style.height = '100vh';
-            document.body.style.height = '100dvh'; // Use dynamic viewport height if supported
+            document.body.style.height = '100%';
             document.body.style.position = 'fixed';
             document.body.style.overflow = 'hidden';
-            
-            // iOS Standalone App Optimizations
-            if (isIOS && isStandalone) {
-                console.log('🍎 iOS Standalone mode detected - applying fullscreen optimizations');
-                
-                // Force fullscreen
-                document.documentElement.style.height = '100vh';
-                document.body.style.height = '100vh';
-                document.body.style.margin = '0';
-                document.body.style.padding = '0';
-                
-                // Prevent iOS Safari UI from appearing
-                document.addEventListener('touchstart', function(e) {
-                    if (e.touches.length > 1) {
-                        e.preventDefault();
-                    }
-                }, { passive: false });
-                
-                // Handle viewport changes on iOS
-                let timeout;
-                window.addEventListener('resize', function() {
-                    clearTimeout(timeout);
-                    timeout = setTimeout(function() {
-                        // Force recalculation of viewport
-                        document.body.style.height = window.innerHeight + 'px';
-                        document.documentElement.style.height = window.innerHeight + 'px';
-                    }, 100);
-                });
-                
-                // Set initial height
-                document.body.style.height = window.innerHeight + 'px';
-                document.documentElement.style.height = window.innerHeight + 'px';
-            }
+            document.body.style.width = '100%';
+            document.body.style.top = '0';
+            document.body.style.left = '0';
+            document.documentElement.style.position = 'fixed';
+            document.documentElement.style.height = '100%';
+            document.documentElement.style.width = '100%';
+            document.documentElement.style.overflow = 'hidden';
             
             // Prevent rubber band scrolling on iOS
             if (isIOS) {
-                document.body.style.webkitOverflowScrolling = 'touch';
                 document.addEventListener('touchmove', function(e) {
                     if (e.target.closest('.modal-body, .settings-panel, .proximity-alerts')) {
                         return; // Allow scrolling in specific containers
                     }
                     e.preventDefault();
                 }, { passive: false });
+                
+                // Prevent double-tap zoom
+                let lastTouchEnd = 0;
+                document.addEventListener('touchend', function(e) {
+                    const now = Date.now();
+                    if (now - lastTouchEnd <= 300) {
+                        e.preventDefault();
+                    }
+                    lastTouchEnd = now;
+                }, false);
             }
         }
 
@@ -4709,7 +4663,7 @@ const db = firebase.firestore();
         console.log('  3. Sign out and back in if needed');
         console.log('');
 
-        // Enhanced touch event prevention - prevent iOS Safari UI from appearing
+        // Enhanced touch event prevention - only prevent double-tap zoom and pull-to-refresh
         let touchStartY = 0;
         
         document.addEventListener('touchstart', function(event) {
@@ -4718,42 +4672,19 @@ const db = firebase.firestore();
             }
         }, { passive: true });
         
-        // Prevent pull-to-refresh and iOS Safari UI appearance
+        // Prevent pull-to-refresh only at top of page
         document.addEventListener('touchmove', function(event) {
             if (event.touches && event.touches[0]) {
                 const touchY = event.touches[0].clientY;
                 const touchDiff = touchY - touchStartY;
                 
-                // For iOS standalone apps, be more aggressive about preventing scrolling
-                if (isStandalone && isIOS) {
-                    if (!event.target.closest('.modal-body, .settings-panel, .proximity-alerts, .notes-list')) {
-                        event.preventDefault();
-                    }
-                } else {
-                    // Only prevent if pulling down at top of page and not in scrollable areas
-                    if (touchDiff > 0 && window.scrollY === 0 && 
-                        !event.target.closest('.modal-body, .settings-panel, .proximity-alerts, .notes-list')) {
-                        event.preventDefault();
-                    }
+                // Only prevent if pulling down at top of page and not in scrollable areas
+                if (touchDiff > 0 && window.scrollY === 0 && 
+                    !event.target.closest('.modal-body, .settings-panel, .proximity-alerts, .notes-list')) {
+                    event.preventDefault();
                 }
             }
         }, { passive: false });
-        
-        // Additional iOS standalone mode optimizations
-        if (isStandalone && isIOS) {
-            // Prevent any scrolling that might trigger Safari UI
-            document.addEventListener('scroll', function(e) {
-                window.scrollTo(0, 0);
-            }, { passive: false });
-            
-            // Force viewport to stay fixed
-            window.addEventListener('orientationchange', function() {
-                setTimeout(function() {
-                    window.scrollTo(0, 0);
-                    document.body.style.height = window.innerHeight + 'px';
-                }, 100);
-            });
-        }
         
         // Enhanced keyboard handling for iOS
         const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
@@ -9563,49 +9494,6 @@ const db = firebase.firestore();
     window.debugLocation = debugLocation;
     window.testPremiumGPS = testPremiumGPS;
     window.demoPremiumGPS = demoPremiumGPS;
-    
-    // Debug iOS fullscreen status
-    function debugIOSFullscreen() {
-        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-        const isStandalone = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
-        const isSafari = /Safari/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent);
-        
-        console.log('🍎 iOS Fullscreen Debug Info:');
-        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-        console.log('Device Detection:');
-        console.log('  Is iOS:', isIOS);
-        console.log('  Is Standalone:', isStandalone);
-        console.log('  Is Safari:', isSafari);
-        console.log('  User Agent:', navigator.userAgent);
-        console.log('');
-        console.log('Viewport Info:');
-        console.log('  Window Width:', window.innerWidth);
-        console.log('  Window Height:', window.innerHeight);
-        console.log('  Screen Width:', screen.width);
-        console.log('  Screen Height:', screen.height);
-        console.log('  Device Pixel Ratio:', window.devicePixelRatio);
-        console.log('');
-        console.log('Document Dimensions:');
-        console.log('  Document Height:', document.documentElement.scrollHeight);
-        console.log('  Body Height:', document.body.scrollHeight);
-        console.log('  Scroll Position:', window.scrollY);
-        console.log('');
-        console.log('Style Information:');
-        console.log('  Body Height Style:', document.body.style.height);
-        console.log('  HTML Height Style:', document.documentElement.style.height);
-        console.log('  Body Position:', document.body.style.position);
-        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-        
-        if (isStandalone && isIOS) {
-            console.log('✅ iOS Standalone mode active - fullscreen optimizations applied');
-        } else if (isIOS && isSafari) {
-            console.log('⚠️ Running in iOS Safari - add to home screen for fullscreen experience');
-        } else {
-            console.log('ℹ️ Not iOS or not standalone mode');
-        }
-    }
-    
-    window.debugIOSFullscreen = debugIOSFullscreen;
 
     // Debug function to fix invisible location marker
     function fixLocationMarker() {
