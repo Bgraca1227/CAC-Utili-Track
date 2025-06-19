@@ -193,6 +193,8 @@ const db = firebase.firestore();
         background-color: #0a0a0f;
         margin: 0;
         padding: 0;
+        /* Add padding to extend into safe areas */
+        padding-bottom: env(safe-area-inset-bottom);
     }
 
     body {
@@ -212,10 +214,12 @@ const db = firebase.firestore();
         font-family: 'Inter', -apple-system, sans-serif;
         background-color: #0a0a0f;
         color: var(--text-primary);
-        touch-action: none; /* Changed from manipulation to none */
+        touch-action: none;
         -webkit-text-size-adjust: 100%;
         -webkit-user-select: none;
         user-select: none;
+        /* Extend into bottom safe area */
+        padding-bottom: env(safe-area-inset-bottom);
     }
 
     /* Prevent any element from causing overflow */
@@ -234,14 +238,17 @@ const db = firebase.firestore();
         position: fixed;
         top: 0;
         left: 0;
+        right: 0;
+        /* Use negative bottom to extend beyond safe area */
+        bottom: calc(-1 * env(safe-area-inset-bottom, 0));
         width: 100vw;
-        height: 100vh;
-        height: -webkit-fill-available;
+        height: calc(100vh + env(safe-area-inset-bottom, 0));
+        height: calc(-webkit-fill-available + env(safe-area-inset-bottom, 0));
         overflow: hidden;
         background: #0a0a0f;
         margin: 0;
         padding: 0;
-        transform: translate3d(0, 0, 0); /* Force GPU acceleration */
+        transform: translate3d(0, 0, 0);
         -webkit-transform: translate3d(0, 0, 0);
     }
     
@@ -251,8 +258,9 @@ const db = firebase.firestore();
         top: 0;
         left: 0;
         width: 100vw;
-        height: 100vh;
-        height: -webkit-fill-available;
+        /* Extend map to cover the entire screen including safe area */
+        height: calc(100vh + env(safe-area-inset-bottom, 0));
+        height: calc(-webkit-fill-available + env(safe-area-inset-bottom, 0));
         z-index: 1;
         background: #0a0a0f;
         margin: 0;
@@ -3075,16 +3083,23 @@ const db = firebase.firestore();
         html, body {
             background-color: #0a0a0f !important;
             background: #0a0a0f !important;
+            /* Ensure coverage of safe areas */
+            padding-bottom: env(safe-area-inset-bottom) !important;
         }
         
         .app-container {
             background-color: #0a0a0f !important;
             background: #0a0a0f !important;
+            /* Extend beyond safe area */
+            bottom: calc(-1 * env(safe-area-inset-bottom, 0)) !important;
+            height: calc(100vh + env(safe-area-inset-bottom, 0)) !important;
         }
         
         #map {
             background-color: #0a0a0f !important;
             background: #0a0a0f !important;
+            /* Extend map to cover safe area */
+            height: calc(100vh + env(safe-area-inset-bottom, 0)) !important;
         }
         
         /* Ensure no margins or padding that could show through */
@@ -3664,7 +3679,7 @@ const db = firebase.firestore();
 </head>
 <body>
     <!-- Black background failsafe -->
-    <div style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; width: 100vw; height: 100vh; background-color: #0a0a0f; z-index: 0;"></div>
+    <div style="position: fixed; top: 0; left: 0; right: 0; bottom: calc(-1 * env(safe-area-inset-bottom, 0)); width: 100vw; height: calc(100vh + env(safe-area-inset-bottom, 0)); background-color: #0a0a0f; z-index: 0;"></div>
     
     <!-- ========== TRIPLE AAA QUALITY SPLASH SCREEN ========== -->
     <div class="splash-screen" id="splash">
@@ -4333,15 +4348,19 @@ const db = firebase.firestore();
                 const vh = window.innerHeight * 0.01;
                 document.documentElement.style.setProperty('--vh', `${vh}px`);
                 
-                // Force the app container and map to use the full height
+                // Get safe area inset
+                const safeAreaBottom = parseInt(getComputedStyle(document.documentElement).getPropertyValue('env(safe-area-inset-bottom)') || '0');
+                
+                // Force the app container and map to use the full height including safe area
                 const appContainer = document.querySelector('.app-container');
                 const mapElement = document.getElementById('map');
                 
                 if (appContainer) {
-                    appContainer.style.height = `${window.innerHeight}px`;
+                    appContainer.style.height = `${window.innerHeight + safeAreaBottom}px`;
+                    appContainer.style.bottom = `-${safeAreaBottom}px`;
                 }
                 if (mapElement) {
-                    mapElement.style.height = `${window.innerHeight}px`;
+                    mapElement.style.height = `${window.innerHeight + safeAreaBottom}px`;
                 }
             };
             
@@ -4737,17 +4756,22 @@ const db = firebase.firestore();
                 // Force exact viewport dimensions
                 const setRealViewportHeight = () => {
                     const height = window.innerHeight;
+                    
+                    // Get safe area inset
+                    const safeAreaBottom = parseInt(getComputedStyle(document.documentElement).getPropertyValue('env(safe-area-inset-bottom)') || '0');
+                    
                     document.documentElement.style.height = `${height}px`;
                     document.body.style.height = `${height}px`;
                     
                     const appContainer = document.querySelector('.app-container');
                     if (appContainer) {
-                        appContainer.style.height = `${height}px`;
+                        appContainer.style.height = `${height + safeAreaBottom}px`;
+                        appContainer.style.bottom = `-${safeAreaBottom}px`;
                     }
                     
                     const mapElement = document.getElementById('map');
                     if (mapElement) {
-                        mapElement.style.height = `${height}px`;
+                        mapElement.style.height = `${height + safeAreaBottom}px`;
                     }
                     
                     // Force background everywhere
