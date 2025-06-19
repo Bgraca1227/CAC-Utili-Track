@@ -46,6 +46,7 @@
 
     <!-- Theme Color -->
     <meta name="theme-color" content="#0a0a0f">
+    <meta name="background-color" content="#0a0a0f">
 
     <!-- iOS Specific Meta Tags for Better Home Screen Experience -->
     <meta name="apple-mobile-web-app-title" content="CAC Utili-Track">
@@ -82,6 +83,7 @@ const db = firebase.firestore();
 
 <style>
     :root {
+        --vh: 1vh;
         /* Premium Color Palette */
         --bg-primary: #0a0a0f;
         --bg-secondary: #12121a;
@@ -178,14 +180,21 @@ const db = firebase.firestore();
     html {
         position: fixed;
         height: 100%;
+        height: -webkit-fill-available;
         width: 100%;
         overflow: hidden;
         background-color: #0a0a0f;
+        /* Ensure the background extends to all edges */
+        padding: 0;
+        margin: 0;
     }
 
     body {
         position: fixed;
         height: 100%;
+        height: -webkit-fill-available;
+        min-height: 100%;
+        min-height: -webkit-fill-available;
         width: 100%;
         overflow: hidden;
         margin: 0;
@@ -196,6 +205,8 @@ const db = firebase.firestore();
         touch-action: manipulation;
         -webkit-text-size-adjust: 100%;
         overscroll-behavior: none;
+        /* Ensure body fills the entire viewport */
+        padding-bottom: env(safe-area-inset-bottom);
     }
     
     /* Prevent all zooming */
@@ -213,8 +224,13 @@ const db = firebase.firestore();
         bottom: 0;
         width: 100%;
         height: 100%;
+        height: -webkit-fill-available;
+        height: calc(var(--vh, 1vh) * 100);
         overflow: hidden;
         background: var(--bg-primary);
+        /* Ensure it extends to the very bottom */
+        padding-bottom: 0;
+        margin-bottom: 0;
     }
     
     /* Map Container */
@@ -226,8 +242,10 @@ const db = firebase.firestore();
         bottom: 0;
         width: 100%;
         height: 100%;
+        height: -webkit-fill-available;
+        height: calc(var(--vh, 1vh) * 100);
         z-index: 1;
-        background: var(--bg-primary);
+        background: #0a0a0f; /* Match your dark background */
     }
     
     /* ========== TRIPLE AAA QUALITY SPLASH SCREEN ========== */
@@ -3041,8 +3059,25 @@ const db = firebase.firestore();
 
     /* Force black background on iOS standalone */
     @media all and (display-mode: standalone) {
-        html, body, .app-container, #map {
+        html, body {
             background-color: #0a0a0f !important;
+            background: #0a0a0f !important;
+        }
+        
+        .app-container {
+            background-color: #0a0a0f !important;
+            background: #0a0a0f !important;
+        }
+        
+        #map {
+            background-color: #0a0a0f !important;
+            background: #0a0a0f !important;
+        }
+        
+        /* Ensure no margins or padding that could show through */
+        * {
+            margin: 0;
+            padding: 0;
         }
     }
 
@@ -4270,8 +4305,46 @@ const db = firebase.firestore();
         cleanupFunctions: []
     };
 
+    // iOS Standalone Mode Fix
+    function fixiOSStandalone() {
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+        const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
+                            window.navigator.standalone === true;
+        
+        if (isIOS && isStandalone) {
+            // Fix viewport height
+            const setViewportHeight = () => {
+                const vh = window.innerHeight * 0.01;
+                document.documentElement.style.setProperty('--vh', `${vh}px`);
+                
+                // Force the app container and map to use the full height
+                const appContainer = document.querySelector('.app-container');
+                const mapElement = document.getElementById('map');
+                
+                if (appContainer) {
+                    appContainer.style.height = `${window.innerHeight}px`;
+                }
+                if (mapElement) {
+                    mapElement.style.height = `${window.innerHeight}px`;
+                }
+            };
+            
+            // Set initial height
+            setViewportHeight();
+            
+            // Update on resize (orientation change)
+            window.addEventListener('resize', setViewportHeight);
+            window.addEventListener('orientationchange', setViewportHeight);
+            
+            // Ensure background color extends everywhere
+            document.documentElement.style.backgroundColor = '#0a0a0f';
+            document.body.style.backgroundColor = '#0a0a0f';
+        }
+    }
+
     // Initialize App
     document.addEventListener('DOMContentLoaded', () => {
+        fixiOSStandalone();
         initializeApp();
     });
 
