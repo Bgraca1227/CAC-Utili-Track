@@ -3,10 +3,11 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, shrink-to-fit=no">
-    <meta name="format-detection" content="telephone=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="format-detection" content="telephone=no">
+    <meta name="msapplication-tap-highlight" content="no">
     <meta name="apple-touch-fullscreen" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
     <title>CAC Utili-Track</title>
@@ -179,34 +180,47 @@ const db = firebase.firestore();
     
     html {
         position: fixed;
-        height: 100%;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        width: 100vw;
+        height: 100vh;
         height: -webkit-fill-available;
-        width: 100%;
         overflow: hidden;
+        overscroll-behavior: none;
+        -webkit-overflow-scrolling: touch;
         background-color: #0a0a0f;
-        /* Ensure the background extends to all edges */
-        padding: 0;
         margin: 0;
+        padding: 0;
     }
 
     body {
         position: fixed;
-        height: 100%;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        width: 100vw;
+        height: 100vh;
         height: -webkit-fill-available;
-        min-height: 100%;
-        min-height: -webkit-fill-available;
-        width: 100%;
-        overflow: hidden;
         margin: 0;
         padding: 0;
+        overflow: hidden;
+        overscroll-behavior: none;
+        -webkit-overflow-scrolling: touch;
         font-family: 'Inter', -apple-system, sans-serif;
         background-color: #0a0a0f;
         color: var(--text-primary);
-        touch-action: manipulation;
+        touch-action: none; /* Changed from manipulation to none */
         -webkit-text-size-adjust: 100%;
-        overscroll-behavior: none;
-        /* Ensure body fills the entire viewport */
-        padding-bottom: env(safe-area-inset-bottom);
+        -webkit-user-select: none;
+        user-select: none;
+    }
+
+    /* Prevent any element from causing overflow */
+    * {
+        max-width: 100vw !important;
     }
     
     /* Prevent all zooming */
@@ -220,17 +234,15 @@ const db = firebase.firestore();
         position: fixed;
         top: 0;
         left: 0;
-        right: 0;
-        bottom: 0;
-        width: 100%;
-        height: 100%;
+        width: 100vw;
+        height: 100vh;
         height: -webkit-fill-available;
-        height: calc(var(--vh, 1vh) * 100);
         overflow: hidden;
-        background: var(--bg-primary);
-        /* Ensure it extends to the very bottom */
-        padding-bottom: 0;
-        margin-bottom: 0;
+        background: #0a0a0f;
+        margin: 0;
+        padding: 0;
+        transform: translate3d(0, 0, 0); /* Force GPU acceleration */
+        -webkit-transform: translate3d(0, 0, 0);
     }
     
     /* Map Container */
@@ -238,14 +250,15 @@ const db = firebase.firestore();
         position: absolute;
         top: 0;
         left: 0;
-        right: 0;
-        bottom: 0;
-        width: 100%;
-        height: 100%;
+        width: 100vw;
+        height: 100vh;
         height: -webkit-fill-available;
-        height: calc(var(--vh, 1vh) * 100);
         z-index: 1;
-        background: #0a0a0f; /* Match your dark background */
+        background: #0a0a0f;
+        margin: 0;
+        padding: 0;
+        transform: translate3d(0, 0, 0);
+        -webkit-transform: translate3d(0, 0, 0);
     }
     
     /* ========== TRIPLE AAA QUALITY SPLASH SCREEN ========== */
@@ -3650,6 +3663,9 @@ const db = firebase.firestore();
 
 </head>
 <body>
+    <!-- Black background failsafe -->
+    <div style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; width: 100vw; height: 100vh; background-color: #0a0a0f; z-index: 0;"></div>
+    
     <!-- ========== TRIPLE AAA QUALITY SPLASH SCREEN ========== -->
     <div class="splash-screen" id="splash">
         <!-- Dynamic Geometric Background -->
@@ -4675,6 +4691,98 @@ const db = firebase.firestore();
     function initializeMainApp() {
         console.log('🚀 Initializing main app for user:', AppState.currentUser.email);
 
+        // Comprehensive iOS Standalone Fix - MUST BE FIRST
+        const isiOSDevice = /iPad|iPhone|iPod/.test(navigator.userAgent);
+        const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
+                            window.navigator.standalone === true;
+        
+        if (isiOSDevice) {
+            // Prevent ALL scrolling and bouncing
+            document.body.addEventListener('touchmove', function(e) {
+                e.preventDefault();
+            }, { passive: false });
+            
+            // Lock the viewport
+            window.addEventListener('scroll', function() {
+                window.scrollTo(0, 0);
+            });
+            
+            // Prevent double-tap zoom completely
+            let lastTouchEnd = 0;
+            document.addEventListener('touchend', function(e) {
+                const now = Date.now();
+                if (now - lastTouchEnd <= 300) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    // Prevent any default double-tap behavior
+                    return false;
+                }
+                lastTouchEnd = now;
+            }, { passive: false, capture: true });
+            
+            // Prevent pinch zoom
+            document.addEventListener('gesturestart', function(e) {
+                e.preventDefault();
+            }, { passive: false });
+            
+            document.addEventListener('gesturechange', function(e) {
+                e.preventDefault();
+            }, { passive: false });
+            
+            document.addEventListener('gestureend', function(e) {
+                e.preventDefault();
+            }, { passive: false });
+            
+            if (isStandalone) {
+                // Force exact viewport dimensions
+                const setRealViewportHeight = () => {
+                    const height = window.innerHeight;
+                    document.documentElement.style.height = `${height}px`;
+                    document.body.style.height = `${height}px`;
+                    
+                    const appContainer = document.querySelector('.app-container');
+                    if (appContainer) {
+                        appContainer.style.height = `${height}px`;
+                    }
+                    
+                    const mapElement = document.getElementById('map');
+                    if (mapElement) {
+                        mapElement.style.height = `${height}px`;
+                    }
+                    
+                    // Force background everywhere
+                    document.documentElement.style.backgroundColor = '#0a0a0f';
+                    document.body.style.backgroundColor = '#0a0a0f';
+                    
+                    // Hide any overflow
+                    document.documentElement.style.overflow = 'hidden';
+                    document.body.style.overflow = 'hidden';
+                    
+                    // Force position
+                    window.scrollTo(0, 0);
+                };
+                
+                // Apply immediately
+                setRealViewportHeight();
+                
+                // Reapply on any resize
+                window.addEventListener('resize', () => {
+                    setTimeout(setRealViewportHeight, 0);
+                });
+                
+                window.addEventListener('orientationchange', () => {
+                    setTimeout(setRealViewportHeight, 100);
+                });
+                
+                // Force on visibility change
+                document.addEventListener('visibilitychange', () => {
+                    if (!document.hidden) {
+                        setTimeout(setRealViewportHeight, 100);
+                    }
+                });
+            }
+        }
+
         // Setup graceful Firestore collection handling
         setupGracefulFirestoreHandling();
 
@@ -5213,7 +5321,10 @@ const db = firebase.firestore();
             scrollWheelZoom: true,
             boxZoom: false,
             keyboard: false,
-            tap: false
+            tap: false,
+            bounceAtZoomLimits: false, // Add this
+            inertia: false, // Add this
+            zoomAnimation: false // Add this for iOS
         });
 
         // Add tile layer
@@ -6384,9 +6495,20 @@ const db = firebase.firestore();
                 return; // Don't interfere with other modes
             }
             
-            // Prevent event bubbling and default behavior
+            // Prevent ALL defaults more aggressively
+            if (e.preventDefault) e.preventDefault();
+            if (e.stopPropagation) e.stopPropagation();
+            if (e.stopImmediatePropagation) e.stopImmediatePropagation();
             L.DomEvent.stopPropagation(e);
             L.DomEvent.preventDefault(e);
+            
+            // For iOS, prevent any zoom or viewport changes
+            if (e.touches && e.touches.length > 1) {
+                return false; // Prevent multi-touch
+            }
+            
+            // Prevent viewport from moving
+            window.scrollTo(0, 0);
             
             longPress = false;
             hasMoved = false;
