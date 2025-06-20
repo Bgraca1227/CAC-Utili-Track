@@ -2343,6 +2343,24 @@ const db = firebase.firestore();
         animation: pressingPulse 0.3s ease-in-out;
     }
     
+    /* Touch zones for utility lines - invisible but interactive */
+    .utility-touch-zone {
+        stroke: transparent !important;
+        fill: none !important;
+        opacity: 0 !important;
+        cursor: pointer;
+        touch-action: manipulation;
+        -webkit-touch-callout: none;
+    }
+    
+    /* Show debug outline for touch zones (uncomment for testing) */
+    /*
+    .utility-touch-zone {
+        stroke: rgba(255, 0, 0, 0.3) !important;
+        opacity: 0.3 !important;
+    }
+    */
+    
     @keyframes drawingPulse {
         0%, 100% { 
             opacity: 0.5; 
@@ -5375,6 +5393,9 @@ const db = firebase.firestore();
             if (utility.lineLayer) {
                 AppState.map.removeLayer(utility.lineLayer);
             }
+            if (utility.touchZone) {
+                AppState.map.removeLayer(utility.touchZone);
+            }
             if (utility.connectionMarkers) {
                 utility.connectionMarkers.forEach(marker => {
                     if (AppState.map.hasLayer(marker)) {
@@ -6168,6 +6189,15 @@ const db = firebase.firestore();
                     weight: scaledWeight
                 });
                 
+                // Update touch zone weight to maintain touch target size
+                if (utility.touchZone) {
+                    const touchWeight = Math.max(30, scaledWeight * 4); // Keep generous touch target
+                    utility.touchZone.setStyle({
+                        weight: touchWeight,
+                        opacity: 0 // Keep touch zone invisible but functional
+                    });
+                }
+                
                 // Apply to connection markers
                 if (utility.connectionMarkers) {
                     utility.connectionMarkers.forEach(marker => {
@@ -6578,16 +6608,26 @@ const db = firebase.firestore();
         const baseWeight = utilityData.lineType === 'main' ? 8 : 6;
         const scaledWeight = Math.max(1, baseWeight * lineScale);
         
+        // Create invisible touch zone (much wider for easier selection)
+        const touchZone = L.polyline(utilityData.points, {
+            color: 'transparent',
+            weight: Math.max(30, scaledWeight * 4), // Minimum 30px touch target
+            opacity: 0,
+            interactive: true,
+            className: 'utility-touch-zone'
+        });
+        
+        // Create visible utility line
         const line = L.polyline(utilityData.points, {
             color: getUtilityColor(utilityData.type),
             weight: scaledWeight,
             opacity: 1,
             dashArray: utilityData.lineType === 'service' ? '15, 5' : null,
             className: `utility-line ${utilityData.type} ${utilityData.lineType}`,
-            interactive: true
+            interactive: false // Disable interaction on visible line, use touch zone instead
         });
 
-        // Enhanced mobile-first interaction handling
+        // Enhanced mobile-first interaction handling for touch zone
         let pressTimer;
         let longPress = false;
         let startTime = 0;
@@ -6769,22 +6809,22 @@ const db = firebase.firestore();
             hasMoved = false;
         };
 
-        // Enhanced event handling for mobile with explicit touch support
-        line.on('mousedown', startPress);
-        line.on('touchstart', startPress);
-        line.on('mousemove', movePress);
-        line.on('touchmove', movePress);
-        line.on('mouseup', endPress);
-        line.on('touchend', endPress);
-        line.on('mouseleave', endPress);
-        line.on('touchcancel', endPress);
+        // Enhanced event handling for mobile with explicit touch support - on touch zone
+        touchZone.on('mousedown', startPress);
+        touchZone.on('touchstart', startPress);
+        touchZone.on('mousemove', movePress);
+        touchZone.on('touchmove', movePress);
+        touchZone.on('mouseup', endPress);
+        touchZone.on('touchend', endPress);
+        touchZone.on('mouseleave', endPress);
+        touchZone.on('touchcancel', endPress);
         
         // Additional debugging for mobile touch events
         if ('ontouchstart' in window) {
-            console.log('📱 Touch support detected, utility line touch events registered for:', utilityData.id);
+            console.log('📱 Touch support detected, utility touch zone registered for:', utilityData.id);
         }
 
-        line.on('click', (e) => {
+        touchZone.on('click', (e) => {
                 L.DomEvent.stopPropagation(e);
             
             // Handle double-tap to open modal (alternative to long press)
@@ -6799,10 +6839,12 @@ const db = firebase.firestore();
             lastClickTime = now;
         });
 
-        // Store reference
+        // Store references to both line and touch zone
         utilityData.lineLayer = line;
+        utilityData.touchZone = touchZone;
 
-        // Add to appropriate layer
+        // Add both to appropriate layer (touch zone first so it's under the visible line)
+        touchZone.addTo(AppState.layers.utilities[utilityData.type]);
         line.addTo(AppState.layers.utilities[utilityData.type]);
 
         // Apply current zoom-based opacity
@@ -7615,6 +7657,11 @@ const db = firebase.firestore();
             // Remove from map
             if (AppState.selectedUtilityData.lineLayer) {
                 AppState.map.removeLayer(AppState.selectedUtilityData.lineLayer);
+            }
+            
+            // Remove touch zone
+            if (AppState.selectedUtilityData.touchZone) {
+                AppState.map.removeLayer(AppState.selectedUtilityData.touchZone);
             }
             
             // Remove connection markers if they exist
@@ -9861,6 +9908,31 @@ const db = firebase.firestore();
     }
     
     window.fixLocationMarker = fixLocationMarker;
+    
+    // Debug function to show/hide touch zones for testing
+    function debugTouchZones(show = true) {
+        console.log(`${show ? '🔍 Showing' : '🙈 Hiding'} touch zones for debugging...`);
+        
+        AppState.utilities.forEach(utility => {
+            if (utility.touchZone) {
+                if (show) {
+                    utility.touchZone.setStyle({
+                        color: 'rgba(255, 0, 0, 0.5)',
+                        opacity: 0.3
+                    });
+                } else {
+                    utility.touchZone.setStyle({
+                        color: 'transparent',
+                        opacity: 0
+                    });
+                }
+            }
+        });
+        
+        showToast(`Touch zones ${show ? 'visible' : 'hidden'} - ${show ? 'Red outlines show touch areas' : 'Back to normal'}`, 'info');
+    }
+    
+    window.debugTouchZones = debugTouchZones;
     
     // Enhanced cleanup function for memory management
     function cleanup() {
