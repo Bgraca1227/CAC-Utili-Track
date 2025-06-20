@@ -2247,6 +2247,9 @@ const db = firebase.firestore();
         display: grid;
         grid-template-columns: repeat(2, 1fr);
         gap: var(--spacing-sm);
+        max-height: 300px;
+        overflow-y: auto;
+        padding: 4px;
     }
     
     .map-style-btn {
@@ -4182,7 +4185,13 @@ const db = firebase.firestore();
             <div class="map-styles">
                 <button class="map-style-btn active" data-style="streets">Streets</button>
                 <button class="map-style-btn" data-style="satellite">Satellite</button>
+                <button class="map-style-btn" data-style="usgsImagery">USGS Aerial</button>
+                <button class="map-style-btn" data-style="usgsTopo">USGS Topo</button>
+                <button class="map-style-btn" data-style="esriStreet">ESRI Street</button>
+                <button class="map-style-btn" data-style="esriTopo">ESRI Topo</button>
                 <button class="map-style-btn" data-style="terrain">Terrain</button>
+                <button class="map-style-btn" data-style="cartoLight">Light</button>
+                <button class="map-style-btn" data-style="cartoVoyager">Voyager</button>
                 <button class="map-style-btn" data-style="dark">Dark</button>
             </div>
         </div>
@@ -4377,7 +4386,14 @@ const db = firebase.firestore();
             streets: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
             satellite: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
             terrain: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
-            dark: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png'
+            dark: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
+            // New free map options
+            usgsImagery: 'https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryOnly/MapServer/tile/{z}/{y}/{x}',
+            usgsTopo: 'https://basemap.nationalmap.gov/arcgis/rest/services/USGSTopo/MapServer/tile/{z}/{y}/{x}',
+            esriStreet: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',
+            esriTopo: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}',
+            cartoLight: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+            cartoVoyager: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png'
         },
         currentMapStyle: 'streets',
         cloudSync: {
@@ -4930,6 +4946,18 @@ const db = firebase.firestore();
                 setTheme(e.matches ? 'dark' : 'light');
             }
         });
+
+        // Load saved map style preference
+        const savedMapStyle = localStorage.getItem('preferredMapStyle');
+        if (savedMapStyle && AppState.mapStyles[savedMapStyle]) {
+            AppState.currentMapStyle = savedMapStyle;
+            changeMapStyle(savedMapStyle);
+            
+            // Update button state
+            document.querySelectorAll('.map-style-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.style === savedMapStyle);
+            });
+        }
 
         // Load data from Firestore
         loadUtilities();
@@ -8468,12 +8496,28 @@ const db = firebase.firestore();
             }
         });
 
-        L.tileLayer(AppState.mapStyles[style], {
+        const tileLayer = L.tileLayer(AppState.mapStyles[style], {
             maxZoom: 22,
-            maxNativeZoom: 19
-        }).addTo(AppState.map);
+            maxNativeZoom: 19,
+            errorTileUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=' // 1x1 transparent pixel
+        });
 
+        // Add error handling
+        tileLayer.on('tileerror', function(error) {
+            console.error('Tile loading error:', error);
+            // Only show error once per map change
+            if (!tileLayer._errorShown) {
+                tileLayer._errorShown = true;
+                showToast(`Some map tiles may not load properly`, 'warning');
+            }
+        });
+
+        tileLayer.addTo(AppState.map);
         AppState.currentMapStyle = style;
+        
+        // Save preference
+        localStorage.setItem('preferredMapStyle', style);
+        
         hapticFeedback(30);
     }
 
