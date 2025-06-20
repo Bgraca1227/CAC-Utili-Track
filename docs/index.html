@@ -868,9 +868,12 @@ const db = firebase.firestore();
     /* Premium Bottom Controls */
     .bottom-controls {
         position: absolute;
-        bottom: calc(env(safe-area-inset-bottom, 0) + var(--spacing-md));
+        /* Use fixed positioning from viewport bottom, not container bottom */
+        bottom: env(safe-area-inset-bottom, 0);
         left: var(--spacing-md);
         right: var(--spacing-md);
+        /* Add extra padding to ensure buttons aren't cut off */
+        padding-bottom: var(--spacing-md);
         display: flex;
         justify-content: space-between;
         align-items: flex-end;
@@ -2594,6 +2597,7 @@ const db = firebase.firestore();
     .structure-container {
         position: absolute;
         right: var(--spacing-md);
+        /* Adjust bottom position to account for safe area */
         bottom: calc(env(safe-area-inset-bottom, 0) + 160px);
         z-index: 95;
     }
@@ -3106,6 +3110,23 @@ const db = firebase.firestore();
         * {
             margin: 0;
             padding: 0;
+        }
+    }
+
+    /* Prevent viewport manipulation in standalone mode */
+    @media all and (display-mode: standalone) {
+        html, body {
+            position: fixed !important;
+            overflow: hidden !important;
+            transform: none !important;
+            -webkit-transform: none !important;
+            touch-action: pan-x pan-y !important;
+        }
+        
+        .app-container {
+            position: fixed !important;
+            transform: translate3d(0, 0, 0) !important;
+            -webkit-transform: translate3d(0, 0, 0) !important;
         }
     }
 
@@ -4718,7 +4739,9 @@ const db = firebase.firestore();
         if (isiOSDevice) {
             // Prevent ALL scrolling and bouncing
             document.body.addEventListener('touchmove', function(e) {
-                e.preventDefault();
+                if (!e.target.closest('.modal-body, .settings-panel, .proximity-alerts, .notes-list')) {
+                    e.preventDefault();
+                }
             }, { passive: false });
             
             // Lock the viewport
@@ -4733,10 +4756,24 @@ const db = firebase.firestore();
                 if (now - lastTouchEnd <= 300) {
                     e.preventDefault();
                     e.stopPropagation();
+                    e.stopImmediatePropagation();
                     // Prevent any default double-tap behavior
                     return false;
                 }
                 lastTouchEnd = now;
+            }, { passive: false, capture: true });
+            
+            // Additional double-tap prevention on touchstart
+            let lastTouchStart = 0;
+            document.addEventListener('touchstart', function(e) {
+                const now = Date.now();
+                if (now - lastTouchStart <= 300) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    e.stopImmediatePropagation();
+                    return false;
+                }
+                lastTouchStart = now;
             }, { passive: false, capture: true });
             
             // Prevent pinch zoom
@@ -4752,26 +4789,32 @@ const db = firebase.firestore();
                 e.preventDefault();
             }, { passive: false });
             
+            // Prevent double-click zoom
+            document.addEventListener('dblclick', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+                return false;
+            }, { passive: false, capture: true });
+            
             if (isStandalone) {
                 // Force exact viewport dimensions
                 const setRealViewportHeight = () => {
                     const height = window.innerHeight;
-                    
-                    // Get safe area inset
-                    const safeAreaBottom = parseInt(getComputedStyle(document.documentElement).getPropertyValue('env(safe-area-inset-bottom)') || '0');
+                    const safeBottom = parseInt(getComputedStyle(document.documentElement).getPropertyValue('padding-bottom') || '0');
                     
                     document.documentElement.style.height = `${height}px`;
                     document.body.style.height = `${height}px`;
                     
                     const appContainer = document.querySelector('.app-container');
                     if (appContainer) {
-                        appContainer.style.height = `${height + safeAreaBottom}px`;
-                        appContainer.style.bottom = `-${safeAreaBottom}px`;
+                        appContainer.style.height = `${height + safeBottom}px`;
+                        appContainer.style.bottom = `-${safeBottom}px`;
                     }
                     
                     const mapElement = document.getElementById('map');
                     if (mapElement) {
-                        mapElement.style.height = `${height + safeAreaBottom}px`;
+                        mapElement.style.height = `${height + safeBottom}px`;
                     }
                     
                     // Force background everywhere
@@ -4784,6 +4827,10 @@ const db = firebase.firestore();
                     
                     // Force position
                     window.scrollTo(0, 0);
+                    
+                    // Reset any transforms that might have been applied
+                    document.body.style.transform = 'none';
+                    document.documentElement.style.transform = 'none';
                 };
                 
                 // Apply immediately
@@ -4804,6 +4851,13 @@ const db = firebase.firestore();
                         setTimeout(setRealViewportHeight, 100);
                     }
                 });
+                
+                // Prevent any touch that might cause viewport changes
+                document.addEventListener('touchmove', function(e) {
+                    if (e.scale && e.scale !== 1) {
+                        e.preventDefault();
+                    }
+                }, { passive: false });
             }
         }
 
@@ -4875,39 +4929,33 @@ const db = firebase.firestore();
         console.log('  3. Sign out and back in if needed');
         console.log('');
 
-        // Enhanced touch event prevention - only prevent double-tap zoom and pull-to-refresh
-        let touchStartY = 0;
-        
-        document.addEventListener('touchstart', function(event) {
-            if (event.touches && event.touches[0]) {
-                touchStartY = event.touches[0].clientY;
-            }
-        }, { passive: true });
-        
-        // Prevent pull-to-refresh only at top of page
-        document.addEventListener('touchmove', function(event) {
-            if (event.touches && event.touches[0]) {
-                const touchY = event.touches[0].clientY;
-                const touchDiff = touchY - touchStartY;
-                
-                // Only prevent if pulling down at top of page and not in scrollable areas
-                if (touchDiff > 0 && window.scrollY === 0 && 
-                    !event.target.closest('.modal-body, .settings-panel, .proximity-alerts, .notes-list')) {
-                    event.preventDefault();
-                }
-            }
-        }, { passive: false });
-        
         // Enhanced keyboard handling for iOS
         const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
         if (isIOS) {
             const viewport = document.querySelector('meta[name=viewport]');
-            document.addEventListener('focusin', function() {
-                viewport.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
+            const viewportContent = 'width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover';
+            
+            // Set and lock viewport
+            viewport.setAttribute('content', viewportContent);
+            
+            // Prevent any changes
+            const observer = new MutationObserver(() => {
+                if (viewport.getAttribute('content') !== viewportContent) {
+                    viewport.setAttribute('content', viewportContent);
+                }
             });
             
-            document.addEventListener('focusout', function() {
-                viewport.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover');
+            observer.observe(viewport, { attributes: true, attributeFilter: ['content'] });
+            
+            // Handle focus events without changing viewport
+            document.addEventListener('focusin', function(e) {
+                e.preventDefault();
+                viewport.setAttribute('content', viewportContent);
+            });
+            
+            document.addEventListener('focusout', function(e) {
+                e.preventDefault();
+                viewport.setAttribute('content', viewportContent);
             });
         }
         
@@ -9226,7 +9274,7 @@ const db = firebase.firestore();
                     if (events) {
                         console.log('📋 Registered events:', Object.keys(events));
                         console.log('  - touchstart:', !!events.touchstart);
-                        console.log('  - touchmove:', !!events.touchmove);
+                        console.log('  - touchmove:', !!events.touchmove); 
                         console.log('  - touchend:', !!events.touchend);
                         console.log('  - mousedown:', !!events.mousedown);
                     }
