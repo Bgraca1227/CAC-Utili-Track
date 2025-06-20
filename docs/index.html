@@ -1485,7 +1485,7 @@ const db = firebase.firestore();
     /* Utility Info Modal - Premium Glass */
     .info-modal {
         position: fixed;
-        bottom: calc(env(safe-area-inset-bottom, 0) + var(--spacing-xl));
+        bottom: calc(env(safe-area-inset-bottom, 0) + 120px);
         left: var(--spacing-md);
         right: var(--spacing-md);
         background: var(--bg-glass);
@@ -1494,9 +1494,9 @@ const db = firebase.firestore();
         border-radius: var(--radius-2xl);
         box-shadow: var(--shadow-xl);
         z-index: 300;
-        transform: translateY(calc(100% + env(safe-area-inset-bottom, 0) + var(--spacing-xl)));
+        transform: translateY(calc(100% + env(safe-area-inset-bottom, 0) + 120px));
         transition: transform var(--transition-spring);
-        max-height: calc(85vh - env(safe-area-inset-bottom, 0) - var(--spacing-2xl));
+        max-height: calc(75vh - env(safe-area-inset-bottom, 0));
         overflow: hidden;
         display: flex;
         flex-direction: column;
