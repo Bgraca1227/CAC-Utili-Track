@@ -4789,14 +4789,9 @@ const db = firebase.firestore();
                 window.scrollTo(0, 0);
             });
             
-            // Prevent double-tap zoom outside of map (allow on map for zoom)
+            // Prevent double-tap zoom everywhere (including map)
             let lastTouchEnd = 0;
             document.addEventListener('touchend', function(e) {
-                // Allow double-tap zoom on map
-                if (e.target.closest('#map') || e.target.closest('.leaflet-container')) {
-                    return; // Allow map zoom interactions
-                }
-                
                 const now = Date.now();
                 if (now - lastTouchEnd <= 300) {
                     e.preventDefault();
@@ -4808,12 +4803,12 @@ const db = firebase.firestore();
                 lastTouchEnd = now;
             }, { passive: false, capture: true });
             
-            // Additional double-tap prevention on touchstart (but allow on map)
+            // Additional double-tap prevention on touchstart (but allow multi-touch for pinch zoom)
             let lastTouchStart = 0;
             document.addEventListener('touchstart', function(e) {
-                // Allow multi-touch and double-tap on map for pinch zoom
-                if (e.target.closest('#map') && (e.touches.length > 1 || e.target.closest('.leaflet-container'))) {
-                    return; // Allow map interactions
+                // Only allow multi-touch on map for pinch zoom (not single finger double-tap)
+                if (e.target.closest('#map') && e.touches.length > 1) {
+                    return; // Allow pinch zoom gestures
                 }
                 
                 const now = Date.now();
@@ -4826,7 +4821,7 @@ const db = firebase.firestore();
                 lastTouchStart = now;
             }, { passive: false, capture: true });
             
-            // Allow pinch zoom on map, prevent everywhere else
+            // Allow pinch zoom gestures on map only
             document.addEventListener('gesturestart', function(e) {
                 if (!e.target.closest('#map')) {
                     e.preventDefault();
@@ -4845,13 +4840,8 @@ const db = firebase.firestore();
                 }
             }, { passive: false });
             
-            // Prevent double-click zoom outside of map (allow on map)
+            // Prevent double-click zoom everywhere (including map)
             document.addEventListener('dblclick', function(e) {
-                // Allow double-click zoom on map
-                if (e.target.closest('#map') || e.target.closest('.leaflet-container')) {
-                    return; // Allow map zoom interactions
-                }
-                
                 e.preventDefault();
                 e.stopPropagation();
                 e.stopImmediatePropagation();
@@ -5452,7 +5442,7 @@ const db = firebase.firestore();
             zoom: 16,
             zoomControl: false,
             attributionControl: false,
-            doubleClickZoom: true, // Enable double-click zoom on map
+            doubleClickZoom: false, // Disable double-click zoom
             touchZoom: true,
             scrollWheelZoom: true,
             boxZoom: false,
@@ -6658,9 +6648,9 @@ const db = firebase.firestore();
                 if (e.stopPropagation) e.stopPropagation();
             }
             
-            // Allow multi-touch for pinch zoom on map
-            if (e.touches && e.touches.length > 1 && e.target.closest('#map')) {
-                return; // Allow pinch zoom
+            // Allow multi-touch for pinch zoom on map - don't interfere with utility selection during pinch
+            if (e.touches && e.touches.length > 1) {
+                return; // Always allow pinch zoom gestures
             }
             
             longPress = false;
