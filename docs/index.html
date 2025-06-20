@@ -870,11 +870,11 @@ const db = firebase.firestore();
     .bottom-controls {
         position: absolute;
         /* Use fixed positioning from viewport bottom with extra spacing */
-        bottom: calc(env(safe-area-inset-bottom, 0) + var(--spacing-2xl));
+        bottom: calc(env(safe-area-inset-bottom, 0) + 60px);
         left: var(--spacing-md);
         right: var(--spacing-md);
         /* Add extra padding to ensure buttons aren't cut off */
-        padding-bottom: var(--spacing-lg);
+        padding-bottom: var(--spacing-xl);
         display: flex;
         justify-content: space-between;
         align-items: flex-end;
@@ -1120,7 +1120,7 @@ const db = firebase.firestore();
         gap: var(--spacing-sm);
         position: absolute;
         right: var(--spacing-md);
-        top: 50%;
+        top: 45%;
         transform: translateY(-50%);
         z-index: 100;
     }
@@ -1132,7 +1132,7 @@ const db = firebase.firestore();
         gap: var(--spacing-sm);
         position: absolute;
         left: var(--spacing-md);
-        top: 50%;
+        top: 45%;
         transform: translateY(-50%);
         z-index: 100;
     }
@@ -2122,7 +2122,7 @@ const db = firebase.firestore();
     /* Exit Excavation Button */
     .exit-excavation {
         position: absolute;
-        bottom: calc(env(safe-area-inset-bottom, 0) + 120px);
+        bottom: calc(env(safe-area-inset-bottom, 0) + 150px);
         left: 50%;
         transform: translateX(-50%);
         padding: var(--spacing-md) var(--spacing-xl);
@@ -2156,6 +2156,7 @@ const db = firebase.firestore();
         transition: right var(--transition-spring);
         overflow-y: auto;
         padding-top: env(safe-area-inset-top, 0);
+        padding-bottom: calc(env(safe-area-inset-bottom, 0) + var(--spacing-xl));
     }
     
     .settings-panel.active {
@@ -2337,6 +2338,11 @@ const db = firebase.firestore();
         animation: highlightGlow 2s ease-in-out infinite;
     }
     
+    .utility-line.pressing {
+        filter: drop-shadow(0 0 15px currentColor) drop-shadow(0 2px 12px rgba(0, 0, 0, 0.6));
+        animation: pressingPulse 0.3s ease-in-out;
+    }
+    
     @keyframes drawingPulse {
         0%, 100% { 
             opacity: 0.5; 
@@ -2356,6 +2362,15 @@ const db = firebase.firestore();
         }
         50% { 
             filter: drop-shadow(0 0 30px currentColor) drop-shadow(0 6px 20px rgba(0, 0, 0, 0.6));
+        }
+    }
+    
+    @keyframes pressingPulse {
+        0% { 
+            filter: drop-shadow(0 0 8px currentColor) drop-shadow(0 2px 8px rgba(0, 0, 0, 0.4));
+        }
+        100% { 
+            filter: drop-shadow(0 0 15px currentColor) drop-shadow(0 2px 12px rgba(0, 0, 0, 0.6));
         }
     }
     
@@ -2599,7 +2614,7 @@ const db = firebase.firestore();
         position: absolute;
         right: var(--spacing-md);
         /* Adjust bottom position to account for safe area and new bottom controls height */
-        bottom: calc(env(safe-area-inset-bottom, 0) + 220px);
+        bottom: calc(env(safe-area-inset-bottom, 0) + 250px);
         z-index: 95;
     }
     
@@ -2866,7 +2881,7 @@ const db = firebase.firestore();
     /* Cloud Sync Status */
     .sync-status {
         position: fixed;
-        bottom: calc(env(safe-area-inset-bottom, 0) + 100px);
+        bottom: calc(env(safe-area-inset-bottom, 0) + 130px);
         left: 50%;
         transform: translateX(-50%);
         background: var(--bg-glass);
@@ -3700,6 +3715,7 @@ const db = firebase.firestore();
         font-weight: 600;
         cursor: pointer;
         margin-top: var(--spacing-lg);
+        margin-bottom: calc(env(safe-area-inset-bottom, 0) + var(--spacing-lg));
         transition: all var(--transition-normal);
     }
 
@@ -6650,13 +6666,19 @@ const db = firebase.firestore();
                     hapticFeedback(100);
                     showInfoModal(utilityData);
                 }
-            }, 500); // Reduced from 600ms to 500ms
+            }, 350); // Reduced to 350ms for faster response
             
-            // Highlight line on press
+            // Highlight line on press with stronger visual feedback
             line.setStyle({
-                weight: (utilityData.lineType === 'main' ? 8 : 6) + 2,
-                opacity: 0.8
+                weight: (utilityData.lineType === 'main' ? 8 : 6) + 4,
+                opacity: 1.0,
+                className: `utility-line ${utilityData.type} ${utilityData.lineType} pressing`
             });
+            
+            // Add temporary glow effect
+            if (line.getElement()) {
+                line.getElement().style.filter = 'drop-shadow(0 0 15px currentColor)';
+            }
         };
         
         const movePress = (e) => {
@@ -6691,13 +6713,13 @@ const db = firebase.firestore();
             
             const currentPos = { x: clientX, y: clientY };
             
-            // Check if moved more than 20px (increased threshold for mobile)
+            // Check if moved more than 30px (increased threshold for mobile)
             const distance = Math.sqrt(
                 Math.pow(currentPos.x - startPos.x, 2) + 
                 Math.pow(currentPos.y - startPos.y, 2)
             );
             
-            if (distance > 20) { // Increased from 10px to 20px for better mobile tolerance
+            if (distance > 30) { // Increased to 30px for more forgiving touch detection
                 console.log('🔄 Movement detected, cancelling long press', { distance });
                 hasMoved = true;
                 clearTimeout(pressTimer);
@@ -6725,11 +6747,17 @@ const db = firebase.firestore();
             
             line.setStyle({
                 weight: scaledWeight,
-                opacity: 1
+                opacity: 1,
+                className: `utility-line ${utilityData.type} ${utilityData.lineType}`
             });
             
+            // Remove glow effect
+            if (line.getElement()) {
+                line.getElement().style.filter = '';
+            }
+            
             // Show quick info on short press without movement (if not a long press)
-            if (!longPress && !hasMoved && pressDuration < 450 && pressDuration > 50) {
+            if (!longPress && !hasMoved && pressDuration < 300 && pressDuration > 50) {
                 const utilityName = `${capitalizeFirst(utilityData.type)} ${capitalizeFirst(utilityData.lineType)}`;
                 const info = utilityData.size ? ` (${utilityData.size}")` : '';
                 showToast(`${utilityName}${info} - Hold to edit`, 'info');
@@ -6761,8 +6789,8 @@ const db = firebase.firestore();
             
             // Handle double-tap to open modal (alternative to long press)
             const now = Date.now();
-            if (now - lastClickTime < 300) {
-                // Double tap detected
+            if (now - lastClickTime < 500) {
+                // Double tap detected (less sensitive with 500ms window)
                 if (!AppState.isDrawing && !AppState.refineMode && !AppState.addingStructure && !AppState.measureMode) {
                     showInfoModal(utilityData);
                     hapticFeedback(50);
