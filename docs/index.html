@@ -2247,9 +2247,6 @@ const db = firebase.firestore();
         display: grid;
         grid-template-columns: repeat(2, 1fr);
         gap: var(--spacing-sm);
-        max-height: 300px;
-        overflow-y: auto;
-        padding: 4px;
     }
     
     .map-style-btn {
@@ -2286,6 +2283,22 @@ const db = firebase.firestore();
         -moz-user-select: none;
         -ms-user-select: none;
         user-select: none;
+    }
+    
+    /* Touch Zone Styles - Invisible but Interactive */
+    .utility-touch-zone {
+        cursor: pointer;
+        pointer-events: auto;
+        touch-action: manipulation;
+    }
+    
+    /* Debug style to temporarily visualize touch zones */
+    .utility-touch-zone.debug {
+        stroke: red;
+        stroke-width: 2;
+        stroke-dasharray: 5, 5;
+        opacity: 0.3 !important;
+        fill: none;
     }
     
     .utility-line:hover {
@@ -2345,24 +2358,6 @@ const db = firebase.firestore();
         filter: drop-shadow(0 0 15px currentColor) drop-shadow(0 2px 12px rgba(0, 0, 0, 0.6));
         animation: pressingPulse 0.3s ease-in-out;
     }
-    
-    /* Touch zones for utility lines - invisible but interactive */
-    .utility-touch-zone {
-        stroke: transparent !important;
-        fill: none !important;
-        opacity: 0 !important;
-        cursor: pointer;
-        touch-action: manipulation;
-        -webkit-touch-callout: none;
-    }
-    
-    /* Show debug outline for touch zones (uncomment for testing) */
-    /*
-    .utility-touch-zone {
-        stroke: rgba(255, 0, 0, 0.3) !important;
-        opacity: 0.3 !important;
-    }
-    */
     
     @keyframes drawingPulse {
         0%, 100% { 
@@ -4185,13 +4180,7 @@ const db = firebase.firestore();
             <div class="map-styles">
                 <button class="map-style-btn active" data-style="streets">Streets</button>
                 <button class="map-style-btn" data-style="satellite">Satellite</button>
-                <button class="map-style-btn" data-style="usgsImagery">USGS Aerial</button>
-                <button class="map-style-btn" data-style="usgsTopo">USGS Topo</button>
-                <button class="map-style-btn" data-style="esriStreet">ESRI Street</button>
-                <button class="map-style-btn" data-style="esriTopo">ESRI Topo</button>
                 <button class="map-style-btn" data-style="terrain">Terrain</button>
-                <button class="map-style-btn" data-style="cartoLight">Light</button>
-                <button class="map-style-btn" data-style="cartoVoyager">Voyager</button>
                 <button class="map-style-btn" data-style="dark">Dark</button>
             </div>
         </div>
@@ -4386,14 +4375,7 @@ const db = firebase.firestore();
             streets: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
             satellite: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
             terrain: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
-            dark: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
-            // New free map options
-            usgsImagery: 'https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryOnly/MapServer/tile/{z}/{y}/{x}',
-            usgsTopo: 'https://basemap.nationalmap.gov/arcgis/rest/services/USGSTopo/MapServer/tile/{z}/{y}/{x}',
-            esriStreet: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',
-            esriTopo: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}',
-            cartoLight: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
-            cartoVoyager: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png'
+            dark: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png'
         },
         currentMapStyle: 'streets',
         cloudSync: {
@@ -4946,18 +4928,6 @@ const db = firebase.firestore();
                 setTheme(e.matches ? 'dark' : 'light');
             }
         });
-
-        // Load saved map style preference
-        const savedMapStyle = localStorage.getItem('preferredMapStyle');
-        if (savedMapStyle && AppState.mapStyles[savedMapStyle]) {
-            AppState.currentMapStyle = savedMapStyle;
-            changeMapStyle(savedMapStyle);
-            
-            // Update button state
-            document.querySelectorAll('.map-style-btn').forEach(btn => {
-                btn.classList.toggle('active', btn.dataset.style === savedMapStyle);
-            });
-        }
 
         // Load data from Firestore
         loadUtilities();
@@ -6217,12 +6187,11 @@ const db = firebase.firestore();
                     weight: scaledWeight
                 });
                 
-                // Update touch zone weight to maintain touch target size
+                // Update touch zone opacity to match (but keep it invisible)
                 if (utility.touchZone) {
-                    const touchWeight = Math.max(30, scaledWeight * 4); // Keep generous touch target
-                    utility.touchZone.setStyle({
-                        weight: touchWeight,
-                        opacity: 0 // Keep touch zone invisible but functional
+                    utility.touchZone.setStyle({ 
+                        opacity: 0, // Always invisible
+                        weight: Math.max(30, 50 * lineScale) // Scale touch zone too, but keep minimum size
                     });
                 }
                 
@@ -6636,26 +6605,16 @@ const db = firebase.firestore();
         const baseWeight = utilityData.lineType === 'main' ? 8 : 6;
         const scaledWeight = Math.max(1, baseWeight * lineScale);
         
-        // Create invisible touch zone (much wider for easier selection)
-        const touchZone = L.polyline(utilityData.points, {
-            color: 'transparent',
-            weight: Math.max(30, scaledWeight * 4), // Minimum 30px touch target
-            opacity: 0,
-            interactive: true,
-            className: 'utility-touch-zone'
-        });
-        
-        // Create visible utility line
         const line = L.polyline(utilityData.points, {
             color: getUtilityColor(utilityData.type),
             weight: scaledWeight,
             opacity: 1,
             dashArray: utilityData.lineType === 'service' ? '15, 5' : null,
             className: `utility-line ${utilityData.type} ${utilityData.lineType}`,
-            interactive: false // Disable interaction on visible line, use touch zone instead
+            interactive: true
         });
 
-        // Enhanced mobile-first interaction handling for touch zone
+        // Enhanced mobile-first interaction handling
         let pressTimer;
         let longPress = false;
         let startTime = 0;
@@ -6837,22 +6796,22 @@ const db = firebase.firestore();
             hasMoved = false;
         };
 
-        // Enhanced event handling for mobile with explicit touch support - on touch zone
-        touchZone.on('mousedown', startPress);
-        touchZone.on('touchstart', startPress);
-        touchZone.on('mousemove', movePress);
-        touchZone.on('touchmove', movePress);
-        touchZone.on('mouseup', endPress);
-        touchZone.on('touchend', endPress);
-        touchZone.on('mouseleave', endPress);
-        touchZone.on('touchcancel', endPress);
+        // Enhanced event handling for mobile with explicit touch support
+        line.on('mousedown', startPress);
+        line.on('touchstart', startPress);
+        line.on('mousemove', movePress);
+        line.on('touchmove', movePress);
+        line.on('mouseup', endPress);
+        line.on('touchend', endPress);
+        line.on('mouseleave', endPress);
+        line.on('touchcancel', endPress);
         
         // Additional debugging for mobile touch events
         if ('ontouchstart' in window) {
-            console.log('📱 Touch support detected, utility touch zone registered for:', utilityData.id);
+            console.log('📱 Touch support detected, utility line touch events registered for:', utilityData.id);
         }
 
-        touchZone.on('click', (e) => {
+        line.on('click', (e) => {
                 L.DomEvent.stopPropagation(e);
             
             // Handle double-tap to open modal (alternative to long press)
@@ -6867,11 +6826,34 @@ const db = firebase.firestore();
             lastClickTime = now;
         });
 
-        // Store references to both line and touch zone
+        // Store reference
         utilityData.lineLayer = line;
+
+        // Create invisible touch zone for mobile-friendly selection
+        const touchZone = L.polyline(utilityData.points, {
+            color: 'transparent',
+            weight: 50, // Much wider touch target (50px)
+            opacity: 0,
+            fillOpacity: 0,
+            interactive: true,
+            className: 'utility-touch-zone'
+        });
+
+        // Forward all touch events from touch zone to main line
+        touchZone.on('mousedown', (e) => line.fireEvent('mousedown', e));
+        touchZone.on('touchstart', (e) => line.fireEvent('touchstart', e));
+        touchZone.on('mousemove', (e) => line.fireEvent('mousemove', e));
+        touchZone.on('touchmove', (e) => line.fireEvent('touchmove', e));
+        touchZone.on('mouseup', (e) => line.fireEvent('mouseup', e));
+        touchZone.on('touchend', (e) => line.fireEvent('touchend', e));
+        touchZone.on('mouseleave', (e) => line.fireEvent('mouseleave', e));
+        touchZone.on('touchcancel', (e) => line.fireEvent('touchcancel', e));
+        touchZone.on('click', (e) => line.fireEvent('click', e));
+
+        // Store touch zone reference
         utilityData.touchZone = touchZone;
 
-        // Add both to appropriate layer (touch zone first so it's under the visible line)
+        // Add both to appropriate layer (touch zone goes first, so it's below visually)
         touchZone.addTo(AppState.layers.utilities[utilityData.type]);
         line.addTo(AppState.layers.utilities[utilityData.type]);
 
@@ -7579,6 +7561,12 @@ const db = firebase.firestore();
             if (currentPoints.length >= 2) {
                 // Update the line on the map
                 AppState.selectedUtilityData.lineLayer.setLatLngs(currentPoints);
+                
+                // Also update the touch zone to match
+                if (AppState.selectedUtilityData.touchZone) {
+                    AppState.selectedUtilityData.touchZone.setLatLngs(currentPoints);
+                }
+                
                 console.log(`📏 Updated line with ${currentPoints.length} vertex points`);
             }
         } catch (error) {
@@ -7637,6 +7625,11 @@ const db = firebase.firestore();
                 
                 // Ensure line is updated with final points
                 AppState.selectedUtilityData.lineLayer.setLatLngs(AppState.selectedUtilityData.points);
+                
+                // Also update touch zone with final points
+                if (AppState.selectedUtilityData.touchZone) {
+                    AppState.selectedUtilityData.touchZone.setLatLngs(AppState.selectedUtilityData.points);
+                }
         }
 
             // Clear refine state
@@ -8496,28 +8489,12 @@ const db = firebase.firestore();
             }
         });
 
-        const tileLayer = L.tileLayer(AppState.mapStyles[style], {
+        L.tileLayer(AppState.mapStyles[style], {
             maxZoom: 22,
-            maxNativeZoom: 19,
-            errorTileUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=' // 1x1 transparent pixel
-        });
+            maxNativeZoom: 19
+        }).addTo(AppState.map);
 
-        // Add error handling
-        tileLayer.on('tileerror', function(error) {
-            console.error('Tile loading error:', error);
-            // Only show error once per map change
-            if (!tileLayer._errorShown) {
-                tileLayer._errorShown = true;
-                showToast(`Some map tiles may not load properly`, 'warning');
-            }
-        });
-
-        tileLayer.addTo(AppState.map);
         AppState.currentMapStyle = style;
-        
-        // Save preference
-        localStorage.setItem('preferredMapStyle', style);
-        
         hapticFeedback(30);
     }
 
@@ -8566,9 +8543,21 @@ const db = firebase.firestore();
                     const finalOpacity = (isHighlighted || isBeingRefined) ? 1.0 : zoomOpacity;
                     
                     utility.lineLayer.setStyle({ opacity: finalOpacity });
+                    
+                    // Touch zone remains invisible but active when utility is visible
+                    if (utility.touchZone) {
+                        utility.touchZone.setStyle({ opacity: 0 });
+                        utility.touchZone.options.interactive = true;
+                    }
                 } else {
                     // Completely hidden when type is disabled
                     utility.lineLayer.setStyle({ opacity: 0 });
+                    
+                    // Disable touch zone interaction when utility is hidden
+                    if (utility.touchZone) {
+                        utility.touchZone.setStyle({ opacity: 0 });
+                        utility.touchZone.options.interactive = false;
+                    }
                 }
             }
         });
@@ -9510,6 +9499,76 @@ const db = firebase.firestore();
     
     // Make debug function available globally
     window.debugAccountStatus = debugAccountStatus;
+    
+    // Debug function to temporarily visualize touch zones
+    function debugTouchZones(show = true) {
+        console.log(show ? '🔍 Showing touch zones...' : '🔍 Hiding touch zones...');
+        
+        AppState.utilities.forEach(utility => {
+            if (utility.touchZone) {
+                if (show) {
+                    utility.touchZone.setStyle({
+                        stroke: 'red',
+                        strokeWidth: 2,
+                        dashArray: '5, 5',
+                        opacity: 0.3,
+                        className: 'utility-touch-zone debug'
+                    });
+                } else {
+                    utility.touchZone.setStyle({
+                        stroke: 'transparent',
+                        opacity: 0,
+                        className: 'utility-touch-zone'
+                    });
+                }
+            }
+        });
+        
+        showToast(show ? 'Touch zones visible (red dashed)' : 'Touch zones hidden', 'info');
+    }
+    
+    // Test touch zone functionality
+    function testTouchZones() {
+        console.log('🧪 Testing touch zones...');
+        
+        // Create a test utility if none exist
+        if (AppState.utilities.length === 0) {
+            console.log('📝 Creating test utility for touch zone testing...');
+            createTestUtilityForRefining();
+            
+            setTimeout(() => {
+                console.log('✅ Test utility created with touch zones');
+                showToast('✅ Test utility created! Try tapping near (but not exactly on) the line', 'success');
+                
+                // Temporarily show touch zones for 5 seconds
+                debugTouchZones(true);
+                setTimeout(() => {
+                    debugTouchZones(false);
+                    showToast('Touch zones hidden - try tapping around the line area', 'info');
+                }, 5000);
+            }, 1000);
+            
+            return;
+        }
+        
+        // Show existing touch zones temporarily
+        console.log('👆 Showing touch zones for existing utilities...');
+        showToast('Red dashed lines show touch areas - tap anywhere in these zones!', 'info');
+        debugTouchZones(true);
+        
+        setTimeout(() => {
+            debugTouchZones(false);
+            showToast('Touch zones hidden - but they\'re still active!', 'success');
+        }, 8000);
+        
+        console.log('✅ Touch zone test completed');
+    }
+    
+    // Make debug functions available globally
+    window.debugTouchZones = debugTouchZones;
+    window.showTouchZones = () => debugTouchZones(true);
+    window.hideTouchZones = () => debugTouchZones(false);
+    window.testTouchZones = testTouchZones;
 
     // ========== ROLE MANAGEMENT FUNCTIONS ==========
 
@@ -9952,31 +10011,6 @@ const db = firebase.firestore();
     }
     
     window.fixLocationMarker = fixLocationMarker;
-    
-    // Debug function to show/hide touch zones for testing
-    function debugTouchZones(show = true) {
-        console.log(`${show ? '🔍 Showing' : '🙈 Hiding'} touch zones for debugging...`);
-        
-        AppState.utilities.forEach(utility => {
-            if (utility.touchZone) {
-                if (show) {
-                    utility.touchZone.setStyle({
-                        color: 'rgba(255, 0, 0, 0.5)',
-                        opacity: 0.3
-                    });
-                } else {
-                    utility.touchZone.setStyle({
-                        color: 'transparent',
-                        opacity: 0
-                    });
-                }
-            }
-        });
-        
-        showToast(`Touch zones ${show ? 'visible' : 'hidden'} - ${show ? 'Red outlines show touch areas' : 'Back to normal'}`, 'info');
-    }
-    
-    window.debugTouchZones = debugTouchZones;
     
     // Enhanced cleanup function for memory management
     function cleanup() {
