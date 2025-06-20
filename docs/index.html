@@ -46,7 +46,8 @@
     <link rel="manifest" href="manifest.json">
 
     <!-- Theme Color -->
-    <meta name="theme-color" content="#0a0a0f">
+    <meta name="theme-color" content="#4a90e2">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="background-color" content="#0a0a0f">
 
     <!-- iOS Specific Meta Tags for Better Home Screen Experience -->
@@ -868,8 +869,8 @@ const db = firebase.firestore();
     /* Premium Bottom Controls */
     .bottom-controls {
         position: absolute;
-        /* Use fixed positioning from viewport bottom, not container bottom */
-        bottom: env(safe-area-inset-bottom, 0);
+        /* Use fixed positioning from viewport bottom with extra spacing */
+        bottom: calc(env(safe-area-inset-bottom, 0) + var(--spacing-lg));
         left: var(--spacing-md);
         right: var(--spacing-md);
         /* Add extra padding to ensure buttons aren't cut off */
@@ -2121,7 +2122,7 @@ const db = firebase.firestore();
     /* Exit Excavation Button */
     .exit-excavation {
         position: absolute;
-        bottom: calc(env(safe-area-inset-bottom, 0) + var(--spacing-xl));
+        bottom: calc(env(safe-area-inset-bottom, 0) + var(--spacing-2xl));
         left: 50%;
         transform: translateX(-50%);
         padding: var(--spacing-md) var(--spacing-xl);
@@ -2597,8 +2598,8 @@ const db = firebase.firestore();
     .structure-container {
         position: absolute;
         right: var(--spacing-md);
-        /* Adjust bottom position to account for safe area */
-        bottom: calc(env(safe-area-inset-bottom, 0) + 160px);
+        /* Adjust bottom position to account for safe area and new bottom controls height */
+        bottom: calc(env(safe-area-inset-bottom, 0) + 180px);
         z-index: 95;
     }
     
@@ -2865,7 +2866,7 @@ const db = firebase.firestore();
     /* Cloud Sync Status */
     .sync-status {
         position: fixed;
-        bottom: calc(env(safe-area-inset-bottom, 0) + var(--spacing-md));
+        bottom: calc(env(safe-area-inset-bottom, 0) + var(--spacing-lg));
         left: 50%;
         transform: translateX(-50%);
         background: var(--bg-glass);
@@ -3127,6 +3128,11 @@ const db = firebase.firestore();
             position: fixed !important;
             transform: translate3d(0, 0, 0) !important;
             -webkit-transform: translate3d(0, 0, 0) !important;
+        }
+        
+        /* Allow pinch zoom on map */
+        #map {
+            touch-action: pan-x pan-y pinch-zoom !important;
         }
     }
 
@@ -4776,17 +4782,23 @@ const db = firebase.firestore();
                 lastTouchStart = now;
             }, { passive: false, capture: true });
             
-            // Prevent pinch zoom
+            // Allow pinch zoom on map, prevent everywhere else
             document.addEventListener('gesturestart', function(e) {
-                e.preventDefault();
+                if (!e.target.closest('#map')) {
+                    e.preventDefault();
+                }
             }, { passive: false });
             
             document.addEventListener('gesturechange', function(e) {
-                e.preventDefault();
+                if (!e.target.closest('#map')) {
+                    e.preventDefault();
+                }
             }, { passive: false });
             
             document.addEventListener('gestureend', function(e) {
-                e.preventDefault();
+                if (!e.target.closest('#map')) {
+                    e.preventDefault();
+                }
             }, { passive: false });
             
             // Prevent double-click zoom
@@ -4852,9 +4864,9 @@ const db = firebase.firestore();
                     }
                 });
                 
-                // Prevent any touch that might cause viewport changes
+                // Prevent viewport changes outside of map area
                 document.addEventListener('touchmove', function(e) {
-                    if (e.scale && e.scale !== 1) {
+                    if (e.scale && e.scale !== 1 && !e.target.closest('#map')) {
                         e.preventDefault();
                     }
                 }, { passive: false });
