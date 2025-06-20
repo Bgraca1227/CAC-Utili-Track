@@ -2270,7 +2270,7 @@ const db = firebase.firestore();
     
     /* Utility Line Styles */
     .utility-line {
-        stroke-width: 6;
+        stroke-width: 3; /* Made thinner and fixed */
         stroke-linecap: round;
         stroke-linejoin: round;
         fill: none;
@@ -2283,12 +2283,16 @@ const db = firebase.firestore();
         -moz-user-select: none;
         -ms-user-select: none;
         user-select: none;
-        pointer-events: none; /* Visual line doesn't receive events */
+        pointer-events: auto; /* Visual line receives events for easier selection */
+    }
+    
+    .utility-line.main {
+        stroke-width: 4; /* Slightly thicker for main lines */
     }
     
     /* Invisible touch targets for easier utility selection */
     .utility-touch-target {
-        stroke-width: 40;
+        stroke-width: 50; /* Large fixed touch area */
         stroke-linecap: round;
         stroke-linejoin: round;
         fill: none;
@@ -2300,21 +2304,15 @@ const db = firebase.firestore();
     
     .utility-line:hover {
         filter: drop-shadow(0 4px 16px rgba(0, 0, 0, 0.4)) drop-shadow(0 0 12px currentColor);
-        stroke-width: 8 !important;
-    }
-    
-    .utility-line.main {
-        stroke-width: 8;
-        filter: drop-shadow(0 3px 12px rgba(0, 0, 0, 0.4));
+        stroke-width: 5 !important; /* Slightly thicker on hover */
     }
     
     .utility-line.main:hover {
-        stroke-width: 10 !important;
+        stroke-width: 6 !important; /* Slightly thicker for main lines on hover */
     }
     
     .utility-line.service {
-        stroke-width: 6;
-        stroke-dasharray: 15, 5;
+        stroke-dasharray: 8, 4; /* Smaller dash pattern */
         filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.3));
     }
     
@@ -6185,19 +6183,20 @@ const db = firebase.firestore();
                 const isExcavationMode = AppState.excavationMode;
                 const finalOpacity = (isHighlighted || isBeingRefined || isExcavationMode) ? 1.0 : opacity;
                 
-                // Base weight with inverse zoom scaling (thinner when zoomed out)
-                const baseWeight = utility.lineType === 'main' ? 8 : 6;
-                const scaledWeight = Math.max(1, baseWeight * lineScale); // Minimum of 1px
+                // Keep consistent fixed weight regardless of zoom
+                const fixedWeight = utility.lineType === 'main' ? 4 : 3;
                 
                 utility.lineLayer.setStyle({ 
                     opacity: finalOpacity,
-                    weight: scaledWeight
+                    weight: fixedWeight // No more zoom scaling
                 });
                 
-                // Update touch target size based on zoom
+                // Keep touch target at fixed size
                 if (utility.touchTarget) {
-                    const touchWeight = Math.max(40, scaledWeight * 6);
-                    utility.touchTarget.setStyle({ weight: touchWeight });
+                    utility.touchTarget.setStyle({ 
+                        weight: 50, // Fixed large touch area
+                        opacity: 0 // Always invisible
+                    });
                 }
                 
                 // Apply to connection markers
@@ -6332,17 +6331,14 @@ const db = firebase.firestore();
         }
 
         if (AppState.drawingPoints.length > 1) {
-            // Use current zoom scaling for consistent appearance
-            const zoom = AppState.map.getZoom();
-            const lineScale = calculateUtilityLineScale(zoom);
-            const baseWeight = AppState.lineType === 'main' ? 8 : 6;
-            const scaledWeight = Math.max(1, baseWeight * lineScale);
+            // Use consistent fixed weight
+            const fixedWeight = AppState.lineType === 'main' ? 4 : 3;
             
             AppState.tempLine = L.polyline(AppState.drawingPoints, {
                 color: getUtilityColor(AppState.selectedUtility),
-                weight: scaledWeight,
+                weight: fixedWeight,
                 opacity: 1.0, // Always fully visible during drawing
-                dashArray: AppState.lineType === 'service' ? '15, 5' : null,
+                dashArray: AppState.lineType === 'service' ? '8, 4' : null,
                 className: 'utility-line drawing'
             }).addTo(AppState.map);
         }
@@ -6604,29 +6600,27 @@ const db = firebase.firestore();
     }
 
     function createUtilityLine(utilityData) {
-        // Use current zoom scaling for initial line creation
-        const zoom = AppState.map.getZoom();
-        const lineScale = calculateUtilityLineScale(zoom);
-        const baseWeight = utilityData.lineType === 'main' ? 8 : 6;
-        const scaledWeight = Math.max(1, baseWeight * lineScale);
+        // Use consistent fixed weights regardless of zoom
+        const baseWeight = utilityData.lineType === 'main' ? 4 : 3; // Made thinner
         
-        // Create visible line
+        // Create visible line with fixed size
         const line = L.polyline(utilityData.points, {
             color: getUtilityColor(utilityData.type),
-            weight: scaledWeight,
+            weight: baseWeight,
             opacity: 1,
-            dashArray: utilityData.lineType === 'service' ? '15, 5' : null,
+            dashArray: utilityData.lineType === 'service' ? '8, 4' : null, // Smaller dash pattern
             className: `utility-line ${utilityData.type} ${utilityData.lineType}`,
-            interactive: false  // Make visual line non-interactive
+            interactive: true  // Make visual line interactive again for better touch handling
         });
         
         // Create invisible larger touch target for easier selection
         const touchTarget = L.polyline(utilityData.points, {
             color: 'transparent',
-            weight: Math.max(40, scaledWeight * 6), // Much larger touch area (minimum 40px)
+            weight: 50, // Large fixed touch area
             opacity: 0,
             interactive: true,
-            className: `utility-touch-target ${utilityData.type} ${utilityData.lineType}`
+            className: `utility-touch-target ${utilityData.type} ${utilityData.lineType}`,
+            pane: 'overlayPane' // Ensure it's on top
         });
 
         // Enhanced mobile-first interaction handling
@@ -6708,7 +6702,7 @@ const db = firebase.firestore();
             
             // Highlight line on press with stronger visual feedback
             line.setStyle({
-                weight: (utilityData.lineType === 'main' ? 8 : 6) + 4,
+                weight: (utilityData.lineType === 'main' ? 4 : 3) + 2, // Slightly thicker
                 opacity: 1.0,
                 className: `utility-line ${utilityData.type} ${utilityData.lineType} pressing`
             });
@@ -6777,14 +6771,11 @@ const db = firebase.firestore();
             
             clearTimeout(pressTimer);
             
-            // Reset line style to current zoom-appropriate weight
-            const currentZoom = AppState.map.getZoom();
-            const lineScale = calculateUtilityLineScale(currentZoom);
-            const baseWeight = utilityData.lineType === 'main' ? 8 : 6;
-            const scaledWeight = Math.max(1, baseWeight * lineScale);
+            // Reset line style to fixed weight
+            const fixedWeight = utilityData.lineType === 'main' ? 4 : 3;
             
             line.setStyle({
-                weight: scaledWeight,
+                weight: fixedWeight,
                 opacity: 1,
                 className: `utility-line ${utilityData.type} ${utilityData.lineType}`
             });
@@ -6807,38 +6798,37 @@ const db = firebase.firestore();
             hasMoved = false;
         };
 
-        // Enhanced event handling for mobile with explicit touch support - using invisible touch target
-        touchTarget.on('mousedown', startPress);
-        touchTarget.on('touchstart', startPress);
-        touchTarget.on('mousemove', movePress);
-        touchTarget.on('touchmove', movePress);
-        touchTarget.on('mouseup', endPress);
-        touchTarget.on('touchend', endPress);
-        touchTarget.on('mouseleave', endPress);
-        touchTarget.on('touchcancel', endPress);
-        
-        // Additional debugging for mobile touch events
-        if ('ontouchstart' in window) {
-            console.log('📱 Touch support detected, utility touch target registered for:', utilityData.id);
-        }
-
-        touchTarget.on('click', (e) => {
-            // Don't prevent propagation to allow map interactions
-            if (!e.target.closest('#map')) {
-                L.DomEvent.stopPropagation(e);
-            }
+        // Enhanced event handling for mobile - bind to both visual line and touch target
+        const bindEventsToElement = (element, elementName) => {
+            element.on('mousedown', startPress);
+            element.on('touchstart', startPress);
+            element.on('mousemove', movePress);
+            element.on('touchmove', movePress);
+            element.on('mouseup', endPress);
+            element.on('touchend', endPress);
+            element.on('mouseleave', endPress);
+            element.on('touchcancel', endPress);
             
-            // Handle double-tap to open modal (alternative to long press)
-            const now = Date.now();
-            if (now - lastClickTime < 400) {
-                // Double tap detected (more responsive timing)
-                if (!AppState.isDrawing && !AppState.refineMode && !AppState.addingStructure && !AppState.measureMode) {
-                    showInfoModal(utilityData);
-                    hapticFeedback(50);
+            element.on('click', (e) => {
+                // Handle double-tap to open modal (alternative to long press)
+                const now = Date.now();
+                if (now - lastClickTime < 400) {
+                    // Double tap detected (more responsive timing)
+                    if (!AppState.isDrawing && !AppState.refineMode && !AppState.addingStructure && !AppState.measureMode) {
+                        console.log(`🎯 Double tap detected on ${elementName} for utility:`, utilityData.id);
+                        showInfoModal(utilityData);
+                        hapticFeedback(50);
+                    }
                 }
-            }
-            lastClickTime = now;
-        });
+                lastClickTime = now;
+            });
+            
+            console.log(`📱 Touch events bound to ${elementName} for utility:`, utilityData.id);
+        };
+        
+        // Bind events to both elements for better touch coverage
+        bindEventsToElement(line, 'visual line');
+        bindEventsToElement(touchTarget, 'touch target');
 
         // Store references
         utilityData.lineLayer = line;
@@ -6849,12 +6839,21 @@ const db = firebase.firestore();
         touchTarget.addTo(AppState.layers.utilities[utilityData.type]);
 
         // Apply current zoom-based opacity to visible line only
-        const opacity = calculateZoomOpacity(zoom);
+        const currentZoom = AppState.map.getZoom();
+        const opacity = calculateZoomOpacity(currentZoom);
         line.setStyle({ opacity: opacity });
         
-        // Update touch target size based on zoom
-        const touchWeight = Math.max(40, scaledWeight * 6);
-        touchTarget.setStyle({ weight: touchWeight });
+        // Keep touch target at fixed large size
+        touchTarget.setStyle({ weight: 50, opacity: 0 });
+        
+        console.log(`✅ Utility line created with touch events:`, {
+            id: utilityData.id,
+            type: utilityData.type,
+            lineType: utilityData.lineType,
+            visualWeight: baseWeight,
+            touchWeight: 50,
+            eventsReady: true
+        });
 
         // Enhanced connection markers with animations
         if (utilityData.connections && utilityData.connections.length > 0) {
@@ -7338,7 +7337,7 @@ const db = firebase.firestore();
         // Highlight the utility line
         if (AppState.selectedUtilityData.lineLayer) {
             AppState.selectedUtilityData.lineLayer.setStyle({
-                weight: AppState.selectedUtilityData.lineType === 'main' ? 12 : 10,
+                weight: AppState.selectedUtilityData.lineType === 'main' ? 6 : 5,
                 opacity: 1,
                 className: `utility-line ${AppState.selectedUtilityData.type} ${AppState.selectedUtilityData.lineType} highlighted`
             });
@@ -7607,7 +7606,7 @@ const db = firebase.firestore();
             // Reset line styling
         if (AppState.selectedUtilityData.lineLayer) {
             AppState.selectedUtilityData.lineLayer.setStyle({
-                    weight: AppState.selectedUtilityData.lineType === 'main' ? 8 : 6,
+                    weight: AppState.selectedUtilityData.lineType === 'main' ? 4 : 3,
                     opacity: 1,
                 className: `utility-line ${AppState.selectedUtilityData.type} ${AppState.selectedUtilityData.lineType}`
             });
@@ -8204,7 +8203,7 @@ const db = firebase.firestore();
             if (utility.lineLayer) {
                 utility.lineLayer.setStyle({
                     opacity: 1.0, // Full opacity regardless of zoom
-                    weight: utility.lineType === 'main' ? 12 : 10, // Thicker lines
+                    weight: utility.lineType === 'main' ? 6 : 5, // Slightly thicker for excavation
                     className: `utility-line ${utility.type} ${utility.lineType} excavation-enhanced`
                 });
                 
@@ -8243,7 +8242,7 @@ const db = firebase.firestore();
             if (utility.lineLayer) {
                 utility.lineLayer.setStyle({
                     opacity: zoomOpacity,
-                    weight: utility.lineType === 'main' ? 8 : 6, // Normal thickness
+                    weight: utility.lineType === 'main' ? 4 : 3, // Normal fixed thickness
                     className: `utility-line ${utility.type} ${utility.lineType}`
                 });
                 
@@ -8524,11 +8523,21 @@ const db = firebase.firestore();
                                          utility.id === AppState.selectedUtilityData.id;
                     const finalOpacity = (isHighlighted || isBeingRefined) ? 1.0 : zoomOpacity;
                     
-                    utility.lineLayer.setStyle({ opacity: finalOpacity });
+                    // Keep fixed weight
+                    const fixedWeight = utility.lineType === 'main' ? 4 : 3;
+                    
+                    utility.lineLayer.setStyle({ 
+                        opacity: finalOpacity,
+                        weight: fixedWeight
+                    });
                     
                     // Keep touch target interactive when visible
                     if (utility.touchTarget) {
-                        utility.touchTarget.setStyle({ opacity: 0 }); // Always invisible but interactive
+                        utility.touchTarget.setStyle({ 
+                            weight: 50,
+                            opacity: 0 
+                        });
+                        utility.touchTarget.options.interactive = true;
                     }
                 } else {
                     // Completely hidden when type is disabled
