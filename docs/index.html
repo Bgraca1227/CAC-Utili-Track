@@ -827,8 +827,8 @@ const db = firebase.firestore();
         opacity: 0;
         pointer-events: none;
         transition: opacity var(--transition-normal);
-        padding: calc(env(safe-area-inset-top, 0) + 80px) var(--spacing-lg) var(--spacing-lg);
-        padding-top: calc(env(safe-area-inset-top, 0) + 80px);
+        padding: calc(env(safe-area-inset-top, 0) + 20px) var(--spacing-lg) var(--spacing-lg);
+        padding-top: calc(env(safe-area-inset-top, 0) + 20px);
     }
 
     .search-modal.active {
@@ -1022,7 +1022,7 @@ const db = firebase.firestore();
     /* Mobile keyboard handling for search modal */
     @media (max-height: 600px) {
         .search-modal {
-            padding-top: calc(env(safe-area-inset-top, 0) + 40px);
+            padding-top: calc(env(safe-area-inset-top, 0) + 10px);
         }
         
         .search-modal-content {
@@ -1036,7 +1036,7 @@ const db = firebase.firestore();
 
     @media (max-height: 500px) {
         .search-modal {
-            padding-top: calc(env(safe-area-inset-top, 0) + 20px);
+            padding-top: calc(env(safe-area-inset-top, 0) + 5px);
         }
         
         .search-modal-content {
