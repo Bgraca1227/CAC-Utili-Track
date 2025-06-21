@@ -765,6 +765,258 @@ const db = firebase.firestore();
     .top-bar > * {
         pointer-events: auto;
     }
+
+    .top-bar-content {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        width: 100%;
+        max-width: 100%;
+        gap: var(--spacing-md);
+    }
+
+    /* Search Container */
+    .search-container {
+        display: flex;
+        align-items: center;
+    }
+
+    .search-btn {
+        width: 48px;
+        height: 48px;
+        border: none;
+        background: var(--bg-glass);
+        backdrop-filter: blur(20px) saturate(180%);
+        -webkit-backdrop-filter: blur(20px) saturate(180%);
+        border-radius: var(--radius-xl);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        box-shadow: var(--shadow-lg);
+        transition: all var(--transition-normal);
+        border: 1px solid var(--border-color);
+        color: var(--text-primary);
+    }
+
+    .search-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-xl);
+        background: var(--bg-tertiary);
+    }
+
+    .search-btn:active {
+        transform: scale(0.95);
+    }
+
+    .search-btn i {
+        font-size: 20px;
+    }
+
+    /* Search Modal */
+    .search-modal {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.7);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        z-index: 800;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity var(--transition-normal);
+        padding: var(--spacing-lg);
+    }
+
+    .search-modal.active {
+        opacity: 1;
+        pointer-events: auto;
+    }
+
+    .search-modal-content {
+        background: var(--bg-glass);
+        backdrop-filter: blur(30px) saturate(180%);
+        -webkit-backdrop-filter: blur(30px) saturate(180%);
+        border-radius: var(--radius-xl);
+        box-shadow: var(--shadow-xl);
+        width: 100%;
+        max-width: 500px;
+        max-height: 70vh;
+        overflow: hidden;
+        border: 1px solid var(--border-color);
+        transform: scale(0.9);
+        transition: transform var(--transition-spring);
+    }
+
+    .search-modal.active .search-modal-content {
+        transform: scale(1);
+    }
+
+    .search-header {
+        padding: var(--spacing-lg);
+        border-bottom: 1px solid var(--border-color);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .search-header h3 {
+        font-size: 20px;
+        font-weight: 700;
+        margin: 0;
+        background: var(--gradient-primary);
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
+    .search-close {
+        width: 32px;
+        height: 32px;
+        border: none;
+        background: var(--bg-glass-light);
+        border-radius: var(--radius-full);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all var(--transition-normal);
+        color: var(--text-primary);
+    }
+
+    .search-close:hover {
+        background: var(--bg-tertiary);
+        transform: scale(1.1);
+    }
+
+    .search-body {
+        padding: var(--spacing-lg);
+    }
+
+    .search-input-container {
+        display: flex;
+        gap: var(--spacing-sm);
+        margin-bottom: var(--spacing-lg);
+    }
+
+    .search-input {
+        flex: 1;
+        padding: var(--spacing-md) var(--spacing-lg);
+        border: 2px solid var(--border-color);
+        border-radius: var(--radius-md);
+        background: var(--bg-glass-light);
+        color: var(--text-primary);
+        font-size: 16px;
+        font-weight: 500;
+        transition: all var(--transition-normal);
+    }
+
+    .search-input:focus {
+        outline: none;
+        border-color: #667eea;
+        background: var(--bg-secondary);
+        box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+    }
+
+    .search-submit {
+        padding: var(--spacing-md) var(--spacing-lg);
+        border: none;
+        background: var(--gradient-primary);
+        color: white;
+        border-radius: var(--radius-md);
+        font-weight: 600;
+        cursor: pointer;
+        transition: all var(--transition-normal);
+        box-shadow: var(--shadow-md);
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-sm);
+    }
+
+    .search-submit:hover {
+        transform: translateY(-1px);
+        box-shadow: var(--shadow-lg);
+    }
+
+    .search-submit:active {
+        transform: scale(0.95);
+    }
+
+    .search-results {
+        max-height: 300px;
+        overflow-y: auto;
+        border-radius: var(--radius-md);
+        border: 1px solid var(--border-color);
+        background: var(--bg-glass-light);
+    }
+
+    .search-result-item {
+        padding: var(--spacing-md);
+        border-bottom: 1px solid var(--border-color);
+        cursor: pointer;
+        transition: all var(--transition-normal);
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-sm);
+    }
+
+    .search-result-item:last-child {
+        border-bottom: none;
+    }
+
+    .search-result-item:hover {
+        background: var(--bg-tertiary);
+    }
+
+    .search-result-icon {
+        width: 32px;
+        height: 32px;
+        border-radius: var(--radius-md);
+        background: var(--gradient-primary);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 14px;
+        flex-shrink: 0;
+    }
+
+    .search-result-content {
+        flex: 1;
+    }
+
+    .search-result-title {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 2px;
+    }
+
+    .search-result-subtitle {
+        font-size: 12px;
+        color: var(--text-secondary);
+    }
+
+    .search-loading {
+        padding: var(--spacing-lg);
+        text-align: center;
+        color: var(--text-secondary);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: var(--spacing-sm);
+    }
+
+    .search-loading i {
+        animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
     
     /* Utility Selector - Premium Glass Design */
     .utility-selector {
@@ -3878,22 +4130,51 @@ const db = firebase.firestore();
 
     <!-- Top Bar -->
     <div class="top-bar">
-        <div class="utility-selector" role="toolbar" aria-label="Utility type selector">
-            <button class="utility-btn water active" data-utility="water" aria-label="Select water utilities" aria-pressed="true">
-                <i class="fas fa-tint" aria-hidden="true"></i>
-            </button>
-            <button class="utility-btn gas" data-utility="gas" aria-label="Select gas utilities" aria-pressed="false">
-                <i class="fas fa-fire" aria-hidden="true"></i>
-            </button>
-            <button class="utility-btn electric" data-utility="electric" aria-label="Select electric utilities" aria-pressed="false">
-                <i class="fas fa-bolt" aria-hidden="true"></i>
-            </button>
-            <button class="utility-btn sewer" data-utility="sewer" aria-label="Select sewer utilities" aria-pressed="false">
-                <i class="fas fa-toilet" aria-hidden="true"></i>
-            </button>
-            <button class="utility-btn telecom" data-utility="telecom" aria-label="Select telecom utilities" aria-pressed="false">
-                <i class="fas fa-phone" aria-hidden="true"></i>
-            </button>
+        <div class="top-bar-content">
+            <div class="utility-selector" role="toolbar" aria-label="Utility type selector">
+                <button class="utility-btn water active" data-utility="water" aria-label="Select water utilities" aria-pressed="true">
+                    <i class="fas fa-tint" aria-hidden="true"></i>
+                </button>
+                <button class="utility-btn gas" data-utility="gas" aria-label="Select gas utilities" aria-pressed="false">
+                    <i class="fas fa-fire" aria-hidden="true"></i>
+                </button>
+                <button class="utility-btn electric" data-utility="electric" aria-label="Select electric utilities" aria-pressed="false">
+                    <i class="fas fa-bolt" aria-hidden="true"></i>
+                </button>
+                <button class="utility-btn sewer" data-utility="sewer" aria-label="Select sewer utilities" aria-pressed="false">
+                    <i class="fas fa-toilet" aria-hidden="true"></i>
+                </button>
+                <button class="utility-btn telecom" data-utility="telecom" aria-label="Select telecom utilities" aria-pressed="false">
+                    <i class="fas fa-phone" aria-hidden="true"></i>
+                </button>
+            </div>
+            
+            <div class="search-container">
+                <button class="search-btn" id="searchBtn" title="Search for address">
+                    <i class="fas fa-search"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search Modal -->
+    <div class="search-modal" id="searchModal">
+        <div class="search-modal-content">
+            <div class="search-header">
+                <h3>Search Address</h3>
+                <button class="search-close" id="searchCloseBtn">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="search-body">
+                <div class="search-input-container">
+                    <input type="text" class="search-input" id="searchInput" placeholder="Enter address, city, or landmark..." autocomplete="off">
+                    <button class="search-submit" id="searchSubmitBtn">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+                <div class="search-results" id="searchResults"></div>
+            </div>
         </div>
     </div>
 
@@ -5584,6 +5865,16 @@ const db = firebase.firestore();
         // Note input modal
         document.getElementById('cancelNoteBtn').addEventListener('click', hideNoteInput);
         document.getElementById('saveNoteBtn').addEventListener('click', saveNote);
+
+        // Search functionality
+        document.getElementById('searchBtn').addEventListener('click', openSearchModal);
+        document.getElementById('searchCloseBtn').addEventListener('click', closeSearchModal);
+        document.getElementById('searchSubmitBtn').addEventListener('click', performSearch);
+        document.getElementById('searchInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                performSearch();
+            }
+        });
 
         // Excavation mode
         document.getElementById('exitExcavationBtn').addEventListener('click', exitExcavationMode);
@@ -10088,6 +10379,230 @@ const db = firebase.firestore();
         console.log('UtiliTrack cleanup completed');
     }
     
+    // ========== SEARCH FUNCTIONALITY ==========
+
+    function openSearchModal() {
+        const modal = document.getElementById('searchModal');
+        const input = document.getElementById('searchInput');
+        const resultsContainer = document.getElementById('searchResults');
+        
+        modal.classList.add('active');
+        input.focus();
+        
+        // Clear previous results
+        resultsContainer.innerHTML = '';
+        input.value = '';
+        
+        hapticFeedback(30);
+    }
+
+    function closeSearchModal() {
+        const modal = document.getElementById('searchModal');
+        modal.classList.remove('active');
+        hapticFeedback(30);
+    }
+
+    async function performSearch() {
+        const input = document.getElementById('searchInput');
+        const resultsContainer = document.getElementById('searchResults');
+        const query = input.value.trim();
+        
+        if (!query) {
+            showToast('Please enter a search term', 'warning');
+            return;
+        }
+        
+        // Show loading
+        resultsContainer.innerHTML = `
+            <div class="search-loading">
+                <i class="fas fa-spinner"></i>
+                <span>Searching...</span>
+            </div>
+        `;
+        
+        try {
+            console.log('🔍 Searching for:', query);
+            
+            // Use Nominatim (OpenStreetMap) geocoding service - free and no API key required
+            const response = await fetch(
+                `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=10&countrycodes=us&addressdetails=1`,
+                {
+                    headers: {
+                        'User-Agent': 'CAC-UtiliTrack/1.0'
+                    }
+                }
+            );
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const results = await response.json();
+            
+            console.log('📍 Search results:', results);
+            
+            if (results.length === 0) {
+                resultsContainer.innerHTML = `
+                    <div class="search-loading">
+                        <i class="fas fa-search"></i>
+                        <span>No results found for "${query}"</span>
+                    </div>
+                `;
+                return;
+            }
+            
+            // Display results
+            displaySearchResults(results);
+            
+        } catch (error) {
+            console.error('❌ Search error:', error);
+            resultsContainer.innerHTML = `
+                <div class="search-loading">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <span>Search failed. Please try again.</span>
+                </div>
+            `;
+            showToast('Search failed. Please check your internet connection.', 'error');
+        }
+    }
+
+    function displaySearchResults(results) {
+        const resultsContainer = document.getElementById('searchResults');
+        
+        resultsContainer.innerHTML = results.map((result, index) => {
+            const type = result.type || result.class || 'location';
+            const icon = getLocationIcon(type);
+            
+            // Create display name
+            let displayName = result.display_name;
+            if (displayName.length > 60) {
+                displayName = displayName.substring(0, 60) + '...';
+            }
+            
+            // Get address components
+            const address = result.address || {};
+            const mainName = address.house_number && address.road 
+                ? `${address.house_number} ${address.road}`
+                : address.road || address.name || result.display_name.split(',')[0];
+            
+            const locality = [
+                address.city || address.town || address.village,
+                address.state,
+                address.postcode
+            ].filter(Boolean).join(', ');
+            
+            return `
+                <div class="search-result-item" onclick="selectSearchResult(${result.lat}, ${result.lon}, '${mainName.replace(/'/g, "\\'")}')">
+                    <div class="search-result-icon">
+                        <i class="fas ${icon}"></i>
+                    </div>
+                    <div class="search-result-content">
+                        <div class="search-result-title">${mainName}</div>
+                        <div class="search-result-subtitle">${locality}</div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    function getLocationIcon(type) {
+        const iconMap = {
+            'house': 'fa-home',
+            'building': 'fa-building',
+            'residential': 'fa-home',
+            'commercial': 'fa-store',
+            'industrial': 'fa-industry',
+            'school': 'fa-school',
+            'hospital': 'fa-hospital',
+            'restaurant': 'fa-utensils',
+            'hotel': 'fa-bed',
+            'gas_station': 'fa-gas-pump',
+            'bank': 'fa-university',
+            'park': 'fa-tree',
+            'road': 'fa-road',
+            'street': 'fa-road',
+            'highway': 'fa-highway',
+            'city': 'fa-city',
+            'town': 'fa-map-marker',
+            'village': 'fa-map-marker',
+            'suburb': 'fa-map-marker-alt',
+            'administrative': 'fa-landmark',
+            'boundary': 'fa-map',
+            'place': 'fa-map-marker-alt'
+        };
+        
+        return iconMap[type] || 'fa-map-marker-alt';
+    }
+
+    function selectSearchResult(lat, lon, name) {
+        console.log(`📍 Selected location: ${name} at ${lat}, ${lon}`);
+        
+        // Center map on selected location
+        AppState.map.setView([lat, lon], 18);
+        
+        // Add temporary marker to show the searched location
+        const searchMarker = L.marker([lat, lon], {
+            icon: L.divIcon({
+                className: 'search-result-marker',
+                html: `
+                    <div style="
+                        width: 40px; 
+                        height: 40px; 
+                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+                        border: 3px solid white; 
+                        border-radius: 50%; 
+                        display: flex; 
+                        align-items: center; 
+                        justify-content: center; 
+                        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+                        animation: searchBounce 0.6s ease-out;
+                    ">
+                        <i class="fas fa-search" style="color: white; font-size: 16px;"></i>
+                    </div>
+                `,
+                iconSize: [40, 40],
+                iconAnchor: [20, 20]
+            })
+        }).addTo(AppState.map);
+        
+        // Remove marker after 5 seconds
+        setTimeout(() => {
+            if (AppState.map.hasLayer(searchMarker)) {
+                AppState.map.removeLayer(searchMarker);
+            }
+        }, 5000);
+        
+        // Close search modal
+        closeSearchModal();
+        
+        // Show success message
+        showToast(`📍 Found: ${name}`, 'success');
+        hapticFeedback(100);
+    }
+
+    // Make selectSearchResult available globally for onclick handlers
+    window.selectSearchResult = selectSearchResult;
+
+    // Add bounce animation CSS
+    const searchAnimationStyle = document.createElement('style');
+    searchAnimationStyle.textContent = `
+        @keyframes searchBounce {
+            0% {
+                transform: scale(0.3) translateY(-50px);
+                opacity: 0;
+            }
+            50% {
+                transform: scale(1.1) translateY(-10px);
+                opacity: 1;
+            }
+            100% {
+                transform: scale(1) translateY(0);
+                opacity: 1;
+            }
+        }
+    `;
+    document.head.appendChild(searchAnimationStyle);
+
     // Cleanup on page unload
     window.addEventListener('beforeunload', cleanup);
     window.addEventListener('pagehide', cleanup);
