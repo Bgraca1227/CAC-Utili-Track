@@ -1174,11 +1174,21 @@ const db = firebase.firestore();
         transform-origin: center center;
         will-change: transform;
         opacity: 1.0 !important; /* Always visible regardless of zoom */
+        visibility: visible !important; /* Force visibility */
+        display: block !important; /* Force display */
     }
     
     /* Ensure all child elements of location marker are visible */
     .user-location-marker * {
         opacity: inherit !important;
+        visibility: visible !important;
+    }
+    
+    /* Specific targeting for location container */
+    .location-container {
+        opacity: 1.0 !important;
+        visibility: visible !important;
+        display: flex !important;
     }
     
     .location-container {
@@ -5879,11 +5889,20 @@ const db = firebase.firestore();
                 zIndexOffset: 1000
             }).addTo(AppState.map);
         
-        // Ensure marker element is always visible
+        // Ensure marker element is always visible with comprehensive styling
         const markerElement = AppState.userMarker.getElement();
         if (markerElement) {
             markerElement.style.opacity = '1.0';
+            markerElement.style.visibility = 'visible';
+            markerElement.style.display = 'block';
             markerElement.style.zIndex = '1000';
+            
+            // Ensure all child elements are visible too
+            const container = markerElement.querySelector('.location-container');
+            if (container) {
+                container.style.opacity = '1.0';
+                container.style.visibility = 'visible';
+            }
         }
         
                  // Apply initial scaling
@@ -5916,14 +5935,18 @@ const db = firebase.firestore();
         // Update marker attributes for visual states and ensure visibility
         const markerElement = AppState.userMarker.getElement();
         if (markerElement) {
-            // Ensure marker stays visible
+            // Ensure marker stays visible with comprehensive styling
             markerElement.style.opacity = '1.0';
+            markerElement.style.visibility = 'visible';
+            markerElement.style.display = 'block';
             markerElement.style.zIndex = '1000';
             
             const container = markerElement.querySelector('.location-container');
-        if (container) {
-            container.setAttribute('data-gps-quality', AppState.gps.quality);
-            container.setAttribute('data-moving', AppState.gps.isMoving.toString());
+            if (container) {
+                container.setAttribute('data-gps-quality', AppState.gps.quality);
+                container.setAttribute('data-moving', AppState.gps.isMoving.toString());
+                container.style.opacity = '1.0';
+                container.style.visibility = 'visible';
             }
         }
         
@@ -6057,19 +6080,31 @@ const db = firebase.firestore();
             markerElement.style.transform = `scale(${scale})`;
             markerElement.style.transformOrigin = 'center center';
             markerElement.style.opacity = '1.0'; // Always fully visible
+            markerElement.style.visibility = 'visible'; // Force visibility
+            markerElement.style.display = 'block'; // Ensure it's displayed
             markerElement.style.zIndex = '1000'; // Always on top
+            
+            // Ensure all child elements are also visible
+            const container = markerElement.querySelector('.location-container');
+            if (container) {
+                container.style.opacity = '1.0';
+                container.style.visibility = 'visible';
+            }
+            
+            console.log(`📍 Location marker transform applied: zoom=${zoom}, scale=${scale}`);
         }
     }
 
     // Separate scaling function for user location marker - more conservative scaling
     function calculateUserLocationScale(zoom) {
-        // More conservative scaling that keeps the marker visible at all zoom levels
+        // Very conservative scaling that ensures marker is always clearly visible
         if (zoom >= 18) return 1.0;     // Full size at close zoom
-        if (zoom >= 16) return 0.9;     // 90% size
-        if (zoom >= 14) return 0.8;     // 80% size
-        if (zoom >= 12) return 0.7;     // 70% size
-        if (zoom >= 10) return 0.6;     // 60% size - still clearly visible
-        return 0.5;                     // Minimum 50% size - never disappears
+        if (zoom >= 16) return 1.0;     // Keep full size longer
+        if (zoom >= 14) return 0.9;     // 90% size
+        if (zoom >= 12) return 0.8;     // 80% size
+        if (zoom >= 10) return 0.8;     // Keep larger at medium zoom
+        if (zoom >= 8) return 0.8;      // Still clearly visible
+        return 0.8;                     // Minimum 80% size - always clearly visible
     }
 
     // ========== UTILITY FUNCTIONS ==========
@@ -6222,12 +6257,23 @@ const db = firebase.firestore();
         if (AppState.userMarker) {
             applyPremiumLocationTransform();
             
-            // Double-check marker visibility after zoom change
-            const markerElement = AppState.userMarker.getElement();
-            if (markerElement) {
-                markerElement.style.opacity = '1.0';
-                markerElement.style.zIndex = '1000';
-            }
+            // Triple-check marker visibility after zoom change with delay to handle timing issues
+            setTimeout(() => {
+                const markerElement = AppState.userMarker?.getElement();
+                if (markerElement) {
+                    markerElement.style.opacity = '1.0';
+                    markerElement.style.visibility = 'visible';
+                    markerElement.style.display = 'block';
+                    markerElement.style.zIndex = '1000';
+                    
+                    // Ensure container is also visible
+                    const container = markerElement.querySelector('.location-container');
+                    if (container) {
+                        container.style.opacity = '1.0';
+                        container.style.visibility = 'visible';
+                    }
+                }
+            }, 50); // Small delay to handle any timing conflicts
         }
         
         // Ensure refine markers are always fully visible
@@ -9932,6 +9978,45 @@ const db = firebase.firestore();
     
     window.fixLocationMarker = fixLocationMarker;
     
+    // Enhanced location marker visibility guardian
+    function ensureLocationMarkerVisibility() {
+        if (!AppState.userMarker) return;
+        
+        const markerElement = AppState.userMarker.getElement();
+        if (!markerElement) return;
+        
+        // Force all visibility properties
+        markerElement.style.opacity = '1.0';
+        markerElement.style.visibility = 'visible';
+        markerElement.style.display = 'block';
+        markerElement.style.zIndex = '1000';
+        
+        // Ensure proper scaling
+        const zoom = AppState.map.getZoom();
+        const scale = calculateUserLocationScale(zoom);
+        markerElement.style.transform = `scale(${scale})`;
+        markerElement.style.transformOrigin = 'center center';
+        
+        // Ensure container visibility
+        const container = markerElement.querySelector('.location-container');
+        if (container) {
+            container.style.opacity = '1.0';
+            container.style.visibility = 'visible';
+            container.style.display = 'flex';
+        }
+        
+        console.log(`🛡️ Location marker visibility ensured at zoom ${zoom}`);
+    }
+    
+    // Start periodic visibility check
+    if (typeof window.locationVisibilityInterval === 'undefined') {
+        window.locationVisibilityInterval = setInterval(() => {
+            if (AppState.userMarker && AppState.map) {
+                ensureLocationMarkerVisibility();
+            }
+        }, 2000); // Check every 2 seconds
+    }
+    
     // Enhanced cleanup function for memory management
     function cleanup() {
         console.log('Cleaning up UtiliTrack resources...');
@@ -9955,6 +10040,12 @@ const db = firebase.firestore();
             }
         });
         AppState.alertTimeouts.clear();
+        
+        // Clear location visibility guardian
+        if (window.locationVisibilityInterval) {
+            clearInterval(window.locationVisibilityInterval);
+            window.locationVisibilityInterval = undefined;
+        }
         
         // Clear refine markers if any exist
         if (AppState.refineMarkers && AppState.refineMarkers.length > 0) {
