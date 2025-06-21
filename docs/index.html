@@ -1019,6 +1019,17 @@ const db = firebase.firestore();
         to { transform: rotate(360deg); }
     }
 
+    /* Standalone mode specific search modal positioning */
+    @media all and (display-mode: standalone) {
+        .search-modal {
+            padding-top: calc(env(safe-area-inset-top, 20px) + 10px);
+        }
+        
+        .search-modal-content {
+            max-height: 45vh;
+        }
+    }
+
     /* Mobile keyboard handling for search modal */
     @media (max-height: 600px) {
         .search-modal {
@@ -1045,6 +1056,27 @@ const db = firebase.firestore();
         
         .search-results {
             max-height: 100px;
+        }
+    }
+
+    /* Standalone mode keyboard handling */
+    @media all and (display-mode: standalone) and (max-height: 600px) {
+        .search-modal {
+            padding-top: calc(env(safe-area-inset-top, 20px) + 5px);
+        }
+        
+        .search-modal-content {
+            max-height: 35vh;
+        }
+    }
+
+    @media all and (display-mode: standalone) and (max-height: 500px) {
+        .search-modal {
+            padding-top: calc(env(safe-area-inset-top, 20px) + 2px);
+        }
+        
+        .search-modal-content {
+            max-height: 30vh;
         }
     }
     
@@ -10415,6 +10447,11 @@ const db = firebase.firestore();
         const modal = document.getElementById('searchModal');
         const input = document.getElementById('searchInput');
         const resultsContainer = document.getElementById('searchResults');
+        
+        // Debug: Check if we're in standalone mode
+        const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
+                            window.navigator.standalone === true;
+        console.log('🔍 Opening search modal - Standalone mode:', isStandalone);
         
         modal.classList.add('active');
         input.focus();
