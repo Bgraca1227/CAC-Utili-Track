@@ -10826,6 +10826,833 @@ const db = firebase.firestore();
     // Cleanup on page unload
     window.addEventListener('beforeunload', cleanup);
     window.addEventListener('pagehide', cleanup);
+
+    /*********************************
+    * USER PROFILE & EXPERIENCE SYSTEM
+    *********************************/
+    const ExperienceSystem = {
+        // Level thresholds (exponential progression)
+        levelThresholds: [
+            0,      // Level 1
+            100,    // Level 2
+            250,    // Level 3
+            450,    // Level 4
+            700,    // Level 5
+            1000,   // Level 6
+            1400,   // Level 7
+            1900,   // Level 8
+            2500,   // Level 9
+            3200,   // Level 10
+            4000,   // Level 11
+            5000,   // Level 12
+            6200,   // Level 13
+            7600,   // Level 14
+            9200,   // Level 15
+            11000,  // Level 16
+            13000,  // Level 17
+            15300,  // Level 18
+            17900,  // Level 19
+            20800,  // Level 20
+        ],
+        
+        // Achievement definitions
+        achievements: {
+            first_steps: {
+                id: 'first_steps',
+                name: 'First Steps',
+                description: 'Draw your first utility',
+                exp: 50,
+                icon: 'route',
+                check: (userData) => userData.totalUtilitiesDrawn >= 1
+            },
+            mapper_novice: {
+                id: 'mapper_novice',
+                name: 'Mapper Novice',
+                description: 'Draw 10 utilities',
+                exp: 100,
+                icon: 'map',
+                check: (userData) => userData.totalUtilitiesDrawn >= 10
+            },
+            jack_of_all_trades: {
+                id: 'jack_of_all_trades',
+                name: 'Jack of All Trades',
+                description: 'Draw all 5 utility types',
+                exp: 200,
+                icon: 'layers',
+                check: (userData) => {
+                    return userData.statsWater > 0 && userData.statsGas > 0 && 
+                           userData.statsElectric > 0 && userData.statsSewer > 0 && 
+                           userData.statsTelecom > 0;
+                }
+            },
+            mile_walker: {
+                id: 'mile_walker',
+                name: 'A Mile in My Shoes',
+                description: 'Draw a mile of utilities total',
+                exp: 300,
+                icon: 'ruler',
+                check: (userData) => userData.totalDistance >= 1609.34 // 1 mile in meters
+            },
+            first_delete: {
+                id: 'first_delete',
+                name: 'Clean Slate',
+                description: 'Delete your first utility',
+                exp: 25,
+                icon: 'trash',
+                requiresAction: 'delete'
+            },
+            first_edit: {
+                id: 'first_edit',
+                name: 'Perfectionist',
+                description: 'Edit your first utility',
+                exp: 25,
+                icon: 'edit',
+                requiresAction: 'edit'
+            },
+            first_refine: {
+                id: 'first_refine',
+                name: 'Fine Tuner',
+                description: 'Refine your first utility',
+                exp: 25,
+                icon: 'crosshairs',
+                requiresAction: 'refine'
+            },
+            // Type-specific achievements
+            water_10: { id: 'water_10', name: 'Water Apprentice', description: 'Draw 10 water utilities', exp: 50, icon: 'tint', check: (userData) => userData.statsWater >= 10 },
+            water_25: { id: 'water_25', name: 'Water Journeyman', description: 'Draw 25 water utilities', exp: 100, icon: 'tint', check: (userData) => userData.statsWater >= 25 },
+            water_50: { id: 'water_50', name: 'Water Expert', description: 'Draw 50 water utilities', exp: 150, icon: 'tint', check: (userData) => userData.statsWater >= 50 },
+            water_100: { id: 'water_100', name: 'Water Master', description: 'Draw 100 water utilities', exp: 250, icon: 'tint', check: (userData) => userData.statsWater >= 100 },
+            
+            gas_10: { id: 'gas_10', name: 'Gas Apprentice', description: 'Draw 10 gas utilities', exp: 50, icon: 'fire', check: (userData) => userData.statsGas >= 10 },
+            gas_25: { id: 'gas_25', name: 'Gas Journeyman', description: 'Draw 25 gas utilities', exp: 100, icon: 'fire', check: (userData) => userData.statsGas >= 25 },
+            gas_50: { id: 'gas_50', name: 'Gas Expert', description: 'Draw 50 gas utilities', exp: 150, icon: 'fire', check: (userData) => userData.statsGas >= 50 },
+            gas_100: { id: 'gas_100', name: 'Gas Master', description: 'Draw 100 gas utilities', exp: 250, icon: 'fire', check: (userData) => userData.statsGas >= 100 },
+            
+            electric_10: { id: 'electric_10', name: 'Electric Apprentice', description: 'Draw 10 electric utilities', exp: 50, icon: 'bolt', check: (userData) => userData.statsElectric >= 10 },
+            electric_25: { id: 'electric_25', name: 'Electric Journeyman', description: 'Draw 25 electric utilities', exp: 100, icon: 'bolt', check: (userData) => userData.statsElectric >= 25 },
+            electric_50: { id: 'electric_50', name: 'Electric Expert', description: 'Draw 50 electric utilities', exp: 150, icon: 'bolt', check: (userData) => userData.statsElectric >= 50 },
+            electric_100: { id: 'electric_100', name: 'Electric Master', description: 'Draw 100 electric utilities', exp: 250, icon: 'bolt', check: (userData) => userData.statsElectric >= 100 },
+            
+            sewer_10: { id: 'sewer_10', name: 'Sewer Apprentice', description: 'Draw 10 sewer utilities', exp: 50, icon: 'toilet', check: (userData) => userData.statsSewer >= 10 },
+            sewer_25: { id: 'sewer_25', name: 'Sewer Journeyman', description: 'Draw 25 sewer utilities', exp: 100, icon: 'toilet', check: (userData) => userData.statsSewer >= 25 },
+            sewer_50: { id: 'sewer_50', name: 'Sewer Expert', description: 'Draw 50 sewer utilities', exp: 150, icon: 'toilet', check: (userData) => userData.statsSewer >= 50 },
+            sewer_100: { id: 'sewer_100', name: 'Sewer Master', description: 'Draw 100 sewer utilities', exp: 250, icon: 'toilet', check: (userData) => userData.statsSewer >= 100 },
+            
+            telecom_10: { id: 'telecom_10', name: 'Telecom Apprentice', description: 'Draw 10 telecom utilities', exp: 50, icon: 'phone', check: (userData) => userData.statsTelecom >= 10 },
+            telecom_25: { id: 'telecom_25', name: 'Telecom Journeyman', description: 'Draw 25 telecom utilities', exp: 100, icon: 'phone', check: (userData) => userData.statsTelecom >= 25 },
+            telecom_50: { id: 'telecom_50', name: 'Telecom Expert', description: 'Draw 50 telecom utilities', exp: 150, icon: 'phone', check: (userData) => userData.statsTelecom >= 50 },
+            telecom_100: { id: 'telecom_100', name: 'Telecom Master', description: 'Draw 100 telecom utilities', exp: 250, icon: 'phone', check: (userData) => userData.statsTelecom >= 100 },
+        },
+        
+        // Initialize the experience system
+        init: async function() {
+            if (!AppState.currentUser) return;
+            
+            const userId = AppState.currentUser.uid;
+            const userRef = db.collection('users').doc(userId);
+            
+            // Listen to user data changes
+            userRef.onSnapshot((doc) => {
+                if (doc.exists) {
+                    const userData = doc.data();
+                    this.updateUserProfile(userData);
+                }
+            });
+            
+            // Create profile widget if it doesn't exist
+            if (!document.getElementById('user-profile-widget')) {
+                this.createProfileWidget();
+            }
+            
+            // Initialize audit log button for admins
+            const userData = await this.getUserData();
+            if (userData && userData.role === 'admin') {
+                this.createAuditLogButton();
+            }
+        },
+        
+        // Get current user data
+        getUserData: async function() {
+            if (!AppState.currentUser) return null;
+            
+            const userId = AppState.currentUser.uid;
+            const userDoc = await db.collection('users').doc(userId).get();
+            
+            if (userDoc.exists) {
+                return userDoc.data();
+            }
+            return null;
+        },
+        
+        // Create profile widget
+        createProfileWidget: function() {
+            const widget = document.createElement('div');
+            widget.id = 'user-profile-widget';
+            widget.className = 'user-profile-widget';
+            widget.innerHTML = `
+                <div class="profile-avatar-container">
+                    <div class="profile-avatar">
+                        <svg class="avatar-svg" viewBox="0 0 100 100" id="avatar-svg">
+                            <!-- Avatar will be generated here -->
+                        </svg>
+                    </div>
+                    <div class="exp-ring">
+                        <svg viewBox="0 0 56 56">
+                            <defs>
+                                <linearGradient id="expGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+                                    <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+                                </linearGradient>
+                            </defs>
+                            <circle cx="28" cy="28" r="25" class="exp-ring-bg" />
+                            <circle cx="28" cy="28" r="25" class="exp-ring-fill" id="exp-ring-fill" />
+                        </svg>
+                    </div>
+                    <div class="level-badge" id="level-badge">1</div>
+                </div>
+                <div class="profile-info">
+                    <div class="profile-name" id="profile-name">Loading...</div>
+                    <div class="profile-exp" id="profile-exp">0 / 100 EXP</div>
+                    <div class="exp-progress">
+                        <div class="exp-progress-bar" id="exp-progress-bar" style="width: 0%"></div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(widget);
+        },
+        
+        // Update user profile display
+        updateUserProfile: function(userData) {
+            if (!userData) return;
+            
+            // Ensure required fields exist with defaults
+            const exp = userData.exp || 0;
+            const level = userData.level || 1;
+            const email = userData.email || 'Unknown User';
+            
+            // Update profile name
+            const profileName = document.getElementById('profile-name');
+            if (profileName) {
+                profileName.textContent = email.split('@')[0];
+            }
+            
+            // Update level badge
+            const levelBadge = document.getElementById('level-badge');
+            if (levelBadge) {
+                levelBadge.textContent = level;
+            }
+            
+            // Calculate exp progress
+            const currentLevelThreshold = this.levelThresholds[level - 1] || 0;
+            const nextLevelThreshold = this.levelThresholds[level] || this.levelThresholds[this.levelThresholds.length - 1];
+            const levelProgress = exp - currentLevelThreshold;
+            const levelRequired = nextLevelThreshold - currentLevelThreshold;
+            const progressPercent = Math.max(0, Math.min(100, (levelProgress / levelRequired) * 100));
+            
+            // Update exp text
+            const profileExp = document.getElementById('profile-exp');
+            if (profileExp) {
+                profileExp.textContent = `${levelProgress} / ${levelRequired} EXP`;
+            }
+            
+            // Update progress bar
+            const progressBar = document.getElementById('exp-progress-bar');
+            if (progressBar) {
+                progressBar.style.width = `${progressPercent}%`;
+            }
+            
+            // Update exp ring
+            const expRing = document.getElementById('exp-ring-fill');
+            if (expRing) {
+                const circumference = 2 * Math.PI * 25;
+                const strokeDasharray = `${(progressPercent / 100) * circumference} ${circumference}`;
+                expRing.style.strokeDasharray = strokeDasharray;
+            }
+            
+            // Update avatar
+            this.updateAvatar(level);
+        },
+        
+        // Update avatar based on level
+        updateAvatar: function(level) {
+            const avatarSvg = document.getElementById('avatar-svg');
+            if (!avatarSvg) return;
+            
+            // Generate geometric avatar based on level
+            const shapes = this.generateAvatarShapes(level);
+            avatarSvg.innerHTML = shapes;
+        },
+        
+        // Generate avatar shapes based on level
+        generateAvatarShapes: function(level) {
+            let shapes = '';
+            const baseColor = 'rgba(255, 255, 255, 0.9)';
+            
+            // Level 1-5: Simple shapes
+            if (level >= 1) {
+                shapes += `<circle cx="50" cy="50" r="30" fill="${baseColor}" />`;
+            }
+            
+            // Level 6-10: Add inner details
+            if (level >= 6) {
+                shapes += `<circle cx="50" cy="50" r="20" fill="none" stroke="${baseColor}" stroke-width="2" />`;
+            }
+            
+            // Level 11-15: Add triangular elements
+            if (level >= 11) {
+                shapes += `<polygon points="50,25 65,45 35,45" fill="${baseColor}" opacity="0.6" />`;
+                shapes += `<polygon points="50,75 65,55 35,55" fill="${baseColor}" opacity="0.6" />`;
+            }
+            
+            // Level 16-20: Add hexagonal frame
+            if (level >= 16) {
+                shapes += `<polygon points="50,15 75,32.5 75,67.5 50,85 25,67.5 25,32.5" fill="none" stroke="${baseColor}" stroke-width="2" />`;
+            }
+            
+            return shapes;
+        },
+        
+        // Award experience points
+        awardExp: async function(amount, reason) {
+            if (!AppState.currentUser) return;
+            
+            const userId = AppState.currentUser.uid;
+            const userRef = db.collection('users').doc(userId);
+            
+            try {
+                const userData = await this.getUserData();
+                if (!userData) return;
+                
+                const currentExp = userData.exp || 0;
+                const currentLevel = userData.level || 1;
+                const newExp = Math.max(0, currentExp + amount);
+                
+                // Calculate new level
+                let newLevel = currentLevel;
+                for (let i = 0; i < this.levelThresholds.length; i++) {
+                    if (newExp >= this.levelThresholds[i]) {
+                        newLevel = i + 1;
+                    }
+                }
+                
+                // Update user data
+                await userRef.update({
+                    exp: newExp,
+                    level: newLevel,
+                    lastActiveDate: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                
+                // Show exp gain animation
+                this.showExpGain(amount);
+                
+                // Check for level up
+                if (newLevel > currentLevel) {
+                    this.showLevelUp(newLevel);
+                }
+                
+            } catch (error) {
+                console.error('Error awarding exp:', error);
+            }
+        },
+        
+        // Show exp gain animation
+        showExpGain: function(amount) {
+            const widget = document.getElementById('user-profile-widget');
+            if (!widget) return;
+            
+            const popup = document.createElement('div');
+            popup.className = 'exp-gain-popup';
+            popup.textContent = amount > 0 ? `+${amount} EXP` : `${amount} EXP`;
+            popup.style.left = '60px';
+            popup.style.top = '20px';
+            popup.style.color = amount > 0 ? '#667eea' : '#ff0054';
+            
+            widget.appendChild(popup);
+            
+            setTimeout(() => {
+                popup.remove();
+            }, 1500);
+        },
+        
+        // Show level up animation
+        showLevelUp: function(newLevel) {
+            const levelUpDiv = document.createElement('div');
+            levelUpDiv.className = 'level-up-animation';
+            levelUpDiv.innerHTML = `
+                <div class="level-up-content">
+                    <div class="level-up-icon">
+                        <div class="level-up-number">${newLevel}</div>
+                    </div>
+                    <div class="level-up-text">Level Up!</div>
+                    <div class="level-up-subtext">You've reached level ${newLevel}</div>
+                    <div class="level-particles" id="level-particles"></div>
+                </div>
+            `;
+            
+            document.body.appendChild(levelUpDiv);
+            
+            // Create particles
+            const particlesContainer = document.getElementById('level-particles');
+            for (let i = 0; i < 20; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = '50%';
+                particle.style.top = '50%';
+                particle.style.setProperty('--tx', `${(Math.random() - 0.5) * 200}px`);
+                particle.style.setProperty('--ty', `${(Math.random() - 0.5) * 200}px`);
+                particle.style.animationDelay = `${Math.random() * 0.5}s`;
+                particlesContainer.appendChild(particle);
+            }
+            
+            // Remove after animation
+            setTimeout(() => {
+                levelUpDiv.remove();
+            }, 3000);
+        },
+        
+        // Check achievements
+        checkAchievements: async function(action) {
+            if (!AppState.currentUser) return;
+            
+            const userId = AppState.currentUser.uid;
+            const userRef = db.collection('users').doc(userId);
+            const userData = await this.getUserData();
+            
+            if (!userData) return;
+            
+            const currentAchievements = userData.achievements || [];
+            
+            for (const [key, achievement] of Object.entries(this.achievements)) {
+                // Skip if already earned
+                if (currentAchievements.includes(achievement.id)) continue;
+                
+                // Check if achievement requires specific action
+                if (achievement.requiresAction && achievement.requiresAction !== action) continue;
+                
+                // Check if achievement is earned
+                if (achievement.check && achievement.check(userData)) {
+                    // Award achievement
+                    await userRef.update({
+                        achievements: firebase.firestore.FieldValue.arrayUnion(achievement.id)
+                    });
+                    
+                    // Award exp
+                    await this.awardExp(achievement.exp, `Achievement: ${achievement.name}`);
+                    
+                    // Show achievement toast
+                    this.showAchievementToast(achievement);
+                }
+            }
+        },
+        
+        // Show achievement toast
+        showAchievementToast: function(achievement) {
+            const toast = document.createElement('div');
+            toast.className = 'achievement-toast';
+            toast.innerHTML = `
+                <div class="achievement-icon">
+                    <i class="fas fa-${achievement.icon}"></i>
+                </div>
+                <div class="achievement-content">
+                    <div class="achievement-title">${achievement.name}</div>
+                    <div class="achievement-desc">${achievement.description}</div>
+                    <div class="achievement-exp">+${achievement.exp} EXP</div>
+                </div>
+                <button class="achievement-close">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
+            
+            document.body.appendChild(toast);
+            
+            // Show animation
+            setTimeout(() => {
+                toast.classList.add('show');
+            }, 100);
+            
+            // Auto hide after 5 seconds
+            const hideTimeout = setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => {
+                    toast.remove();
+                }, 500);
+            }, 5000);
+            
+            // Close button
+            toast.querySelector('.achievement-close').addEventListener('click', () => {
+                clearTimeout(hideTimeout);
+                toast.classList.remove('show');
+                setTimeout(() => {
+                    toast.remove();
+                }, 500);
+            });
+        },
+        
+        // Create audit log button for admins
+        createAuditLogButton: function() {
+            const button = document.createElement('button');
+            button.className = 'audit-log-btn';
+            button.id = 'audit-log-btn';
+            button.title = 'Audit Log';
+            button.innerHTML = '<i class="fas fa-history"></i>';
+            
+            document.body.appendChild(button);
+            
+            button.addEventListener('click', () => {
+                AuditLog.toggle();
+            });
+        },
+        
+        // Calculate utility distance
+        calculateUtilityDistance: function(points) {
+            let totalDistance = 0;
+            
+            for (let i = 0; i < points.length - 1; i++) {
+                const p1 = points[i];
+                const p2 = points[i + 1];
+                const distance = haversineDistance(p1.lat, p1.lng, p2.lat, p2.lng);
+                totalDistance += distance;
+            }
+            
+            return totalDistance; // Returns meters
+        }
+    };
+
+    /*********************************
+    * AUDIT LOG SYSTEM
+    *********************************/
+    const AuditLog = {
+        isOpen: false,
+        currentFilter: 'all',
+        
+        // Initialize audit log
+        init: function() {
+            this.createAuditLogPanel();
+        },
+        
+        // Create audit log panel
+        createAuditLogPanel: function() {
+            const panel = document.createElement('div');
+            panel.className = 'audit-log-panel';
+            panel.id = 'audit-log-panel';
+            panel.innerHTML = `
+                <div class="audit-log-header">
+                    <div class="audit-log-title">Audit Log</div>
+                    <button class="audit-log-close" id="audit-log-close">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="audit-log-filters">
+                    <button class="audit-filter-btn active" data-filter="all">All</button>
+                    <button class="audit-filter-btn" data-filter="created">Created</button>
+                    <button class="audit-filter-btn" data-filter="edited">Edited</button>
+                    <button class="audit-filter-btn" data-filter="deleted">Deleted</button>
+                    <button class="audit-filter-btn" data-filter="refined">Refined</button>
+                </div>
+                <div class="audit-log-list" id="audit-log-list">
+                    <!-- Logs will be populated here -->
+                </div>
+            `;
+            
+            document.body.appendChild(panel);
+            
+            // Event listeners
+            document.getElementById('audit-log-close').addEventListener('click', () => {
+                this.close();
+            });
+            
+            // Filter buttons
+            panel.querySelectorAll('.audit-filter-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    this.setFilter(btn.getAttribute('data-filter'));
+                });
+            });
+        },
+        
+        // Toggle audit log panel
+        toggle: function() {
+            if (this.isOpen) {
+                this.close();
+            } else {
+                this.open();
+            }
+        },
+        
+        // Open audit log
+        open: function() {
+            this.isOpen = true;
+            document.getElementById('audit-log-panel').classList.add('show');
+            this.loadLogs();
+        },
+        
+        // Close audit log
+        close: function() {
+            this.isOpen = false;
+            document.getElementById('audit-log-panel').classList.remove('show');
+        },
+        
+        // Set filter
+        setFilter: function(filter) {
+            this.currentFilter = filter;
+            
+            // Update button states
+            document.querySelectorAll('.audit-filter-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.getAttribute('data-filter') === filter);
+            });
+            
+            this.loadLogs();
+        },
+        
+        // Load audit logs
+        loadLogs: async function() {
+            const logList = document.getElementById('audit-log-list');
+            logList.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--text-secondary);">Loading...</div>';
+            
+            try {
+                let query = AppState.safeCollection('auditLogs')
+                    .orderBy('timestamp', 'desc')
+                    .limit(100);
+                
+                if (this.currentFilter !== 'all') {
+                    query = query.where('action', '==', this.currentFilter);
+                }
+                
+                const snapshot = await query.get();
+                
+                if (snapshot.empty) {
+                    logList.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-secondary);">No audit logs found</div>';
+                    return;
+                }
+                
+                logList.innerHTML = '';
+                
+                snapshot.forEach(doc => {
+                    const log = doc.data();
+                    const logItem = this.createLogItem(log);
+                    logList.appendChild(logItem);
+                });
+                
+            } catch (error) {
+                console.error('Error loading audit logs:', error);
+                logList.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--danger-color);">Error loading logs</div>';
+            }
+        },
+        
+        // Create log item element
+        createLogItem: function(log) {
+            const item = document.createElement('div');
+            item.className = 'audit-log-item';
+            
+            const timestamp = log.timestamp ? new Date(log.timestamp.toDate()).toLocaleString() : 'Unknown time';
+            
+            item.innerHTML = `
+                <div class="audit-item-header">
+                    <span class="audit-action-badge ${log.action}">${log.action}</span>
+                    <span class="audit-timestamp">${timestamp}</span>
+                </div>
+                <div class="audit-user">${log.userEmail || 'Unknown user'}</div>
+                <div class="audit-details">${this.formatDetails(log)}</div>
+                <div class="audit-entity-type">
+                    <i class="fas fa-${log.entityType === 'utility' ? 'grip-lines' : 'shapes'}"></i>
+                    ${log.entityType}
+                </div>
+            `;
+            
+            return item;
+        },
+        
+        // Format log details
+        formatDetails: function(log) {
+            const details = log.details || {};
+            let text = '';
+            
+            switch (log.action) {
+                case 'created':
+                    text = `Created new ${details.utilityType || log.entityType}`;
+                    if (details.lineType) text += ` (${details.lineType} line)`;
+                    break;
+                case 'edited':
+                    text = `Edited ${details.utilityType || log.entityType}`;
+                    if (details.changes) text += ` - ${details.changes}`;
+                    break;
+                case 'deleted':
+                    text = `Deleted ${details.utilityType || log.entityType}`;
+                    break;
+                case 'refined':
+                    text = `Refined position of ${details.utilityType || log.entityType}`;
+                    break;
+                default:
+                    text = `Performed ${log.action} on ${log.entityType}`;
+            }
+            
+            return text;
+        },
+        
+        // Log an action
+        logAction: async function(action, entityType, entityId, details = {}) {
+            if (!AppState.currentUser) return;
+            
+            const userId = AppState.currentUser.uid;
+            const userEmail = AppState.currentUser.email;
+            
+            try {
+                await AppState.safeCollection('auditLogs').add({
+                    action: action,
+                    entityType: entityType,
+                    entityId: entityId,
+                    userId: userId,
+                    userEmail: userEmail,
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                    details: details
+                });
+            } catch (error) {
+                console.error('Error logging action:', error);
+            }
+        }
+    };
+
+    // Integrate experience system with existing utility creation
+    const originalFinishDrawing = finishDrawing;
+    finishDrawing = async function() {
+        const originalUtilitiesCount = AppState.utilities.length;
+        
+        // Call original function
+        await originalFinishDrawing();
+        
+        // Check if utility was actually created
+        if (AppState.utilities.length > originalUtilitiesCount && AppState.currentUser) {
+            const newUtility = AppState.utilities[AppState.utilities.length - 1];
+            
+            // Calculate distance for exp
+            const distance = ExperienceSystem.calculateUtilityDistance(newUtility.points);
+            const expGained = Math.max(10, Math.round(distance)); // Minimum 10 exp
+            
+            // Update user stats
+            const userId = AppState.currentUser.uid;
+            const userRef = db.collection('users').doc(userId);
+            
+            const updateData = {
+                totalUtilitiesDrawn: firebase.firestore.FieldValue.increment(1),
+                totalDistance: firebase.firestore.FieldValue.increment(distance),
+                lastActiveDate: firebase.firestore.FieldValue.serverTimestamp()
+            };
+            
+            // Update specific utility type count
+            const utilityType = newUtility.type.charAt(0).toUpperCase() + newUtility.type.slice(1);
+            updateData[`stats${utilityType}`] = firebase.firestore.FieldValue.increment(1);
+            
+            // Set first utility date if not set
+            const userData = await ExperienceSystem.getUserData();
+            if (userData && !userData.firstUtilityDate) {
+                updateData.firstUtilityDate = firebase.firestore.FieldValue.serverTimestamp();
+            }
+            
+            await userRef.update(updateData);
+            
+            // Award exp
+            await ExperienceSystem.awardExp(expGained, 'Utility drawn');
+            
+            // Check achievements
+            await ExperienceSystem.checkAchievements('draw');
+            
+            // Log to audit
+            await AuditLog.logAction('created', 'utility', newUtility.id, {
+                utilityType: newUtility.type,
+                lineType: newUtility.lineType,
+                distance: distance
+            });
+        }
+    };
+
+    // Integrate with utility deletion
+    const originalDeleteUtility = deleteUtility;
+    deleteUtility = async function() {
+        const utilityToDelete = AppState.selectedUtilityData;
+        
+        if (utilityToDelete && AppState.currentUser) {
+            // Log to audit before deletion
+            await AuditLog.logAction('deleted', 'utility', utilityToDelete.id, {
+                utilityType: utilityToDelete.type,
+                lineType: utilityToDelete.lineType
+            });
+            
+            // Check for first delete achievement
+            const userData = await ExperienceSystem.getUserData();
+            if (userData && !userData.achievements?.includes('first_delete')) {
+                await ExperienceSystem.checkAchievements('delete');
+            }
+        }
+        
+        // Call original function
+        await originalDeleteUtility();
+    };
+
+    // Integrate with utility editing
+    const originalSaveEdit = saveEdit;
+    saveEdit = async function() {
+        const utility = AppState.selectedUtilityData;
+        const originalSize = utility?.size;
+        const originalDepth = utility?.depth;
+        const originalMaterial = utility?.material;
+        const originalCondition = utility?.condition;
+        
+        // Call original function
+        await originalSaveEdit();
+        
+        // Log changes if successful and user is logged in
+        if (utility && AppState.currentUser) {
+            const changes = [];
+            if (originalSize !== utility.size) changes.push('size');
+            if (originalDepth !== utility.depth) changes.push('depth');
+            if (originalMaterial !== utility.material) changes.push('material');
+            if (originalCondition !== utility.condition) changes.push('condition');
+            
+            if (changes.length > 0) {
+                await AuditLog.logAction('edited', 'utility', utility.id, {
+                    utilityType: utility.type,
+                    changes: changes.join(', ')
+                });
+                
+                // Check edit achievement
+                const userData = await ExperienceSystem.getUserData();
+                if (userData && !userData.achievements?.includes('first_edit')) {
+                    await ExperienceSystem.checkAchievements('edit');
+                }
+            }
+        }
+    };
+
+    // Integrate with refine location
+    const originalFinishRefining = finishRefining;
+    finishRefining = async function() {
+        const utility = AppState.selectedUtilityData;
+        
+        // Call original function
+        await originalFinishRefining();
+        
+        // Log refine action
+        if (utility && AppState.currentUser) {
+            await AuditLog.logAction('refined', 'utility', utility.id, {
+                utilityType: utility.type,
+                lineType: utility.lineType
+            });
+            
+            // Check refine achievement
+            const userData = await ExperienceSystem.getUserData();
+            if (userData && !userData.achievements?.includes('first_refine')) {
+                await ExperienceSystem.checkAchievements('refine');
+            }
+        }
+    };
+
+    // Initialize experience system when user is authenticated
+    setTimeout(async () => {
+        if (AppState.currentUser) {
+            // Initialize systems
+            await ExperienceSystem.init();
+            AuditLog.init();
+        }
+    }, 2000);
 </script>
 
 </body>
