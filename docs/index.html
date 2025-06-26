@@ -820,7 +820,7 @@ const db = firebase.firestore();
         background: rgba(0, 0, 0, 0.7);
         backdrop-filter: blur(8px);
         -webkit-backdrop-filter: blur(8px);
-        z-index: 800;
+        z-index: 9999;
         display: flex;
         align-items: flex-start;
         justify-content: center;
@@ -3381,27 +3381,27 @@ const db = firebase.firestore();
     *********************************/
     .user-profile-widget {
         position: fixed;
-        top: calc(env(safe-area-inset-top, 0) + 8px);
-        left: 15px;
+        top: calc(env(safe-area-inset-top, 0) + 5px);
+        left: 20px;
         z-index: 1500;
         display: flex;
         align-items: center;
         background: rgba(255, 255, 255, 0.95);
         backdrop-filter: blur(10px);
-        border-radius: 30px;
+        border-radius: 35px;
         box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
         transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         cursor: pointer;
         overflow: hidden;
-        width: 56px;
-        height: 56px;
+        width: 70px;
+        height: 70px;
         padding: 0;
     }
 
     .user-profile-widget.expanded {
-        width: 280px;
-        padding: 8px 16px 8px 8px;
-        gap: 12px;
+        width: 300px;
+        padding: 10px 18px 10px 10px;
+        gap: 14px;
     }
 
     .user-profile-widget:hover {
@@ -3411,16 +3411,16 @@ const db = firebase.firestore();
 
     .profile-avatar-container {
         position: relative;
-        width: 40px;
-        height: 40px;
-        margin: 8px;
+        width: 50px;
+        height: 50px;
+        margin: 10px;
         flex-shrink: 0;
     }
 
     .user-profile-widget.expanded .profile-avatar-container {
         margin: 0;
-        width: 48px;
-        height: 48px;
+        width: 56px;
+        height: 56px;
     }
 
     .profile-avatar {
@@ -3484,16 +3484,16 @@ const db = firebase.firestore();
 
     .level-badge {
         position: absolute;
-        bottom: -6px;
-        right: -6px;
-        width: 20px;
-        height: 20px;
+        bottom: -8px;
+        right: -8px;
+        width: 24px;
+        height: 24px;
         background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
         border-radius: 50%;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 10px;
+        font-size: 12px;
         font-weight: 700;
         color: white;
         border: 2px solid white;
@@ -3501,11 +3501,11 @@ const db = firebase.firestore();
     }
 
     .user-profile-widget.expanded .level-badge {
-        bottom: -4px;
-        right: -4px;
-        width: 22px;
-        height: 22px;
-        font-size: 11px;
+        bottom: -6px;
+        right: -6px;
+        width: 26px;
+        height: 26px;
+        font-size: 13px;
     }
 
     .profile-info {
@@ -3971,41 +3971,41 @@ const db = firebase.firestore();
     /* Mobile responsive */
     @media (max-width: 480px) {
         .user-profile-widget {
-            top: 40px;
-            left: 10px;
-            width: 48px;
-            height: 48px;
+            top: calc(env(safe-area-inset-top, 0) + 10px);
+            left: 15px;
+            width: 60px;
+            height: 60px;
         }
         
         .user-profile-widget.expanded {
-            width: 240px;
-            padding: 6px 12px 6px 6px;
+            width: 260px;
+            padding: 8px 14px 8px 8px;
         }
         
         .profile-avatar-container {
-            width: 32px;
-            height: 32px;
-            margin: 8px;
+            width: 40px;
+            height: 40px;
+            margin: 10px;
         }
         
         .user-profile-widget.expanded .profile-avatar-container {
-            width: 40px;
-            height: 40px;
+            width: 48px;
+            height: 48px;
             margin: 0;
         }
         
         .level-badge {
-            width: 16px;
-            height: 16px;
-            font-size: 9px;
-            bottom: -4px;
-            right: -4px;
+            width: 20px;
+            height: 20px;
+            font-size: 10px;
+            bottom: -6px;
+            right: -6px;
         }
         
         .user-profile-widget.expanded .level-badge {
-            width: 18px;
-            height: 18px;
-            font-size: 10px;
+            width: 22px;
+            height: 22px;
+            font-size: 11px;
         }
         
         .profile-name {
