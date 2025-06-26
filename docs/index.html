@@ -2571,6 +2571,8 @@ const db = firebase.firestore();
         display: grid;
         grid-template-columns: repeat(2, 1fr);
         gap: var(--spacing-sm);
+        max-height: 300px;
+        overflow-y: auto;
     }
     
     .map-style-btn {
@@ -5188,6 +5190,10 @@ const db = firebase.firestore();
             <div class="map-styles">
                 <button class="map-style-btn active" data-style="streets">Streets</button>
                 <button class="map-style-btn" data-style="satellite">Satellite</button>
+                <button class="map-style-btn" data-style="satellite-hd">Satellite HD</button>
+                <button class="map-style-btn" data-style="usgs-hybrid">USGS Hybrid</button>
+                <button class="map-style-btn" data-style="infrastructure">Infrastructure</button>
+                <button class="map-style-btn" data-style="satellite-clarity">Clarity</button>
                 <button class="map-style-btn" data-style="terrain">Terrain</button>
                 <button class="map-style-btn" data-style="dark">Dark</button>
             </div>
@@ -5382,6 +5388,10 @@ const db = firebase.firestore();
         mapStyles: {
             streets: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
             satellite: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+            'satellite-hd': 'bing-satellite', // Special marker for Bing
+            'usgs-hybrid': 'https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryTopo/MapServer/tile/{z}/{y}/{x}',
+            'infrastructure': 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',
+            'satellite-clarity': 'https://clarity.maptiles.arcgis.com/arcgis/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
             terrain: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
             dark: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png'
         },
@@ -6481,6 +6491,36 @@ const db = firebase.firestore();
         AppState.elements.toastContainer = document.getElementById('toastContainer');
         AppState.elements.syncStatus = document.getElementById('syncStatus');
     }
+
+    // Add Bing Maps Helper Class
+    L.TileLayer.Bing = L.TileLayer.extend({
+        options: {
+            subdomains: '0123',
+            attribution: '© Microsoft'
+        },
+        initialize: function(type, options) {
+            L.setOptions(this, options);
+            this._type = type;
+            this._url = 'https://t{s}.ssl.ak.tiles.virtualearth.net/tiles/' + type + '{q}.jpeg?g=1';
+        },
+        getTileUrl: function(coords) {
+            return L.Util.template(this._url, L.extend({
+                s: this._getSubdomain(coords),
+                q: this._getQuadkey(coords)
+            }, this.options));
+        },
+        _getQuadkey: function(coords) {
+            const quadkey = [];
+            for (let i = coords.z; i > 0; i--) {
+                let digit = 0;
+                const mask = 1 << (i - 1);
+                if ((coords.x & mask) !== 0) digit++;
+                if ((coords.y & mask) !== 0) digit += 2;
+                quadkey.push(digit);
+            }
+            return quadkey.join('');
+        }
+    });
 
     function initializeMap() {
         // Create map
@@ -9626,16 +9666,42 @@ const db = firebase.firestore();
 
         // Change map tiles
         AppState.map.eachLayer(layer => {
-            if (layer instanceof L.TileLayer) {
+            if (layer instanceof L.TileLayer || layer instanceof L.TileLayer.Bing) {
                 AppState.map.removeLayer(layer);
             }
         });
 
-        L.tileLayer(AppState.mapStyles[style], {
-            maxZoom: 22,
-            maxNativeZoom: 19
-        }).addTo(AppState.map);
-
+        // Handle special map layers
+        let newLayer;
+        const styleUrl = AppState.mapStyles[style];
+        
+        if (styleUrl === 'bing-satellite') {
+            // Use Bing Satellite layer
+            newLayer = new L.TileLayer.Bing('a', {
+                maxZoom: 21,
+                maxNativeZoom: 19,
+                keepBuffer: 8
+            });
+        } else {
+            // Use regular tile layer
+            const layerOptions = {
+                maxZoom: 22,
+                maxNativeZoom: 19,
+                keepBuffer: 8
+            };
+            
+            // Add specific attribution for known services
+            if (style === 'usgs-hybrid') {
+                layerOptions.attribution = 'USGS National Map';
+                layerOptions.maxNativeZoom = 16;
+            } else if (style === 'infrastructure' || style === 'satellite-clarity') {
+                layerOptions.attribution = '&copy; Esri';
+            }
+            
+            newLayer = L.tileLayer(styleUrl, layerOptions);
+        }
+        
+        newLayer.addTo(AppState.map);
         AppState.currentMapStyle = style;
         hapticFeedback(30);
     }
