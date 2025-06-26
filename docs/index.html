@@ -5186,10 +5186,14 @@ const db = firebase.firestore();
         <div class="settings-section">
             <h3>Map Style</h3>
             <div class="map-styles">
-                <button class="map-style-btn active" data-style="streets">Streets</button>
-                <button class="map-style-btn" data-style="satellite">Satellite</button>
-                <button class="map-style-btn" data-style="terrain">Terrain</button>
-                <button class="map-style-btn" data-style="dark">Dark</button>
+                <button class="map-style-btn active" data-style="google-hybrid">Google Hybrid</button>
+                <button class="map-style-btn" data-style="google-streets">Google Streets</button>
+                <button class="map-style-btn" data-style="google-satellite">Google Satellite</button>
+                <button class="map-style-btn" data-style="google-terrain">Google Terrain</button>
+                <button class="map-style-btn" data-style="streets">OSM Streets</button>
+                <button class="map-style-btn" data-style="satellite">Esri Satellite</button>
+                <button class="map-style-btn" data-style="terrain">Topographic</button>
+                <button class="map-style-btn" data-style="dark">Dark Mode</button>
             </div>
         </div>
 
@@ -5313,6 +5317,7 @@ const db = firebase.firestore();
 
 <!-- Leaflet JS -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<!-- Google Maps plugin for Leaflet -->
 <script src="https://unpkg.com/leaflet.gridlayer.googlemutant@latest/dist/Leaflet.GoogleMutant.js"></script>
 
 <script>
@@ -5381,16 +5386,18 @@ const db = firebase.firestore();
         alertTimeouts: new Map(),
         connectionCandidate: null,
         mapStyles: {
-            googleHybrid: 'Google Hybrid',      // Satellite + Labels (BEST for utilities)
-            googleStreets: 'Google Streets',    // Standard Google Maps
-            googleSatellite: 'Google Satellite', // Satellite only
-            googleTerrain: 'Google Terrain',    // Topographic style
+            // Google Maps (via GoogleMutant plugin)
+            'google-hybrid': 'google-hybrid',
+            'google-streets': 'google-streets',
+            'google-satellite': 'google-satellite',
+            'google-terrain': 'google-terrain',
+            // Traditional tile layers
             streets: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
             satellite: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
             terrain: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
             dark: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png'
         },
-        currentMapStyle: 'googleHybrid',
+        currentMapStyle: 'google-hybrid',
         cloudSync: {
             enabled: false,
             lastSync: null,
@@ -6491,7 +6498,7 @@ const db = firebase.firestore();
         // Create map
         AppState.map = L.map('map', {
             center: [40.7128, -74.0060], // Default to NYC
-            zoom: 18, // Default to street level for utility work
+            zoom: 18, // Street level for utility work
             zoomControl: false,
             attributionControl: false,
             doubleClickZoom: false, // Disable double-click zoom
@@ -6510,39 +6517,56 @@ const db = firebase.firestore();
             zoomDelta: 0.25
         });
 
-        // Create Google Maps layers
-        const googleStreets = L.gridLayer.googleMutant({
-            type: 'roadmap',
-            maxZoom: 22
-        });
+        // Create Google Maps layers with error handling
+        let googleLayersCreated = false;
+        try {
+            if (window.L && window.L.gridLayer && window.L.gridLayer.googleMutant) {
+                const googleStreets = L.gridLayer.googleMutant({
+                    type: 'roadmap',
+                    maxZoom: 22
+                });
 
-        const googleSatellite = L.gridLayer.googleMutant({
-            type: 'satellite',
-            maxZoom: 22
-        });
+                const googleSatellite = L.gridLayer.googleMutant({
+                    type: 'satellite',
+                    maxZoom: 22
+                });
 
-        const googleHybrid = L.gridLayer.googleMutant({
-            type: 'hybrid',
-            maxZoom: 22
-        });
+                const googleHybrid = L.gridLayer.googleMutant({
+                    type: 'hybrid',
+                    maxZoom: 22
+                });
 
-        const googleTerrain = L.gridLayer.googleMutant({
-            type: 'terrain',
-            maxZoom: 22
-        });
+                const googleTerrain = L.gridLayer.googleMutant({
+                    type: 'terrain',
+                    maxZoom: 22
+                });
 
-        // Store Google layers in AppState for easy access
-        AppState.googleLayers = {
-            googleStreets,
-            googleSatellite,
-            googleHybrid,
-            googleTerrain
-        };
+                // Store Google Maps layers for layer switching
+                AppState.googleLayers = {
+                    'google-streets': googleStreets,
+                    'google-satellite': googleSatellite,
+                    'google-hybrid': googleHybrid,
+                    'google-terrain': googleTerrain
+                };
 
-        // Add Google Hybrid as default layer (best for utility work)
-        googleHybrid.addTo(AppState.map);
-        AppState.currentMapLayer = googleHybrid;
-        AppState.currentMapStyle = 'googleHybrid';
+                // Add Google Hybrid as default layer (best for utility work)
+                googleHybrid.addTo(AppState.map);
+                googleLayersCreated = true;
+                console.log('✅ Google Maps layers created successfully');
+            }
+        } catch (error) {
+            console.warn('⚠️ Google Maps plugin not available, using fallback:', error);
+        }
+
+        // Fallback to OpenStreetMap if Google Maps failed
+        if (!googleLayersCreated) {
+            console.log('🔄 Using fallback tile layer');
+            L.tileLayer(AppState.mapStyles.streets, {
+                maxZoom: 22,
+                maxNativeZoom: 19
+            }).addTo(AppState.map);
+            AppState.currentMapStyle = 'streets';
+        }
 
         // Initialize utility layers
         const utilityTypes = ['water', 'gas', 'electric', 'sewer', 'telecom'];
@@ -9634,15 +9658,13 @@ const db = firebase.firestore();
         const darkModeToggle = document.getElementById('darkModeToggle');
         if (theme === 'dark') {
             darkModeToggle.classList.add('active');
-            // Keep current Google Maps layer - they work well in both light and dark themes
             if (AppState.currentMapStyle === 'streets') {
                 changeMapStyle('dark');
             }
         } else {
             darkModeToggle.classList.remove('active');
-            // Keep current Google Maps layer - they work well in both light and dark themes
             if (AppState.currentMapStyle === 'dark') {
-                changeMapStyle('googleHybrid');
+                changeMapStyle('streets');
             }
         }
     }
@@ -9659,32 +9681,35 @@ const db = firebase.firestore();
             btn.classList.toggle('active', btn.dataset.style === style);
         });
 
-        // Remove current map layer
-        if (AppState.currentMapLayer) {
-            AppState.map.removeLayer(AppState.currentMapLayer);
-        }
+        // Remove all existing base layers (both tile layers and Google Maps layers)
+        AppState.map.eachLayer(layer => {
+            if (layer instanceof L.TileLayer || 
+                (layer._mutant && layer._mutantContainer)) { // Google Maps layer
+                AppState.map.removeLayer(layer);
+            }
+        });
 
-        // Handle Google Maps layers vs traditional tile layers
-        const googleStyles = ['googleHybrid', 'googleStreets', 'googleSatellite', 'googleTerrain'];
-        
-        if (googleStyles.includes(style)) {
-            // Use Google Maps layer
-            const layerMap = {
-                googleHybrid: AppState.googleLayers.googleHybrid,
-                googleStreets: AppState.googleLayers.googleStreets,
-                googleSatellite: AppState.googleLayers.googleSatellite,
-                googleTerrain: AppState.googleLayers.googleTerrain
-            };
-            
-            AppState.currentMapLayer = layerMap[style];
-            AppState.currentMapLayer.addTo(AppState.map);
+        // Add the selected layer
+        if (style.startsWith('google-')) {
+            // Use Google Maps layer if available
+            if (AppState.googleLayers && AppState.googleLayers[style]) {
+                AppState.googleLayers[style].addTo(AppState.map);
+            } else {
+                // Fallback to regular tile layer if Google Maps not available
+                console.warn('⚠️ Google Maps layer not available, falling back to streets');
+                L.tileLayer(AppState.mapStyles.streets, {
+                    maxZoom: 22,
+                    maxNativeZoom: 19
+                }).addTo(AppState.map);
+                AppState.currentMapStyle = 'streets';
+                showToast('Google Maps unavailable, using OpenStreetMap', 'warning');
+            }
         } else {
             // Use traditional tile layer
-            AppState.currentMapLayer = L.tileLayer(AppState.mapStyles[style], {
+            L.tileLayer(AppState.mapStyles[style], {
                 maxZoom: 22,
                 maxNativeZoom: 19
-            });
-            AppState.currentMapLayer.addTo(AppState.map);
+            }).addTo(AppState.map);
         }
 
         AppState.currentMapStyle = style;
