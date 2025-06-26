@@ -768,7 +768,7 @@ const db = firebase.firestore();
 
     .top-bar-content {
         display: flex;
-        justify-content: space-between;
+        justify-content: flex-end;
         align-items: center;
         width: 100%;
         max-width: 100%;
@@ -1085,7 +1085,10 @@ const db = firebase.firestore();
         display: flex;
         gap: 2px;
         justify-content: center;
-        margin: 0 auto 0 20px;
+        position: absolute;
+        left: var(--spacing-md);
+        top: 50%;
+        transform: translateY(-50%);
         background: var(--bg-glass);
         backdrop-filter: blur(20px) saturate(180%);
         -webkit-backdrop-filter: blur(20px) saturate(180%);
@@ -1094,7 +1097,6 @@ const db = firebase.firestore();
         box-shadow: var(--shadow-lg), inset 0 1px 0 var(--border-color);
         max-width: fit-content;
         border: 1px solid var(--border-color);
-        position: relative;
     }
     
     .utility-selector::before {
@@ -3381,7 +3383,7 @@ const db = firebase.firestore();
     *********************************/
     .user-profile-widget {
         position: fixed;
-        top: 50px;
+        top: calc(env(safe-area-inset-top, 0) + 15px);
         left: 15px;
         z-index: 1500;
         display: flex;
@@ -3623,6 +3625,7 @@ const db = firebase.firestore();
         padding: 2px;
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+        mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
         -webkit-mask-composite: xor;
         mask-composite: exclude;
         opacity: 0.5;
@@ -6920,18 +6923,21 @@ const db = firebase.firestore();
             }
         }
         
-                 // Apply initial scaling with position protection
-        setTimeout(() => {
-            const creationPosition = AppState.userMarker.getLatLng();
-            applyPremiumLocationTransform();
+                 // Apply initial scaling without timeout to prevent blinking
+        const creationPosition = AppState.userMarker.getLatLng();
+        const initialMarkerElement = AppState.userMarker.getElement();
+        if (initialMarkerElement) {
+            const zoom = AppState.map.getZoom();
+            const scale = calculateUserLocationScale(zoom);
+            initialMarkerElement.style.transform = `scale(${scale})`;
+            initialMarkerElement.style.transformOrigin = 'center center';
             
-            // Verify position wasn't changed during transform
-            const afterTransformPosition = AppState.userMarker.getLatLng();
-            if (creationPosition.distanceTo(afterTransformPosition) > 0.000001) {
-                console.warn('⚠️ Position changed during initial transform, restoring...');
-                AppState.userMarker.setLatLng(creationPosition);
-            }
-        }, 50);
+            // Ensure visibility
+            initialMarkerElement.style.opacity = '1.0';
+            initialMarkerElement.style.visibility = 'visible';
+            initialMarkerElement.style.display = 'block';
+            initialMarkerElement.style.zIndex = '1000';
+        }
         
         // Initialize direction indicator if orientation is available
         if (window.DeviceOrientationEvent && !AppState.needsOrientationPermission) {
@@ -6978,8 +6984,7 @@ const db = firebase.firestore();
             }
         }
         
-        // Update marker attributes for visual states (NOT position)
-        updateLocationMarkerVisuals();
+        // Visual states are updated directly above to prevent conflicts
         
         // Update accuracy visualization
         updatePremiumAccuracyDisplay(location.accuracy);
@@ -7321,8 +7326,28 @@ const db = firebase.firestore();
             // Store position before any operations
             const lockedPosition = AppState.userMarker.getLatLng();
             
-            // Apply visual-only transforms
-            applyPremiumLocationTransform();
+            // Apply visual-only transforms without timeout delays that cause blinking
+            const markerElement = AppState.userMarker.getElement();
+            if (markerElement) {
+                // Apply scaling based on zoom
+                const scale = calculateUserLocationScale(currentZoom);
+                markerElement.style.transform = `scale(${scale})`;
+                markerElement.style.transformOrigin = 'center center';
+                
+                // Ensure full visibility - user location is ALWAYS visible
+                markerElement.style.opacity = '1.0';
+                markerElement.style.visibility = 'visible';
+                markerElement.style.display = 'block';
+                markerElement.style.zIndex = '1000';
+                
+                // Ensure container is also visible
+                const container = markerElement.querySelector('.location-container');
+                if (container) {
+                    container.style.opacity = '1.0';
+                    container.style.visibility = 'visible';
+                    container.style.display = 'flex';
+                }
+            }
             
             // Ensure position hasn't drifted during zoom operations
             const currentPosition = AppState.userMarker.getLatLng();
@@ -7330,32 +7355,6 @@ const db = firebase.firestore();
                 console.warn('⚠️ Marker position drifted during zoom, restoring...');
                 AppState.userMarker.setLatLng(lockedPosition);
             }
-            
-            // Triple-check marker visibility after zoom change with delay to handle timing issues
-            setTimeout(() => {
-                const markerElement = AppState.userMarker?.getElement();
-                if (markerElement) {
-                    // Re-verify position hasn't changed during timeout
-                    const finalPosition = AppState.userMarker.getLatLng();
-                    if (lockedPosition.distanceTo(finalPosition) > 0.000001) {
-                        console.warn('⚠️ Marker position changed during timeout, restoring...');
-                        AppState.userMarker.setLatLng(lockedPosition);
-                    }
-                    
-                    // Apply visual styling only
-                    markerElement.style.opacity = '1.0';
-                    markerElement.style.visibility = 'visible';
-                    markerElement.style.display = 'block';
-                    markerElement.style.zIndex = '1000';
-                    
-                    // Ensure container is also visible
-                    const container = markerElement.querySelector('.location-container');
-                    if (container) {
-                        container.style.opacity = '1.0';
-                        container.style.visibility = 'visible';
-                    }
-                }
-            }, 50); // Small delay to handle any timing conflicts
         }
         
         // Ensure refine markers are always fully visible
@@ -11143,23 +11142,37 @@ const db = firebase.firestore();
         markerElement.style.display = 'block';
         markerElement.style.zIndex = '1000';
         
-        // Ensure proper scaling
+        // Ensure proper scaling with stable transform
         const zoom = AppState.map.getZoom();
         const scale = calculateUserLocationScale(zoom);
         markerElement.style.transform = `scale(${scale})`;
         markerElement.style.transformOrigin = 'center center';
         
-        // Ensure container visibility and attributes
+        // Ensure container visibility and attributes - with stability check
         const container = markerElement.querySelector('.location-container');
         if (container) {
-            container.style.opacity = '1.0';
-            container.style.visibility = 'visible';
-            container.style.display = 'flex';
+            // Only update if visibility has changed to prevent flicker
+            if (container.style.opacity !== '1.0') {
+                container.style.opacity = '1.0';
+            }
+            if (container.style.visibility !== 'visible') {
+                container.style.visibility = 'visible';
+            }
+            if (container.style.display !== 'flex') {
+                container.style.display = 'flex';
+            }
             
-            // Update visual attributes without touching position
+            // Update visual attributes without touching position (only when needed)
             if (AppState.gps) {
-                container.setAttribute('data-gps-quality', AppState.gps.quality);
-                container.setAttribute('data-moving', AppState.gps.isMoving.toString());
+                const currentQuality = container.getAttribute('data-gps-quality');
+                const currentMoving = container.getAttribute('data-moving');
+                
+                if (currentQuality !== AppState.gps.quality) {
+                    container.setAttribute('data-gps-quality', AppState.gps.quality);
+                }
+                if (currentMoving !== AppState.gps.isMoving.toString()) {
+                    container.setAttribute('data-moving', AppState.gps.isMoving.toString());
+                }
             }
         }
         
@@ -11169,17 +11182,15 @@ const db = firebase.firestore();
             console.warn('⚠️ Guardian detected position drift, restoring locked position');
             AppState.userMarker.setLatLng(lockedPosition);
         }
-        
-        console.log(`🛡️ Location marker visibility ensured at zoom ${zoom} - position locked`);
     }
     
-    // Start periodic visibility check
+    // Start periodic visibility check - reduced frequency to prevent blinking
     if (typeof window.locationVisibilityInterval === 'undefined') {
         window.locationVisibilityInterval = setInterval(() => {
             if (AppState.userMarker && AppState.map) {
                 ensureLocationMarkerVisibility();
             }
-        }, 2000); // Check every 2 seconds
+        }, 5000); // Check every 5 seconds instead of 2
     }
     
     // Enhanced cleanup function for memory management
