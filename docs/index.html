@@ -3375,6 +3375,602 @@ const db = firebase.firestore();
         user-select: none;
         -webkit-tap-highlight-color: transparent;
     }
+
+    /*********************************
+    * USER PROFILE & EXPERIENCE SYSTEM
+    *********************************/
+    .user-profile-widget {
+        position: fixed;
+        top: 70px;
+        left: 15px;
+        z-index: 1500;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        padding: 8px 16px 8px 8px;
+        border-radius: 30px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .user-profile-widget:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 30px rgba(0, 0, 0, 0.15);
+    }
+
+    .profile-avatar-container {
+        position: relative;
+        width: 48px;
+        height: 48px;
+    }
+
+    .profile-avatar {
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        position: relative;
+        overflow: hidden;
+        animation: avatarGlow 3s ease-in-out infinite;
+    }
+
+    @keyframes avatarGlow {
+        0%, 100% { box-shadow: 0 0 0 0 rgba(102, 126, 234, 0.4); }
+        50% { box-shadow: 0 0 0 8px rgba(102, 126, 234, 0); }
+    }
+
+    .avatar-svg {
+        width: 70%;
+        height: 70%;
+        filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+        transition: transform 0.3s ease;
+    }
+
+    .profile-avatar:hover .avatar-svg {
+        transform: scale(1.1) rotate(5deg);
+    }
+
+    .exp-ring {
+        position: absolute;
+        top: -2px;
+        left: -2px;
+        right: -2px;
+        bottom: -2px;
+        border-radius: 50%;
+    }
+
+    .exp-ring svg {
+        width: 100%;
+        height: 100%;
+        transform: rotate(-90deg);
+    }
+
+    .exp-ring-bg {
+        fill: none;
+        stroke: rgba(0, 0, 0, 0.1);
+        stroke-width: 3;
+    }
+
+    .exp-ring-fill {
+        fill: none;
+        stroke: url(#expGradient);
+        stroke-width: 3;
+        stroke-linecap: round;
+        transition: stroke-dasharray 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .level-badge {
+        position: absolute;
+        bottom: -4px;
+        right: -4px;
+        width: 22px;
+        height: 22px;
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 11px;
+        font-weight: 700;
+        color: white;
+        border: 2px solid white;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .profile-info {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
+
+    .profile-name {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text-primary);
+        line-height: 1;
+    }
+
+    .profile-exp {
+        font-size: 11px;
+        color: var(--text-secondary);
+        font-weight: 500;
+    }
+
+    .exp-progress {
+        width: 100px;
+        height: 4px;
+        background: rgba(0, 0, 0, 0.08);
+        border-radius: 2px;
+        overflow: hidden;
+        margin-top: 4px;
+    }
+
+    .exp-progress-bar {
+        height: 100%;
+        background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+        border-radius: 2px;
+        transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .exp-progress-bar::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+        animation: shimmer 2s infinite;
+    }
+
+    @keyframes shimmer {
+        0% { transform: translateX(-100%); }
+        100% { transform: translateX(100%); }
+    }
+
+    /*********************************
+    * ACHIEVEMENT TOAST
+    *********************************/
+    .achievement-toast {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: rgba(255, 255, 255, 0.98);
+        backdrop-filter: blur(20px);
+        border-radius: 16px;
+        padding: 16px 20px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        z-index: 6000;
+        transform: translateX(400px);
+        transition: transform 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        max-width: 320px;
+        border: 1px solid rgba(0, 0, 0, 0.05);
+    }
+
+    .achievement-toast.show {
+        transform: translateX(0);
+    }
+
+    .achievement-icon {
+        width: 48px;
+        height: 48px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        flex-shrink: 0;
+    }
+
+    .achievement-icon svg {
+        width: 28px;
+        height: 28px;
+        fill: white;
+    }
+
+    .achievement-icon::before {
+        content: '';
+        position: absolute;
+        inset: -4px;
+        border-radius: 16px;
+        padding: 2px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+        -webkit-mask-composite: xor;
+        mask-composite: exclude;
+        opacity: 0.5;
+        animation: rotate 3s linear infinite;
+    }
+
+    @keyframes rotate {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+
+    .achievement-content {
+        flex: 1;
+    }
+
+    .achievement-title {
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin-bottom: 2px;
+    }
+
+    .achievement-desc {
+        font-size: 12px;
+        color: var(--text-secondary);
+        line-height: 1.4;
+    }
+
+    .achievement-exp {
+        font-size: 11px;
+        color: #667eea;
+        font-weight: 600;
+        margin-top: 4px;
+    }
+
+    .achievement-close {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--text-tertiary);
+        transition: all 0.2s ease;
+        cursor: pointer;
+        flex-shrink: 0;
+    }
+
+    .achievement-close:hover {
+        background: rgba(0, 0, 0, 0.05);
+        color: var(--text-secondary);
+    }
+
+    /*********************************
+    * AUDIT LOG PANEL
+    *********************************/
+    .audit-log-panel {
+        position: fixed;
+        top: 0;
+        right: -400px;
+        width: 400px;
+        height: 100%;
+        background: rgba(255, 255, 255, 0.98);
+        backdrop-filter: blur(10px);
+        box-shadow: -2px 0 20px rgba(0, 0, 0, 0.1);
+        z-index: 2500;
+        transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        display: flex;
+        flex-direction: column;
+    }
+
+    .audit-log-panel.show {
+        right: 0;
+    }
+
+    .audit-log-header {
+        padding: 20px;
+        border-bottom: 1px solid var(--border-color);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .audit-log-title {
+        font-size: 18px;
+        font-weight: 700;
+        color: var(--text-primary);
+    }
+
+    .audit-log-close {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--text-tertiary);
+        transition: all 0.2s ease;
+        cursor: pointer;
+    }
+
+    .audit-log-close:hover {
+        background: var(--bg-tertiary);
+        color: var(--text-secondary);
+    }
+
+    .audit-log-filters {
+        padding: 16px 20px;
+        border-bottom: 1px solid var(--border-color);
+        display: flex;
+        gap: 12px;
+    }
+
+    .audit-filter-btn {
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 500;
+        background: var(--bg-tertiary);
+        color: var(--text-secondary);
+        border: none;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .audit-filter-btn.active {
+        background: var(--gradient-primary);
+        color: white;
+    }
+
+    .audit-log-list {
+        flex: 1;
+        overflow-y: auto;
+        padding: 12px;
+    }
+
+    .audit-log-item {
+        background: white;
+        border-radius: 12px;
+        padding: 16px;
+        margin-bottom: 12px;
+        border: 1px solid var(--border-color);
+        transition: all 0.2s ease;
+    }
+
+    .audit-log-item:hover {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        transform: translateY(-1px);
+    }
+
+    .audit-item-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+    }
+
+    .audit-action-badge {
+        padding: 4px 10px;
+        border-radius: 12px;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+
+    .audit-action-badge.created {
+        background: rgba(76, 175, 80, 0.1);
+        color: #4caf50;
+    }
+
+    .audit-action-badge.edited {
+        background: rgba(33, 150, 243, 0.1);
+        color: #2196f3;
+    }
+
+    .audit-action-badge.deleted {
+        background: rgba(244, 67, 54, 0.1);
+        color: #f44336;
+    }
+
+    .audit-action-badge.refined {
+        background: rgba(156, 39, 176, 0.1);
+        color: #9c27b0;
+    }
+
+    .audit-timestamp {
+        font-size: 11px;
+        color: var(--text-tertiary);
+    }
+
+    .audit-user {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 4px;
+    }
+
+    .audit-details {
+        font-size: 12px;
+        color: var(--text-secondary);
+        line-height: 1.5;
+    }
+
+    .audit-entity-type {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 2px 8px;
+        background: var(--bg-tertiary);
+        border-radius: 10px;
+        font-size: 11px;
+        margin-top: 8px;
+    }
+
+    /* Level up animation */
+    .level-up-animation {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 7000;
+        pointer-events: none;
+    }
+
+    .level-up-content {
+        text-align: center;
+        animation: levelUpBounce 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    }
+
+    @keyframes levelUpBounce {
+        0% {
+            transform: scale(0) rotate(-180deg);
+            opacity: 0;
+        }
+        50% {
+            transform: scale(1.2) rotate(10deg);
+        }
+        100% {
+            transform: scale(1) rotate(0deg);
+            opacity: 1;
+        }
+    }
+
+    .level-up-icon {
+        width: 120px;
+        height: 120px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 20px;
+        position: relative;
+    }
+
+    .level-up-icon::before {
+        content: '';
+        position: absolute;
+        inset: -20px;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(102, 126, 234, 0.2) 0%, transparent 70%);
+        animation: levelUpPulse 1s ease-out;
+    }
+
+    @keyframes levelUpPulse {
+        0% {
+            transform: scale(0.5);
+            opacity: 1;
+        }
+        100% {
+            transform: scale(2);
+            opacity: 0;
+        }
+    }
+
+    .level-up-number {
+        font-size: 48px;
+        font-weight: 700;
+        color: white;
+        text-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    }
+
+    .level-up-text {
+        font-size: 24px;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin-bottom: 8px;
+    }
+
+    .level-up-subtext {
+        font-size: 16px;
+        color: var(--text-secondary);
+    }
+
+    /* Particles for level up */
+    .level-particles {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+    }
+
+    .particle {
+        position: absolute;
+        width: 6px;
+        height: 6px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 50%;
+        animation: particleFloat 2s ease-out forwards;
+    }
+
+    @keyframes particleFloat {
+        0% {
+            transform: translate(0, 0) scale(1);
+            opacity: 1;
+        }
+        100% {
+            transform: translate(var(--tx), var(--ty)) scale(0);
+            opacity: 0;
+        }
+    }
+
+    /* Exp gain animation */
+    .exp-gain-popup {
+        position: absolute;
+        font-size: 14px;
+        font-weight: 700;
+        color: #667eea;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        pointer-events: none;
+        animation: expFloat 1.5s ease-out forwards;
+    }
+
+    @keyframes expFloat {
+        0% {
+            transform: translateY(0);
+            opacity: 1;
+        }
+        100% {
+            transform: translateY(-30px);
+            opacity: 0;
+        }
+    }
+
+    /* Mobile responsive */
+    @media (max-width: 480px) {
+        .user-profile-widget {
+            top: 60px;
+            left: 10px;
+            padding: 6px 12px 6px 6px;
+        }
+        
+        .profile-avatar-container {
+            width: 40px;
+            height: 40px;
+        }
+        
+        .level-badge {
+            width: 18px;
+            height: 18px;
+            font-size: 10px;
+        }
+        
+        .profile-name {
+            font-size: 12px;
+        }
+        
+        .profile-exp {
+            font-size: 10px;
+        }
+        
+        .exp-progress {
+            width: 80px;
+        }
+        
+        .achievement-toast {
+            right: 10px;
+            max-width: calc(100vw - 20px);
+        }
+        
+        .audit-log-panel {
+            width: 100%;
+            right: -100%;
+        }
+    }
     
     input, textarea {
         -webkit-user-select: text;
@@ -10922,34 +11518,44 @@ const db = firebase.firestore();
             water_25: { id: 'water_25', name: 'Water Journeyman', description: 'Draw 25 water utilities', exp: 100, icon: 'tint', check: (userData) => userData.statsWater >= 25 },
             water_50: { id: 'water_50', name: 'Water Expert', description: 'Draw 50 water utilities', exp: 150, icon: 'tint', check: (userData) => userData.statsWater >= 50 },
             water_100: { id: 'water_100', name: 'Water Master', description: 'Draw 100 water utilities', exp: 250, icon: 'tint', check: (userData) => userData.statsWater >= 100 },
+            water_150: { id: 'water_150', name: 'Water Legend', description: 'Draw 150 water utilities', exp: 350, icon: 'tint', check: (userData) => userData.statsWater >= 150 },
+            water_200: { id: 'water_200', name: 'Water Grandmaster', description: 'Draw 200 water utilities', exp: 500, icon: 'tint', check: (userData) => userData.statsWater >= 200 },
             
             gas_10: { id: 'gas_10', name: 'Gas Apprentice', description: 'Draw 10 gas utilities', exp: 50, icon: 'fire', check: (userData) => userData.statsGas >= 10 },
             gas_25: { id: 'gas_25', name: 'Gas Journeyman', description: 'Draw 25 gas utilities', exp: 100, icon: 'fire', check: (userData) => userData.statsGas >= 25 },
             gas_50: { id: 'gas_50', name: 'Gas Expert', description: 'Draw 50 gas utilities', exp: 150, icon: 'fire', check: (userData) => userData.statsGas >= 50 },
             gas_100: { id: 'gas_100', name: 'Gas Master', description: 'Draw 100 gas utilities', exp: 250, icon: 'fire', check: (userData) => userData.statsGas >= 100 },
+            gas_150: { id: 'gas_150', name: 'Gas Legend', description: 'Draw 150 gas utilities', exp: 350, icon: 'fire', check: (userData) => userData.statsGas >= 150 },
+            gas_200: { id: 'gas_200', name: 'Gas Grandmaster', description: 'Draw 200 gas utilities', exp: 500, icon: 'fire', check: (userData) => userData.statsGas >= 200 },
             
             electric_10: { id: 'electric_10', name: 'Electric Apprentice', description: 'Draw 10 electric utilities', exp: 50, icon: 'bolt', check: (userData) => userData.statsElectric >= 10 },
             electric_25: { id: 'electric_25', name: 'Electric Journeyman', description: 'Draw 25 electric utilities', exp: 100, icon: 'bolt', check: (userData) => userData.statsElectric >= 25 },
             electric_50: { id: 'electric_50', name: 'Electric Expert', description: 'Draw 50 electric utilities', exp: 150, icon: 'bolt', check: (userData) => userData.statsElectric >= 50 },
             electric_100: { id: 'electric_100', name: 'Electric Master', description: 'Draw 100 electric utilities', exp: 250, icon: 'bolt', check: (userData) => userData.statsElectric >= 100 },
+            electric_150: { id: 'electric_150', name: 'Electric Legend', description: 'Draw 150 electric utilities', exp: 350, icon: 'bolt', check: (userData) => userData.statsElectric >= 150 },
+            electric_200: { id: 'electric_200', name: 'Electric Grandmaster', description: 'Draw 200 electric utilities', exp: 500, icon: 'bolt', check: (userData) => userData.statsElectric >= 200 },
             
             sewer_10: { id: 'sewer_10', name: 'Sewer Apprentice', description: 'Draw 10 sewer utilities', exp: 50, icon: 'toilet', check: (userData) => userData.statsSewer >= 10 },
             sewer_25: { id: 'sewer_25', name: 'Sewer Journeyman', description: 'Draw 25 sewer utilities', exp: 100, icon: 'toilet', check: (userData) => userData.statsSewer >= 25 },
             sewer_50: { id: 'sewer_50', name: 'Sewer Expert', description: 'Draw 50 sewer utilities', exp: 150, icon: 'toilet', check: (userData) => userData.statsSewer >= 50 },
             sewer_100: { id: 'sewer_100', name: 'Sewer Master', description: 'Draw 100 sewer utilities', exp: 250, icon: 'toilet', check: (userData) => userData.statsSewer >= 100 },
+            sewer_150: { id: 'sewer_150', name: 'Sewer Legend', description: 'Draw 150 sewer utilities', exp: 350, icon: 'toilet', check: (userData) => userData.statsSewer >= 150 },
+            sewer_200: { id: 'sewer_200', name: 'Sewer Grandmaster', description: 'Draw 200 sewer utilities', exp: 500, icon: 'toilet', check: (userData) => userData.statsSewer >= 200 },
             
             telecom_10: { id: 'telecom_10', name: 'Telecom Apprentice', description: 'Draw 10 telecom utilities', exp: 50, icon: 'phone', check: (userData) => userData.statsTelecom >= 10 },
             telecom_25: { id: 'telecom_25', name: 'Telecom Journeyman', description: 'Draw 25 telecom utilities', exp: 100, icon: 'phone', check: (userData) => userData.statsTelecom >= 25 },
             telecom_50: { id: 'telecom_50', name: 'Telecom Expert', description: 'Draw 50 telecom utilities', exp: 150, icon: 'phone', check: (userData) => userData.statsTelecom >= 50 },
             telecom_100: { id: 'telecom_100', name: 'Telecom Master', description: 'Draw 100 telecom utilities', exp: 250, icon: 'phone', check: (userData) => userData.statsTelecom >= 100 },
+            telecom_150: { id: 'telecom_150', name: 'Telecom Legend', description: 'Draw 150 telecom utilities', exp: 350, icon: 'phone', check: (userData) => userData.statsTelecom >= 150 },
+            telecom_200: { id: 'telecom_200', name: 'Telecom Grandmaster', description: 'Draw 200 telecom utilities', exp: 500, icon: 'phone', check: (userData) => userData.statsTelecom >= 200 },
         },
         
         // Initialize the experience system
         init: async function() {
-            if (!AppState.currentUser) return;
+            if (!firebase.auth().currentUser) return;
             
-            const userId = AppState.currentUser.uid;
-            const userRef = db.collection('users').doc(userId);
+            const userId = firebase.auth().currentUser.uid;
+            const userRef = firebase.firestore().collection('users').doc(userId);
             
             // Listen to user data changes
             userRef.onSnapshot((doc) => {
@@ -10973,10 +11579,10 @@ const db = firebase.firestore();
         
         // Get current user data
         getUserData: async function() {
-            if (!AppState.currentUser) return null;
+            if (!firebase.auth().currentUser) return null;
             
-            const userId = AppState.currentUser.uid;
-            const userDoc = await db.collection('users').doc(userId).get();
+            const userId = firebase.auth().currentUser.uid;
+            const userDoc = await firebase.firestore().collection('users').doc(userId).get();
             
             if (userDoc.exists) {
                 return userDoc.data();
@@ -11028,6 +11634,7 @@ const db = firebase.firestore();
             // Ensure required fields exist with defaults
             const exp = userData.exp || 0;
             const level = userData.level || 1;
+            const profileAvatar = userData.profileAvatar || 1;
             const email = userData.email || 'Unknown User';
             
             // Update profile name
@@ -11047,7 +11654,7 @@ const db = firebase.firestore();
             const nextLevelThreshold = this.levelThresholds[level] || this.levelThresholds[this.levelThresholds.length - 1];
             const levelProgress = exp - currentLevelThreshold;
             const levelRequired = nextLevelThreshold - currentLevelThreshold;
-            const progressPercent = Math.max(0, Math.min(100, (levelProgress / levelRequired) * 100));
+            const progressPercent = (levelProgress / levelRequired) * 100;
             
             // Update exp text
             const profileExp = document.getElementById('profile-exp');
@@ -11109,15 +11716,36 @@ const db = firebase.firestore();
                 shapes += `<polygon points="50,15 75,32.5 75,67.5 50,85 25,67.5 25,32.5" fill="none" stroke="${baseColor}" stroke-width="2" />`;
             }
             
+            // Level 21+: Add star pattern
+            if (level >= 21) {
+                const starPoints = this.generateStarPoints(50, 50, 5, 25, 15);
+                shapes += `<polygon points="${starPoints}" fill="${baseColor}" opacity="0.4" />`;
+            }
+            
             return shapes;
+        },
+        
+        // Generate star points for avatar
+        generateStarPoints: function(cx, cy, spikes, outerRadius, innerRadius) {
+            let points = '';
+            const step = Math.PI / spikes;
+            
+            for (let i = 0; i < 2 * spikes; i++) {
+                const radius = i % 2 === 0 ? outerRadius : innerRadius;
+                const x = cx + Math.cos(i * step - Math.PI / 2) * radius;
+                const y = cy + Math.sin(i * step - Math.PI / 2) * radius;
+                points += `${x},${y} `;
+            }
+            
+            return points.trim();
         },
         
         // Award experience points
         awardExp: async function(amount, reason) {
-            if (!AppState.currentUser) return;
+            if (!firebase.auth().currentUser) return;
             
-            const userId = AppState.currentUser.uid;
-            const userRef = db.collection('users').doc(userId);
+            const userId = firebase.auth().currentUser.uid;
+            const userRef = firebase.firestore().collection('users').doc(userId);
             
             try {
                 const userData = await this.getUserData();
@@ -11125,7 +11753,7 @@ const db = firebase.firestore();
                 
                 const currentExp = userData.exp || 0;
                 const currentLevel = userData.level || 1;
-                const newExp = Math.max(0, currentExp + amount);
+                const newExp = currentExp + amount;
                 
                 // Calculate new level
                 let newLevel = currentLevel;
@@ -11162,10 +11790,9 @@ const db = firebase.firestore();
             
             const popup = document.createElement('div');
             popup.className = 'exp-gain-popup';
-            popup.textContent = amount > 0 ? `+${amount} EXP` : `${amount} EXP`;
+            popup.textContent = `+${amount} EXP`;
             popup.style.left = '60px';
             popup.style.top = '20px';
-            popup.style.color = amount > 0 ? '#667eea' : '#ff0054';
             
             widget.appendChild(popup);
             
@@ -11212,10 +11839,10 @@ const db = firebase.firestore();
         
         // Check achievements
         checkAchievements: async function(action) {
-            if (!AppState.currentUser) return;
+            if (!firebase.auth().currentUser) return;
             
-            const userId = AppState.currentUser.uid;
-            const userRef = db.collection('users').doc(userId);
+            const userId = firebase.auth().currentUser.uid;
+            const userRef = firebase.firestore().collection('users').doc(userId);
             const userData = await this.getUserData();
             
             if (!userData) return;
@@ -11251,7 +11878,9 @@ const db = firebase.firestore();
             toast.className = 'achievement-toast';
             toast.innerHTML = `
                 <div class="achievement-icon">
-                    <i class="fas fa-${achievement.icon}"></i>
+                    <svg viewBox="0 0 24 24">
+                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" fill="currentColor"/>
+                    </svg>
                 </div>
                 <div class="achievement-content">
                     <div class="achievement-title">${achievement.name}</div>
@@ -11290,17 +11919,19 @@ const db = firebase.firestore();
         
         // Create audit log button for admins
         createAuditLogButton: function() {
-            const button = document.createElement('button');
-            button.className = 'audit-log-btn';
-            button.id = 'audit-log-btn';
-            button.title = 'Audit Log';
-            button.innerHTML = '<i class="fas fa-history"></i>';
-            
-            document.body.appendChild(button);
-            
-            button.addEventListener('click', () => {
-                AuditLog.toggle();
-            });
+            if (AppState.userRole === 'admin') {
+                const adminBtn = document.querySelector('.admin-btn');
+                if (adminBtn && !document.getElementById('audit-log-btn')) {
+                    const auditBtn = document.createElement('button');
+                    auditBtn.className = 'admin-btn';
+                    auditBtn.id = 'audit-log-btn';
+                    auditBtn.style.right = 'calc(var(--spacing-md) + 160px)';
+                    auditBtn.innerHTML = '<i class="fas fa-history"></i>';
+                    auditBtn.title = 'Audit Log';
+                    auditBtn.onclick = () => AuditLog.toggle();
+                    document.body.appendChild(auditBtn);
+                }
+            }
         },
         
         // Calculate utility distance
@@ -11308,9 +11939,12 @@ const db = firebase.firestore();
             let totalDistance = 0;
             
             for (let i = 0; i < points.length - 1; i++) {
-                const p1 = points[i];
-                const p2 = points[i + 1];
-                const distance = haversineDistance(p1.lat, p1.lng, p2.lat, p2.lng);
+                const distance = haversineDistance(
+                    points[i].lat || points[i][0], 
+                    points[i].lng || points[i][1],
+                    points[i + 1].lat || points[i + 1][0], 
+                    points[i + 1].lng || points[i + 1][1]
+                );
                 totalDistance += distance;
             }
             
@@ -11406,10 +12040,10 @@ const db = firebase.firestore();
         // Load audit logs
         loadLogs: async function() {
             const logList = document.getElementById('audit-log-list');
-            logList.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--text-secondary);">Loading...</div>';
+            logList.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--text-tertiary);">Loading...</div>';
             
             try {
-                let query = AppState.safeCollection('auditLogs')
+                let query = firebase.firestore().collection('auditLogs')
                     .orderBy('timestamp', 'desc')
                     .limit(100);
                 
@@ -11420,7 +12054,7 @@ const db = firebase.firestore();
                 const snapshot = await query.get();
                 
                 if (snapshot.empty) {
-                    logList.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-secondary);">No audit logs found</div>';
+                    logList.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-tertiary);">No audit logs found</div>';
                     return;
                 }
                 
@@ -11490,13 +12124,13 @@ const db = firebase.firestore();
         
         // Log an action
         logAction: async function(action, entityType, entityId, details = {}) {
-            if (!AppState.currentUser) return;
+            if (!firebase.auth().currentUser) return;
             
-            const userId = AppState.currentUser.uid;
-            const userEmail = AppState.currentUser.email;
+            const userId = firebase.auth().currentUser.uid;
+            const userEmail = firebase.auth().currentUser.email;
             
             try {
-                await AppState.safeCollection('auditLogs').add({
+                await firebase.firestore().collection('auditLogs').add({
                     action: action,
                     entityType: entityType,
                     entityId: entityId,
@@ -11511,25 +12145,45 @@ const db = firebase.firestore();
         }
     };
 
-    // Integrate experience system with existing utility creation
+    // Hook into existing utility creation function
     const originalFinishDrawing = finishDrawing;
     finishDrawing = async function() {
-        const originalUtilitiesCount = AppState.utilities.length;
-        
-        // Call original function
-        await originalFinishDrawing();
-        
-        // Check if utility was actually created
-        if (AppState.utilities.length > originalUtilitiesCount && AppState.currentUser) {
-            const newUtility = AppState.utilities[AppState.utilities.length - 1];
-            
-            // Calculate distance for exp
-            const distance = ExperienceSystem.calculateUtilityDistance(newUtility.points);
-            const expGained = Math.max(10, Math.round(distance)); // Minimum 10 exp
-            
-            // Update user stats
-            const userId = AppState.currentUser.uid;
-            const userRef = db.collection('users').doc(userId);
+        if (AppState.drawingPoints.length < 2) {
+            showToast('Need at least 2 points', 'warning');
+            return;
+        }
+
+        // Calculate distance for exp
+        const distance = ExperienceSystem.calculateUtilityDistance(AppState.drawingPoints);
+        const expGained = Math.round(distance / 10); // 1 exp per 10 meters
+
+        // Create utility data
+        const utilityData = {
+            id: generateId(),
+            type: AppState.selectedUtility,
+            lineType: AppState.lineType,
+            points: [...AppState.drawingPoints],
+            size: '',
+            depth: '',
+            material: '',
+            condition: '',
+            curbDistance: '',
+            dateAdded: new Date().toISOString(),
+            connections: [],
+            notes: [],
+            distance: distance, // Store distance for future reference
+            createdBy: firebase.auth().currentUser ? firebase.auth().currentUser.uid : null
+        };
+
+        // Add to state and map
+        AppState.utilities.push(utilityData);
+        createUtilityLine(utilityData);
+        saveUtilities();
+
+        // Update user stats and award exp
+        if (firebase.auth().currentUser) {
+            const userId = firebase.auth().currentUser.uid;
+            const userRef = firebase.firestore().collection('users').doc(userId);
             
             const updateData = {
                 totalUtilitiesDrawn: firebase.firestore.FieldValue.increment(1),
@@ -11538,8 +12192,7 @@ const db = firebase.firestore();
             };
             
             // Update specific utility type count
-            const utilityType = newUtility.type.charAt(0).toUpperCase() + newUtility.type.slice(1);
-            updateData[`stats${utilityType}`] = firebase.firestore.FieldValue.increment(1);
+            updateData[`stats${utilityData.type.charAt(0).toUpperCase() + utilityData.type.slice(1)}`] = firebase.firestore.FieldValue.increment(1);
             
             // Set first utility date if not set
             const userData = await ExperienceSystem.getUserData();
@@ -11556,56 +12209,91 @@ const db = firebase.firestore();
             await ExperienceSystem.checkAchievements('draw');
             
             // Log to audit
-            await AuditLog.logAction('created', 'utility', newUtility.id, {
-                utilityType: newUtility.type,
-                lineType: newUtility.lineType,
+            await AuditLog.logAction('created', 'utility', utilityData.id, {
+                utilityType: utilityData.type,
+                lineType: utilityData.lineType,
                 distance: distance
             });
         }
+
+        // Show modal and reset drawing
+        showInfoModal(utilityData);
+        cancelDrawing();
+        hapticFeedback(100);
     };
 
-    // Integrate with utility deletion
+    // Hook into existing delete function
     const originalDeleteUtility = deleteUtility;
     deleteUtility = async function() {
-        const utilityToDelete = AppState.selectedUtilityData;
-        
-        if (utilityToDelete && AppState.currentUser) {
-            // Log to audit before deletion
-            await AuditLog.logAction('deleted', 'utility', utilityToDelete.id, {
-                utilityType: utilityToDelete.type,
-                lineType: utilityToDelete.lineType
-            });
+        if (!AppState.selectedUtilityData) return;
+
+        const utility = AppState.selectedUtilityData;
+        let expLost = 0;
+
+        // Check if current user created this utility
+        if (firebase.auth().currentUser && utility.createdBy === firebase.auth().currentUser.uid) {
+            expLost = Math.round((utility.distance || 0) / 10);
+        }
+
+        // Call original delete function
+        await originalDeleteUtility();
+
+        // Update user stats if they created it
+        if (firebase.auth().currentUser && utility.createdBy === firebase.auth().currentUser.uid) {
+            const userRef = firebase.firestore().collection('users').doc(firebase.auth().currentUser.uid);
             
-            // Check for first delete achievement
+            const updateData = {
+                totalUtilitiesDrawn: firebase.firestore.FieldValue.increment(-1),
+                totalDistance: firebase.firestore.FieldValue.increment(-(utility.distance || 0))
+            };
+            
+            // Update specific utility type count
+            updateData[`stats${utility.type.charAt(0).toUpperCase() + utility.type.slice(1)}`] = firebase.firestore.FieldValue.increment(-1);
+            
+            await userRef.update(updateData);
+            
+            // Remove exp
+            if (expLost > 0) {
+                await ExperienceSystem.awardExp(-expLost, 'Utility deleted');
+            }
+            
+            // Check delete achievement
             const userData = await ExperienceSystem.getUserData();
-            if (userData && !userData.achievements?.includes('first_delete')) {
+            if (userData && !userData.achievements.includes('first_delete')) {
                 await ExperienceSystem.checkAchievements('delete');
             }
         }
-        
-        // Call original function
-        await originalDeleteUtility();
+
+        // Log to audit
+        await AuditLog.logAction('deleted', 'utility', utility.id, {
+            utilityType: utility.type,
+            lineType: utility.lineType
+        });
     };
 
-    // Integrate with utility editing
+    // Hook into existing edit function
     const originalSaveEdit = saveEdit;
     saveEdit = async function() {
+        if (!AppState.selectedUtilityData) return;
+
         const utility = AppState.selectedUtilityData;
-        const originalSize = utility?.size;
-        const originalDepth = utility?.depth;
-        const originalMaterial = utility?.material;
-        const originalCondition = utility?.condition;
-        
-        // Call original function
+        const originalValues = {
+            size: utility.size,
+            depth: utility.depth,
+            material: utility.material,
+            condition: utility.condition
+        };
+
+        // Call original save edit function
         await originalSaveEdit();
-        
-        // Log changes if successful and user is logged in
-        if (utility && AppState.currentUser) {
+
+        // Log changes if successful
+        if (firebase.auth().currentUser) {
             const changes = [];
-            if (originalSize !== utility.size) changes.push('size');
-            if (originalDepth !== utility.depth) changes.push('depth');
-            if (originalMaterial !== utility.material) changes.push('material');
-            if (originalCondition !== utility.condition) changes.push('condition');
+            if (originalValues.size !== utility.size) changes.push('size');
+            if (originalValues.depth !== utility.depth) changes.push('depth');
+            if (originalValues.material !== utility.material) changes.push('material');
+            if (originalValues.condition !== utility.condition) changes.push('condition');
             
             if (changes.length > 0) {
                 await AuditLog.logAction('edited', 'utility', utility.id, {
@@ -11615,23 +12303,23 @@ const db = firebase.firestore();
                 
                 // Check edit achievement
                 const userData = await ExperienceSystem.getUserData();
-                if (userData && !userData.achievements?.includes('first_edit')) {
+                if (userData && !userData.achievements.includes('first_edit')) {
                     await ExperienceSystem.checkAchievements('edit');
                 }
             }
         }
     };
 
-    // Integrate with refine location
+    // Hook into existing refine function
     const originalFinishRefining = finishRefining;
     finishRefining = async function() {
         const utility = AppState.selectedUtilityData;
         
-        // Call original function
+        // Call original refine function
         await originalFinishRefining();
         
         // Log refine action
-        if (utility && AppState.currentUser) {
+        if (utility && firebase.auth().currentUser) {
             await AuditLog.logAction('refined', 'utility', utility.id, {
                 utilityType: utility.type,
                 lineType: utility.lineType
@@ -11639,20 +12327,47 @@ const db = firebase.firestore();
             
             // Check refine achievement
             const userData = await ExperienceSystem.getUserData();
-            if (userData && !userData.achievements?.includes('first_refine')) {
+            if (userData && !userData.achievements.includes('first_refine')) {
                 await ExperienceSystem.checkAchievements('refine');
             }
         }
     };
 
-    // Initialize experience system when user is authenticated
-    setTimeout(async () => {
-        if (AppState.currentUser) {
+    // Initialize systems when auth state changes
+    firebase.auth().onAuthStateChanged(async (user) => {
+        if (user) {
+            // Ensure user document has required fields
+            const userRef = firebase.firestore().collection('users').doc(user.uid);
+            const userDoc = await userRef.get();
+            
+            if (userDoc.exists) {
+                const userData = userDoc.data();
+                const updates = {};
+                
+                // Check and add missing fields
+                if (userData.exp === undefined) updates.exp = 0;
+                if (userData.level === undefined) updates.level = 1;
+                if (userData.achievements === undefined) updates.achievements = [];
+                if (userData.totalUtilitiesDrawn === undefined) updates.totalUtilitiesDrawn = 0;
+                if (userData.profileAvatar === undefined) updates.profileAvatar = 1;
+                if (userData.statsWater === undefined) updates.statsWater = 0;
+                if (userData.statsGas === undefined) updates.statsGas = 0;
+                if (userData.statsElectric === undefined) updates.statsElectric = 0;
+                if (userData.statsSewer === undefined) updates.statsSewer = 0;
+                if (userData.statsTelecom === undefined) updates.statsTelecom = 0;
+                if (userData.totalDistance === undefined) updates.totalDistance = 0;
+                
+                // Update if there are missing fields
+                if (Object.keys(updates).length > 0) {
+                    await userRef.update(updates);
+                }
+            }
+            
             // Initialize systems
             await ExperienceSystem.init();
             AuditLog.init();
         }
-    }, 2000);
+    });
 </script>
 
 </body>
