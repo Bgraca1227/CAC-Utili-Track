@@ -1085,7 +1085,7 @@ const db = firebase.firestore();
         display: flex;
         gap: 2px;
         justify-content: center;
-        margin: 0 auto;
+        margin: 0 auto 0 20px;
         background: var(--bg-glass);
         backdrop-filter: blur(20px) saturate(180%);
         -webkit-backdrop-filter: blur(20px) saturate(180%);
@@ -3381,18 +3381,27 @@ const db = firebase.firestore();
     *********************************/
     .user-profile-widget {
         position: fixed;
-        top: 70px;
+        top: 50px;
         left: 15px;
         z-index: 1500;
         display: flex;
         align-items: center;
-        gap: 12px;
         background: rgba(255, 255, 255, 0.95);
         backdrop-filter: blur(10px);
-        padding: 8px 16px 8px 8px;
         border-radius: 30px;
         box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        cursor: pointer;
+        overflow: hidden;
+        width: 56px;
+        height: 56px;
+        padding: 0;
+    }
+
+    .user-profile-widget.expanded {
+        width: 280px;
+        padding: 8px 16px 8px 8px;
+        gap: 12px;
     }
 
     .user-profile-widget:hover {
@@ -3402,6 +3411,14 @@ const db = firebase.firestore();
 
     .profile-avatar-container {
         position: relative;
+        width: 40px;
+        height: 40px;
+        margin: 8px;
+        flex-shrink: 0;
+    }
+
+    .user-profile-widget.expanded .profile-avatar-container {
+        margin: 0;
         width: 48px;
         height: 48px;
     }
@@ -3437,11 +3454,12 @@ const db = firebase.firestore();
 
     .exp-ring {
         position: absolute;
-        top: -2px;
-        left: -2px;
-        right: -2px;
-        bottom: -2px;
+        top: -3px;
+        left: -3px;
+        right: -3px;
+        bottom: -3px;
         border-radius: 50%;
+        pointer-events: none;
     }
 
     .exp-ring svg {
@@ -3453,39 +3471,57 @@ const db = firebase.firestore();
     .exp-ring-bg {
         fill: none;
         stroke: rgba(0, 0, 0, 0.1);
-        stroke-width: 3;
+        stroke-width: 2;
     }
 
     .exp-ring-fill {
         fill: none;
         stroke: url(#expGradient);
-        stroke-width: 3;
+        stroke-width: 2;
         stroke-linecap: round;
         transition: stroke-dasharray 0.6s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
     .level-badge {
         position: absolute;
-        bottom: -4px;
-        right: -4px;
-        width: 22px;
-        height: 22px;
+        bottom: -6px;
+        right: -6px;
+        width: 20px;
+        height: 20px;
         background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
         border-radius: 50%;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 11px;
+        font-size: 10px;
         font-weight: 700;
         color: white;
         border: 2px solid white;
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
     }
 
+    .user-profile-widget.expanded .level-badge {
+        bottom: -4px;
+        right: -4px;
+        width: 22px;
+        height: 22px;
+        font-size: 11px;
+    }
+
     .profile-info {
-        display: flex;
+        display: none;
         flex-direction: column;
         gap: 2px;
+        opacity: 0;
+        transform: translateX(-20px);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .user-profile-widget.expanded .profile-info {
+        display: flex;
+        opacity: 1;
+        transform: translateX(0);
+        transition-delay: 0.1s;
     }
 
     .profile-name {
@@ -3721,6 +3757,7 @@ const db = firebase.firestore();
         flex: 1;
         overflow-y: auto;
         padding: 12px;
+        max-height: calc(100vh - 200px);
     }
 
     .audit-log-item {
@@ -3933,17 +3970,38 @@ const db = firebase.firestore();
     /* Mobile responsive */
     @media (max-width: 480px) {
         .user-profile-widget {
-            top: 60px;
+            top: 40px;
             left: 10px;
+            width: 48px;
+            height: 48px;
+        }
+        
+        .user-profile-widget.expanded {
+            width: 240px;
             padding: 6px 12px 6px 6px;
         }
         
         .profile-avatar-container {
+            width: 32px;
+            height: 32px;
+            margin: 8px;
+        }
+        
+        .user-profile-widget.expanded .profile-avatar-container {
             width: 40px;
             height: 40px;
+            margin: 0;
         }
         
         .level-badge {
+            width: 16px;
+            height: 16px;
+            font-size: 9px;
+            bottom: -4px;
+            right: -4px;
+        }
+        
+        .user-profile-widget.expanded .level-badge {
             width: 18px;
             height: 18px;
             font-size: 10px;
@@ -4268,7 +4326,7 @@ const db = firebase.firestore();
     .admin-btn {
         position: fixed;
         top: calc(env(safe-area-inset-top, 0) + 80px);
-        right: calc(var(--spacing-md) + 80px);
+        right: calc(var(--spacing-md) + 100px);
         width: 48px;
         height: 48px;
         background: var(--gradient-success);
@@ -4362,6 +4420,7 @@ const db = firebase.firestore();
         transition: right var(--transition-spring);
         overflow-y: auto;
         padding-top: env(safe-area-inset-top, 0);
+        padding-bottom: calc(env(safe-area-inset-bottom, 0) + var(--spacing-lg));
         border-left: 1px solid var(--border-color);
     }
 
@@ -4430,6 +4489,8 @@ const db = firebase.firestore();
         display: flex;
         flex-direction: column;
         gap: var(--spacing-md);
+        max-height: 400px;
+        overflow-y: auto;
     }
 
     .pending-item {
@@ -4544,6 +4605,8 @@ const db = firebase.firestore();
         display: flex;
         flex-direction: column;
         gap: var(--spacing-sm);
+        max-height: 400px;
+        overflow-y: auto;
     }
 
     .user-item {
@@ -11603,15 +11666,15 @@ const db = firebase.firestore();
                         </svg>
                     </div>
                     <div class="exp-ring">
-                        <svg viewBox="0 0 56 56">
+                        <svg viewBox="0 0 50 50">
                             <defs>
                                 <linearGradient id="expGradient" x1="0%" y1="0%" x2="100%" y2="100%">
                                     <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
                                     <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
                                 </linearGradient>
                             </defs>
-                            <circle cx="28" cy="28" r="25" class="exp-ring-bg" />
-                            <circle cx="28" cy="28" r="25" class="exp-ring-fill" id="exp-ring-fill" />
+                            <circle cx="25" cy="25" r="22" class="exp-ring-bg" />
+                            <circle cx="25" cy="25" r="22" class="exp-ring-fill" id="exp-ring-fill" />
                         </svg>
                     </div>
                     <div class="level-badge" id="level-badge">1</div>
@@ -11625,6 +11688,46 @@ const db = firebase.firestore();
                 </div>
             `;
             document.body.appendChild(widget);
+            
+            // Add click handler for expand/collapse
+            let isExpanded = false;
+            let expandTimeout;
+            
+            widget.addEventListener('click', () => {
+                if (!isExpanded) {
+                    // Expand
+                    widget.classList.add('expanded');
+                    isExpanded = true;
+                    
+                    // Auto-collapse after 3 seconds if not hovering
+                    expandTimeout = setTimeout(() => {
+                        if (!widget.matches(':hover')) {
+                            widget.classList.remove('expanded');
+                            isExpanded = false;
+                        }
+                    }, 3000);
+                } else {
+                    // Collapse
+                    widget.classList.remove('expanded');
+                    isExpanded = false;
+                    clearTimeout(expandTimeout);
+                }
+            });
+            
+            // Keep expanded while hovering
+            widget.addEventListener('mouseenter', () => {
+                clearTimeout(expandTimeout);
+            });
+            
+            // Auto-collapse when not hovering (if expanded)
+            widget.addEventListener('mouseleave', () => {
+                if (isExpanded) {
+                    expandTimeout = setTimeout(() => {
+                        widget.classList.remove('expanded');
+                        isExpanded = false;
+                    }, 1000);
+                }
+            });
         },
         
         // Update user profile display
@@ -11671,7 +11774,7 @@ const db = firebase.firestore();
             // Update exp ring
             const expRing = document.getElementById('exp-ring-fill');
             if (expRing) {
-                const circumference = 2 * Math.PI * 25;
+                const circumference = 2 * Math.PI * 22;
                 const strokeDasharray = `${(progressPercent / 100) * circumference} ${circumference}`;
                 expRing.style.strokeDasharray = strokeDasharray;
             }
