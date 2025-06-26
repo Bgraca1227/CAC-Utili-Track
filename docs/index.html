@@ -5186,7 +5186,10 @@ const db = firebase.firestore();
         <div class="settings-section">
             <h3>Map Style</h3>
             <div class="map-styles">
-                <button class="map-style-btn active" data-style="streets">Streets</button>
+                <button class="map-style-btn active" data-style="nycStreets">NYC Streets</button>
+                <button class="map-style-btn" data-style="nycAerial">NYC Aerial 2020</button>
+                <button class="map-style-btn" data-style="nycPlanimetric">NYC Planimetric</button>
+                <button class="map-style-btn" data-style="streets">Standard Streets</button>
                 <button class="map-style-btn" data-style="satellite">Satellite</button>
                 <button class="map-style-btn" data-style="terrain">Terrain</button>
                 <button class="map-style-btn" data-style="dark">Dark</button>
@@ -5380,12 +5383,17 @@ const db = firebase.firestore();
         alertTimeouts: new Map(),
         connectionCandidate: null,
         mapStyles: {
+            // NYC Official Basemaps - High resolution and detailed for utility work
+            nycStreets: 'https://maps.nyc.gov/xyz/1.0.0/carto/basemap/{z}/{x}/{y}.png8',
+            nycAerial: 'https://maps.nyc.gov/xyz/1.0.0/photo/2020/{z}/{x}/{y}.png8',
+            nycPlanimetric: 'https://maps.nyc.gov/xyz/1.0.0/carto/label/{z}/{x}/{y}.png8',
+            // Standard basemaps
             streets: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
             satellite: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
             terrain: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
             dark: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png'
         },
-        currentMapStyle: 'streets',
+        currentMapStyle: 'nycStreets',
         cloudSync: {
             enabled: false,
             lastSync: null,
@@ -6486,7 +6494,7 @@ const db = firebase.firestore();
         // Create map
         AppState.map = L.map('map', {
             center: [40.7128, -74.0060], // Default to NYC
-            zoom: 16,
+            zoom: 18, // Closer zoom for detailed NYC utility work
             zoomControl: false,
             attributionControl: false,
             doubleClickZoom: false, // Disable double-click zoom
@@ -6505,11 +6513,17 @@ const db = firebase.firestore();
             zoomDelta: 0.25
         });
 
-        // Add tile layer
-        L.tileLayer(AppState.mapStyles[AppState.currentMapStyle], {
+        // Add tile layer with enhanced support for NYC basemaps
+        const currentStyle = AppState.currentMapStyle;
+        const tileLayerOptions = {
             maxZoom: 22,
-            maxNativeZoom: 19
-        }).addTo(AppState.map);
+            maxNativeZoom: currentStyle.startsWith('nyc') ? 21 : 19, // NYC maps support higher zoom
+            attribution: currentStyle.startsWith('nyc') ? 
+                'Map data © <a href="https://maps.nyc.gov/">NYC Planning</a>' : 
+                '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        };
+        
+        L.tileLayer(AppState.mapStyles[AppState.currentMapStyle], tileLayerOptions).addTo(AppState.map);
 
         // Initialize utility layers
         const utilityTypes = ['water', 'gas', 'electric', 'sewer', 'telecom'];
@@ -9631,13 +9645,30 @@ const db = firebase.firestore();
             }
         });
 
-        L.tileLayer(AppState.mapStyles[style], {
+        // Enhanced tile layer options for NYC basemaps
+        const tileLayerOptions = {
             maxZoom: 22,
-            maxNativeZoom: 19
-        }).addTo(AppState.map);
+            maxNativeZoom: style.startsWith('nyc') ? 21 : 19, // NYC maps support higher zoom
+            attribution: style.startsWith('nyc') ? 
+                'Map data © <a href="https://maps.nyc.gov/">NYC Planning</a>' : 
+                '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+            keepBuffer: 8
+        };
+
+        // Add bounds for NYC-specific maps to improve performance
+        if (style.startsWith('nyc')) {
+            tileLayerOptions.bounds = [[40.4774, -74.2591], [40.9176, -73.7004]]; // NYC bounds
+        }
+
+        L.tileLayer(AppState.mapStyles[style], tileLayerOptions).addTo(AppState.map);
 
         AppState.currentMapStyle = style;
         hapticFeedback(30);
+        
+        // Show toast for NYC basemap selection
+        if (style.startsWith('nyc')) {
+            showToast('NYC Official Basemap Selected - High resolution for utility work', 'info');
+        }
     }
 
     function toggleUtilityVisibility(toggle) {
