@@ -5186,10 +5186,7 @@ const db = firebase.firestore();
         <div class="settings-section">
             <h3>Map Style</h3>
             <div class="map-styles">
-                <button class="map-style-btn active" data-style="nycStreets">NYC Streets</button>
-                <button class="map-style-btn" data-style="nycAerial">NYC Aerial 2020</button>
-                <button class="map-style-btn" data-style="nycPlanimetric">NYC Planimetric</button>
-                <button class="map-style-btn" data-style="streets">Standard Streets</button>
+                <button class="map-style-btn active" data-style="streets">Streets</button>
                 <button class="map-style-btn" data-style="satellite">Satellite</button>
                 <button class="map-style-btn" data-style="terrain">Terrain</button>
                 <button class="map-style-btn" data-style="dark">Dark</button>
@@ -5316,6 +5313,7 @@ const db = firebase.firestore();
 
 <!-- Leaflet JS -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://unpkg.com/leaflet.gridlayer.googlemutant@latest/dist/Leaflet.GoogleMutant.js"></script>
 
 <script>
     // Premium App State
@@ -5383,17 +5381,16 @@ const db = firebase.firestore();
         alertTimeouts: new Map(),
         connectionCandidate: null,
         mapStyles: {
-            // NYC Official Basemaps - High resolution and detailed for utility work
-            nycStreets: 'https://maps.nyc.gov/xyz/1.0.0/carto/basemap/{z}/{x}/{y}.png8',
-            nycAerial: 'https://maps.nyc.gov/xyz/1.0.0/photo/2020/{z}/{x}/{y}.png8',
-            nycPlanimetric: 'https://maps.nyc.gov/xyz/1.0.0/carto/label/{z}/{x}/{y}.png8',
-            // Standard basemaps
+            googleHybrid: 'Google Hybrid',      // Satellite + Labels (BEST for utilities)
+            googleStreets: 'Google Streets',    // Standard Google Maps
+            googleSatellite: 'Google Satellite', // Satellite only
+            googleTerrain: 'Google Terrain',    // Topographic style
             streets: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
             satellite: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
             terrain: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
             dark: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png'
         },
-        currentMapStyle: 'nycStreets',
+        currentMapStyle: 'googleHybrid',
         cloudSync: {
             enabled: false,
             lastSync: null,
@@ -6494,7 +6491,7 @@ const db = firebase.firestore();
         // Create map
         AppState.map = L.map('map', {
             center: [40.7128, -74.0060], // Default to NYC
-            zoom: 18, // Closer zoom for detailed NYC utility work
+            zoom: 18, // Default to street level for utility work
             zoomControl: false,
             attributionControl: false,
             doubleClickZoom: false, // Disable double-click zoom
@@ -6513,17 +6510,39 @@ const db = firebase.firestore();
             zoomDelta: 0.25
         });
 
-        // Add tile layer with enhanced support for NYC basemaps
-        const currentStyle = AppState.currentMapStyle;
-        const tileLayerOptions = {
-            maxZoom: 22,
-            maxNativeZoom: currentStyle.startsWith('nyc') ? 21 : 19, // NYC maps support higher zoom
-            attribution: currentStyle.startsWith('nyc') ? 
-                'Map data © <a href="https://maps.nyc.gov/">NYC Planning</a>' : 
-                '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        // Create Google Maps layers
+        const googleStreets = L.gridLayer.googleMutant({
+            type: 'roadmap',
+            maxZoom: 22
+        });
+
+        const googleSatellite = L.gridLayer.googleMutant({
+            type: 'satellite',
+            maxZoom: 22
+        });
+
+        const googleHybrid = L.gridLayer.googleMutant({
+            type: 'hybrid',
+            maxZoom: 22
+        });
+
+        const googleTerrain = L.gridLayer.googleMutant({
+            type: 'terrain',
+            maxZoom: 22
+        });
+
+        // Store Google layers in AppState for easy access
+        AppState.googleLayers = {
+            googleStreets,
+            googleSatellite,
+            googleHybrid,
+            googleTerrain
         };
-        
-        L.tileLayer(AppState.mapStyles[AppState.currentMapStyle], tileLayerOptions).addTo(AppState.map);
+
+        // Add Google Hybrid as default layer (best for utility work)
+        googleHybrid.addTo(AppState.map);
+        AppState.currentMapLayer = googleHybrid;
+        AppState.currentMapStyle = 'googleHybrid';
 
         // Initialize utility layers
         const utilityTypes = ['water', 'gas', 'electric', 'sewer', 'telecom'];
@@ -9615,13 +9634,15 @@ const db = firebase.firestore();
         const darkModeToggle = document.getElementById('darkModeToggle');
         if (theme === 'dark') {
             darkModeToggle.classList.add('active');
+            // Keep current Google Maps layer - they work well in both light and dark themes
             if (AppState.currentMapStyle === 'streets') {
                 changeMapStyle('dark');
             }
         } else {
             darkModeToggle.classList.remove('active');
+            // Keep current Google Maps layer - they work well in both light and dark themes
             if (AppState.currentMapStyle === 'dark') {
-                changeMapStyle('streets');
+                changeMapStyle('googleHybrid');
             }
         }
     }
@@ -9638,37 +9659,36 @@ const db = firebase.firestore();
             btn.classList.toggle('active', btn.dataset.style === style);
         });
 
-        // Change map tiles
-        AppState.map.eachLayer(layer => {
-            if (layer instanceof L.TileLayer) {
-                AppState.map.removeLayer(layer);
-            }
-        });
-
-        // Enhanced tile layer options for NYC basemaps
-        const tileLayerOptions = {
-            maxZoom: 22,
-            maxNativeZoom: style.startsWith('nyc') ? 21 : 19, // NYC maps support higher zoom
-            attribution: style.startsWith('nyc') ? 
-                'Map data © <a href="https://maps.nyc.gov/">NYC Planning</a>' : 
-                '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-            keepBuffer: 8
-        };
-
-        // Add bounds for NYC-specific maps to improve performance
-        if (style.startsWith('nyc')) {
-            tileLayerOptions.bounds = [[40.4774, -74.2591], [40.9176, -73.7004]]; // NYC bounds
+        // Remove current map layer
+        if (AppState.currentMapLayer) {
+            AppState.map.removeLayer(AppState.currentMapLayer);
         }
 
-        L.tileLayer(AppState.mapStyles[style], tileLayerOptions).addTo(AppState.map);
+        // Handle Google Maps layers vs traditional tile layers
+        const googleStyles = ['googleHybrid', 'googleStreets', 'googleSatellite', 'googleTerrain'];
+        
+        if (googleStyles.includes(style)) {
+            // Use Google Maps layer
+            const layerMap = {
+                googleHybrid: AppState.googleLayers.googleHybrid,
+                googleStreets: AppState.googleLayers.googleStreets,
+                googleSatellite: AppState.googleLayers.googleSatellite,
+                googleTerrain: AppState.googleLayers.googleTerrain
+            };
+            
+            AppState.currentMapLayer = layerMap[style];
+            AppState.currentMapLayer.addTo(AppState.map);
+        } else {
+            // Use traditional tile layer
+            AppState.currentMapLayer = L.tileLayer(AppState.mapStyles[style], {
+                maxZoom: 22,
+                maxNativeZoom: 19
+            });
+            AppState.currentMapLayer.addTo(AppState.map);
+        }
 
         AppState.currentMapStyle = style;
         hapticFeedback(30);
-        
-        // Show toast for NYC basemap selection
-        if (style.startsWith('nyc')) {
-            showToast('NYC Official Basemap Selected - High resolution for utility work', 'info');
-        }
     }
 
     function toggleUtilityVisibility(toggle) {
