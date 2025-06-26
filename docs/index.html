@@ -768,11 +768,12 @@ const db = firebase.firestore();
 
     .top-bar-content {
         display: flex;
-        justify-content: flex-end;
+        justify-content: flex-start;
         align-items: center;
         width: 100%;
         max-width: 100%;
         gap: var(--spacing-md);
+        padding-right: 320px; /* Make space for utility selector */
     }
 
     /* Search Container */
@@ -1086,7 +1087,7 @@ const db = firebase.firestore();
         gap: 2px;
         justify-content: center;
         position: absolute;
-        left: var(--spacing-md);
+        right: var(--spacing-md);
         top: 50%;
         transform: translateY(-50%);
         background: var(--bg-glass);
