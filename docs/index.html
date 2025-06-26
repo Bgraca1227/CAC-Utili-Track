@@ -6133,7 +6133,19 @@ const db = firebase.firestore();
                         email: result.user.email,
                         uid: result.user.uid,
                         role: 'pending', // New users start as pending
-                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                        // Experience system fields with defaults
+                        exp: 0,
+                        level: 1,
+                        achievements: [],
+                        totalUtilitiesDrawn: 0,
+                        profileAvatar: 1,
+                        statsWater: 0,
+                        statsGas: 0,
+                        statsElectric: 0,
+                        statsSewer: 0,
+                        statsTelecom: 0,
+                        totalDistance: 0
                     });
                     showLoginError('Account created in database. Awaiting admin approval.');
                     await auth.signOut();
@@ -6189,7 +6201,19 @@ const db = firebase.firestore();
                     email: result.user.email,
                     uid: result.user.uid,
                     role: 'restricted',
-                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    // Experience system fields with defaults
+                    exp: 0,
+                    level: 1,
+                    achievements: [],
+                    totalUtilitiesDrawn: 0,
+                    profileAvatar: 1,
+                    statsWater: 0,
+                    statsGas: 0,
+                    statsElectric: 0,
+                    statsSewer: 0,
+                    statsTelecom: 0,
+                    totalDistance: 0
                 });
                 
                 showLoginError('✅ Account created successfully! Awaiting admin approval.');
@@ -6234,7 +6258,19 @@ const db = firebase.firestore();
                         uid: result.user.uid,
                         displayName: result.user.displayName || '',
                         role: 'restricted',
-                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                        // Experience system fields with defaults
+                        exp: 0,
+                        level: 1,
+                        achievements: [],
+                        totalUtilitiesDrawn: 0,
+                        profileAvatar: 1,
+                        statsWater: 0,
+                        statsGas: 0,
+                        statsElectric: 0,
+                        statsSewer: 0,
+                        statsTelecom: 0,
+                        totalDistance: 0
                     });
                     
                     showLoginError('✅ Google account created! Awaiting admin approval.');
