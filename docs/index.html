@@ -8467,7 +8467,7 @@ const db = firebase.firestore();
         document.getElementById('noteTextarea').value = '';
     }
 
-    function saveNote() {
+    async function saveNote() {
         const noteText = document.getElementById('noteTextarea').value.trim();
         
         if (!noteText) {
@@ -8494,20 +8494,51 @@ const db = firebase.firestore();
             date: new Date().toISOString()
         });
         
-        saveUtilities();
-        loadNotes(AppState.selectedUtilityData);
-        hideNoteInput();
-        showToast('Note added', 'success');
-        hapticFeedback(50);
+        // Save immediately to Firestore
+        try {
+            const success = await updateUtilityInFirestore(AppState.selectedUtilityData);
+            if (success) {
+                loadNotes(AppState.selectedUtilityData);
+                hideNoteInput();
+                showToast('Note added', 'success');
+                hapticFeedback(50);
+            } else {
+                // Remove the note if save failed
+                AppState.selectedUtilityData.notes.pop();
+                showToast('Error saving note', 'error');
+            }
+        } catch (error) {
+            console.error('Error saving note:', error);
+            // Remove the note if save failed
+            AppState.selectedUtilityData.notes.pop();
+            showToast('Error saving note', 'error');
+        }
     }
 
-    function deleteNote(index) {
+    async function deleteNote(index) {
         if (!AppState.selectedUtilityData || !AppState.selectedUtilityData.notes) return;
         
+        // Store the deleted note in case we need to restore it
+        const deletedNote = AppState.selectedUtilityData.notes[index];
         AppState.selectedUtilityData.notes.splice(index, 1);
-        saveUtilities();
-        loadNotes(AppState.selectedUtilityData);
-        showToast('Note deleted', 'success');
+        
+        // Save immediately to Firestore
+        try {
+            const success = await updateUtilityInFirestore(AppState.selectedUtilityData);
+            if (success) {
+                loadNotes(AppState.selectedUtilityData);
+                showToast('Note deleted', 'success');
+            } else {
+                // Restore the note if save failed
+                AppState.selectedUtilityData.notes.splice(index, 0, deletedNote);
+                showToast('Error deleting note', 'error');
+            }
+        } catch (error) {
+            console.error('Error deleting note:', error);
+            // Restore the note if save failed
+            AppState.selectedUtilityData.notes.splice(index, 0, deletedNote);
+            showToast('Error deleting note', 'error');
+        }
     }
 
     window.deleteNote = deleteNote;
@@ -8770,7 +8801,7 @@ const db = firebase.firestore();
         }
     }
 
-    function finishRefining() {
+    async function finishRefining() {
         console.log('🔍 Checking refine state:', {
             selectedUtilityData: !!AppState.selectedUtilityData,
             refineMode: AppState.refineMode,
@@ -8834,11 +8865,22 @@ const db = firebase.firestore();
             AppState.map.dragging.enable();
             AppState.map.scrollWheelZoom.enable();
 
-            // Save changes
-        saveUtilities();
-
-            showToast('✅ Location refined and saved!', 'success');
-            hapticFeedback(200);
+            // Save changes immediately to Firestore
+            try {
+                AppState.selectedUtilityData.isModified = true;
+                const success = await updateUtilityInFirestore(AppState.selectedUtilityData);
+                
+                if (success) {
+                    showToast('✅ Location refined and saved!', 'success');
+                    hapticFeedback(200);
+                } else {
+                    throw new Error('Failed to save refined position');
+                }
+            } catch (saveError) {
+                console.error('❌ Error saving refined position:', saveError);
+                showToast('Error saving refined position', 'error');
+                return; // Don't complete the refining if save failed
+            }
             
             console.log('🎉 Refine mode completed successfully');
             
