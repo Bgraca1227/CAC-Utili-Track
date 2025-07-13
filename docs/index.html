@@ -1,4 +1,4 @@
--<!DOCTYPE html>
+<!DOCTYPE html>
 
 <html lang="en">
 <head>
@@ -5191,7 +5191,7 @@ const db = firebase.firestore();
                 <button class="map-style-btn active" data-style="streets">Streets</button>
                 <button class="map-style-btn" data-style="satellite">Satellite</button>
                 <button class="map-style-btn" data-style="satellite-hd">Satellite HD</button>
-                <button class="map-style-btn" data-style="protomaps">Protomaps</button>
+                <button class="map-style-btn" data-style="usgs-hybrid">USGS Hybrid</button>
                 <button class="map-style-btn" data-style="infrastructure">Infrastructure</button>
                 <button class="map-style-btn" data-style="satellite-clarity">Clarity</button>
                 <button class="map-style-btn" data-style="terrain">Terrain</button>
@@ -5389,7 +5389,7 @@ const db = firebase.firestore();
             streets: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
             satellite: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
             'satellite-hd': 'bing-satellite', // Special marker for Bing
-            'protomaps': 'https://api.protomaps.com/tiles/v3/{z}/{x}/{y}.png',
+            'usgs-hybrid': 'https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryTopo/MapServer/tile/{z}/{y}/{x}',
             'infrastructure': 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',
             'satellite-clarity': 'https://clarity.maptiles.arcgis.com/arcgis/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
             terrain: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
@@ -9741,9 +9741,9 @@ const db = firebase.firestore();
             };
             
             // Add specific attribution for known services
-            if (style === 'protomaps') {
-                layerOptions.attribution = '© Protomaps © OpenStreetMap';
-                layerOptions.maxNativeZoom = 19;
+            if (style === 'usgs-hybrid') {
+                layerOptions.attribution = 'USGS National Map';
+                layerOptions.maxNativeZoom = 16;
             } else if (style === 'infrastructure' || style === 'satellite-clarity') {
                 layerOptions.attribution = '&copy; Esri';
             }
