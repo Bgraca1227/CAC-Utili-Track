@@ -5188,6 +5188,9 @@ const db = firebase.firestore();
         <div class="settings-section">
             <h3>Map Style</h3>
             <div class="map-styles">
+                <button class="map-style-btn" data-style="nyc-detailed">NYC Detailed</button>
+                <button class="map-style-btn" data-style="nyc-satellite-hd">NYC Satellite HD</button>
+                <button class="map-style-btn" data-style="nyc-dark">NYC Dark Mode</button>
                 <button class="map-style-btn active" data-style="streets">Streets</button>
                 <button class="map-style-btn" data-style="satellite">Satellite</button>
                 <button class="map-style-btn" data-style="satellite-hd">Satellite HD</button>
@@ -5386,6 +5389,11 @@ const db = firebase.firestore();
         alertTimeouts: new Map(),
         connectionCandidate: null,
         mapStyles: {
+            // NYC-specific high resolution maps (prioritized at top)
+            'nyc-detailed': 'https://tiles.arcgis.com/tiles/yG5s3afENB5iO9fj/arcgis/rest/services/NYC_Planimetric/MapServer/tile/{z}/{y}/{x}',
+            'nyc-satellite-hd': 'https://clarity.maptiles.arcgis.com/arcgis/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+            'nyc-dark': 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+            // Standard maps
             streets: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
             satellite: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
             'satellite-hd': 'bing-satellite', // Special marker for Bing
@@ -6860,6 +6868,9 @@ const db = firebase.firestore();
         
         // Update app state
         AppState.userLocation = [processedLocation.lat, processedLocation.lng];
+        
+        // Check if user should be recommended NYC maps
+        setTimeout(() => checkNYCMapRecommendation(), 2000);
         
         // Create or update marker
         if (!AppState.userMarker) {
@@ -8986,6 +8997,9 @@ const db = firebase.firestore();
                         AppState.userLocation = [latitude, longitude];
                         console.log('Got user location:', AppState.userLocation);
                         
+                        // Check if user should be recommended NYC maps
+                        setTimeout(() => checkNYCMapRecommendation(), 2000);
+                        
                         // Update user marker if it exists
                         if (AppState.userMarker) {
                             AppState.userMarker.setLatLng([latitude, longitude]);
@@ -9740,12 +9754,26 @@ const db = firebase.firestore();
                 keepBuffer: 8
             };
             
-            // Add specific attribution for known services
+            // Add specific attribution and options for known services
             if (style === 'usgs-hybrid') {
                 layerOptions.attribution = 'USGS National Map';
                 layerOptions.maxNativeZoom = 16;
             } else if (style === 'infrastructure' || style === 'satellite-clarity') {
                 layerOptions.attribution = '&copy; Esri';
+            } else if (style === 'nyc-detailed') {
+                layerOptions.attribution = 'NYC DoITT';
+                layerOptions.maxZoom = 21;
+                layerOptions.maxNativeZoom = 21;
+                layerOptions.bounds = [[40.4774, -74.2591], [40.9176, -73.7004]]; // NYC bounds
+            } else if (style === 'nyc-satellite-hd') {
+                layerOptions.attribution = '&copy; Esri';
+                layerOptions.maxZoom = 21;
+                layerOptions.maxNativeZoom = 20;
+            } else if (style === 'nyc-dark') {
+                layerOptions.attribution = '&copy; CARTO';
+                layerOptions.maxZoom = 21;
+                layerOptions.maxNativeZoom = 20;
+                layerOptions.subdomains = 'abcd';
             }
             
             newLayer = L.tileLayer(styleUrl, layerOptions);
@@ -9754,6 +9782,40 @@ const db = firebase.firestore();
         newLayer.addTo(AppState.map);
         AppState.currentMapStyle = style;
         hapticFeedback(30);
+        
+        // Check if user should be notified about NYC maps
+        checkNYCMapRecommendation();
+    }
+
+    // Function to recommend NYC maps when user is in NYC area
+    function checkNYCMapRecommendation() {
+        // Only check if user location is available and not already using NYC maps
+        if (!AppState.userLocation || AppState.currentMapStyle.startsWith('nyc-')) {
+            return;
+        }
+        
+        const [lat, lng] = AppState.userLocation;
+        
+        // Check if user is within NYC bounds
+        const nycBounds = {
+            north: 40.9176,
+            south: 40.4774, 
+            east: -73.7004,
+            west: -74.2591
+        };
+        
+        if (lat >= nycBounds.south && lat <= nycBounds.north && 
+            lng >= nycBounds.west && lng <= nycBounds.east) {
+            
+            // Check if we've already shown this recommendation recently
+            const lastRecommendation = localStorage.getItem('nycMapRecommendation');
+            const now = Date.now();
+            
+            if (!lastRecommendation || (now - parseInt(lastRecommendation)) > 86400000) { // 24 hours
+                showToast('💡 Try NYC Detailed maps for higher resolution in this area!', 'info');
+                localStorage.setItem('nycMapRecommendation', now.toString());
+            }
+        }
     }
 
     function toggleUtilityVisibility(toggle) {
