@@ -5188,16 +5188,18 @@ const db = firebase.firestore();
         <div class="settings-section">
             <h3>Map Style</h3>
             <div class="map-styles">
-                <button class="map-style-btn" data-style="nyc-streets">NYC Streets</button>
+                <button class="map-style-btn active" data-style="nyc-streets">NYC Streets</button>
                 <button class="map-style-btn" data-style="nyc-aerial-2018">NYC Aerial 2018</button>
-                <button class="map-style-btn" data-style="dark-mode">Dark Mode</button>
-                <button class="map-style-btn active" data-style="streets">Streets</button>
+                <button class="map-style-btn" data-style="nyc-aerial-labels">NYC Aerial + Labels</button>
+                <button class="map-style-btn" data-style="nyc-aerial-2016">NYC Aerial 2016</button>
+                <button class="map-style-btn" data-style="streets">Streets</button>
                 <button class="map-style-btn" data-style="satellite">Satellite</button>
                 <button class="map-style-btn" data-style="satellite-hd">Satellite HD</button>
                 <button class="map-style-btn" data-style="usgs-hybrid">USGS Hybrid</button>
                 <button class="map-style-btn" data-style="infrastructure">Infrastructure</button>
                 <button class="map-style-btn" data-style="satellite-clarity">Clarity</button>
                 <button class="map-style-btn" data-style="terrain">Terrain</button>
+                <button class="map-style-btn" data-style="dark">Dark</button>
             </div>
         </div>
 
@@ -5388,10 +5390,11 @@ const db = firebase.firestore();
         alertTimeouts: new Map(),
         connectionCandidate: null,
         mapStyles: {
-            // NYC-specific high resolution maps (prioritized at top)
-            'nyc-streets': 'https://maps.nyc.gov/xyz/1.0.0/carto/basemap/{z}/{x}/{y}.png',
-            'nyc-aerial-2018': 'https://maps.nyc.gov/xyz/1.0.0/photo/2018/{z}/{x}/{y}.png8',
-            'nyc-labels': 'https://maps.nyc.gov/xyz/1.0.0/carto/label-lt/{z}/{x}/{y}.png8',
+            // Official NYC maps (prioritized at top)
+            'nyc-streets': 'https://maps{s}.nyc.gov/xyz/1.0.0/carto/basemap/{z}/{x}/{y}.jpg',
+            'nyc-aerial-2018': 'https://maps{s}.nyc.gov/xyz/1.0.0/photo/2018/{z}/{x}/{y}.png8',
+            'nyc-aerial-labels': 'nyc-aerial-with-labels', // Special marker for layer group
+            'nyc-aerial-2016': 'https://maps{s}.nyc.gov/xyz/1.0.0/photo/2016/{z}/{x}/{y}.png8',
             // Standard maps
             streets: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
             satellite: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
@@ -5400,10 +5403,9 @@ const db = firebase.firestore();
             'infrastructure': 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',
             'satellite-clarity': 'https://clarity.maptiles.arcgis.com/arcgis/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
             terrain: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
-            'dark-mode': 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+            dark: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png'
         },
-        currentMapStyle: 'streets',
-        currentLabelsLayer: null, // For NYC labels overlay
+        currentMapStyle: 'nyc-streets',
         cloudSync: {
             enabled: false,
             lastSync: null,
@@ -6556,11 +6558,31 @@ const db = firebase.firestore();
             zoomDelta: 0.25
         });
 
-        // Add tile layer
-        L.tileLayer(AppState.mapStyles[AppState.currentMapStyle], {
-            maxZoom: 22,
-            maxNativeZoom: 19
-        }).addTo(AppState.map);
+        // Add default tile layer (NYC Streets)
+        const defaultStyle = AppState.currentMapStyle;
+        const defaultStyleUrl = AppState.mapStyles[defaultStyle];
+        
+        let defaultLayer;
+        if (defaultStyle.startsWith('nyc-')) {
+            // Use NYC map configuration
+            defaultLayer = L.tileLayer(defaultStyleUrl, {
+                attribution: 'NYC DoITT',
+                minNativeZoom: 8,
+                maxNativeZoom: 19,
+                maxZoom: 21,
+                subdomains: '1234',
+                bounds: L.latLngBounds([39.3682, -75.9374], [42.0329, -71.7187]),
+                keepBuffer: 8
+            });
+        } else {
+            // Use standard configuration
+            defaultLayer = L.tileLayer(defaultStyleUrl, {
+                maxZoom: 22,
+                maxNativeZoom: 19
+            });
+        }
+        
+        defaultLayer.addTo(AppState.map);
 
         // Initialize utility layers
         const utilityTypes = ['water', 'gas', 'electric', 'sewer', 'telecom'];
@@ -9728,18 +9750,23 @@ const db = firebase.firestore();
             btn.classList.toggle('active', btn.dataset.style === style);
         });
 
-        // Change map tiles
+        // Change map tiles - remove existing tile layers and map layer groups
         AppState.map.eachLayer(layer => {
             if (layer instanceof L.TileLayer || layer instanceof L.TileLayer.Bing) {
                 AppState.map.removeLayer(layer);
+            } else if (layer instanceof L.LayerGroup) {
+                // Only remove layer groups that contain tile layers (base maps)
+                let containsTileLayers = false;
+                layer.eachLayer(sublayer => {
+                    if (sublayer instanceof L.TileLayer) {
+                        containsTileLayers = true;
+                    }
+                });
+                if (containsTileLayers) {
+                    AppState.map.removeLayer(layer);
+                }
             }
         });
-        
-        // Clean up any existing labels layer
-        if (AppState.currentLabelsLayer) {
-            AppState.map.removeLayer(AppState.currentLabelsLayer);
-            AppState.currentLabelsLayer = null;
-        }
 
         // Handle special map layers
         let newLayer;
@@ -9752,6 +9779,29 @@ const db = firebase.firestore();
                 maxNativeZoom: 19,
                 keepBuffer: 8
             });
+        } else if (styleUrl === 'nyc-aerial-with-labels') {
+            // Create NYC Aerial + Labels layer group
+            const nycAerial = L.tileLayer('https://maps{s}.nyc.gov/xyz/1.0.0/photo/2018/{z}/{x}/{y}.png8', {
+                attribution: 'NYC DoITT 2018',
+                minNativeZoom: 8,
+                maxNativeZoom: 19,
+                maxZoom: 21,
+                subdomains: '1234',
+                bounds: L.latLngBounds([40.4888, -74.2759], [40.9279, -73.6896]),
+                keepBuffer: 8
+            });
+            
+            const nycLabels = L.tileLayer('https://maps{s}.nyc.gov/xyz/1.0.0/carto/label-lt/{z}/{x}/{y}.png8', {
+                attribution: 'NYC DoITT',
+                minNativeZoom: 8,
+                maxNativeZoom: 19,
+                maxZoom: 21,
+                subdomains: '1234',
+                bounds: L.latLngBounds([40.0341, -74.2727], [41.2919, -71.9101]),
+                keepBuffer: 8
+            });
+            
+            newLayer = L.layerGroup([nycAerial, nycLabels]);
         } else {
             // Use regular tile layer
             const layerOptions = {
@@ -9766,56 +9816,33 @@ const db = firebase.firestore();
                 layerOptions.maxNativeZoom = 16;
             } else if (style === 'infrastructure' || style === 'satellite-clarity') {
                 layerOptions.attribution = '&copy; Esri';
-            } else if (style === 'nyc-streets') {
-                layerOptions.attribution = 'NYC DoITT';
-                layerOptions.maxZoom = 21;
+            } else if (style.startsWith('nyc-')) {
+                // Official NYC maps configuration
+                layerOptions.attribution = style.includes('aerial') ? 'NYC DoITT' : 'NYC DoITT';
+                layerOptions.minNativeZoom = 8;
                 layerOptions.maxNativeZoom = 19;
-                layerOptions.bounds = [[40.4888, -74.2759], [40.9279, -73.6896]]; // NYC bounds
-            } else if (style === 'nyc-aerial-2018') {
-                layerOptions.attribution = 'NYC DoITT 2018';
                 layerOptions.maxZoom = 21;
-                layerOptions.maxNativeZoom = 19;
-                layerOptions.bounds = [[40.4888, -74.2759], [40.9279, -73.6896]]; // NYC bounds
-            } else if (style === 'nyc-labels') {
-                layerOptions.attribution = 'NYC DoITT';
-                layerOptions.maxZoom = 21;
-                layerOptions.maxNativeZoom = 19;
-                layerOptions.bounds = [[40.4888, -74.2759], [40.9279, -73.6896]]; // NYC bounds
-                layerOptions.opacity = 1;
-            } else if (style === 'dark-mode') {
-                layerOptions.attribution = '&copy; CARTO';
-                layerOptions.maxZoom = 20;
-                layerOptions.maxNativeZoom = 20;
-                layerOptions.subdomains = 'abcd';
+                layerOptions.subdomains = '1234';
+                
+                // Set appropriate bounds based on map type
+                if (style.includes('aerial')) {
+                    layerOptions.bounds = L.latLngBounds([40.4888, -74.2759], [40.9279, -73.6896]);
+                } else {
+                    layerOptions.bounds = L.latLngBounds([39.3682, -75.9374], [42.0329, -71.7187]);
+                }
+                
+                // Add year to attribution for aerial photos
+                if (style === 'nyc-aerial-2018') {
+                    layerOptions.attribution = 'NYC DoITT 2018';
+                } else if (style === 'nyc-aerial-2016') {
+                    layerOptions.attribution = 'NYC DoITT 2016';
+                }
             }
             
             newLayer = L.tileLayer(styleUrl, layerOptions);
         }
         
         newLayer.addTo(AppState.map);
-        
-        // Add NYC labels overlay when using NYC Aerial 2018
-        if (style === 'nyc-aerial-2018') {
-            const labelsLayer = L.tileLayer(AppState.mapStyles['nyc-labels'], {
-                attribution: 'NYC DoITT',
-                maxZoom: 21,
-                maxNativeZoom: 19,
-                bounds: [[40.4888, -74.2759], [40.9279, -73.6896]],
-                opacity: 1,
-                zIndex: 100 // Ensure labels appear on top
-            });
-            labelsLayer.addTo(AppState.map);
-            
-            // Store reference to labels layer for cleanup
-            AppState.currentLabelsLayer = labelsLayer;
-        } else {
-            // Remove any existing labels layer when switching away from NYC Aerial
-            if (AppState.currentLabelsLayer) {
-                AppState.map.removeLayer(AppState.currentLabelsLayer);
-                AppState.currentLabelsLayer = null;
-            }
-        }
-        
         AppState.currentMapStyle = style;
         hapticFeedback(30);
         
@@ -9832,7 +9859,7 @@ const db = firebase.firestore();
         
         const [lat, lng] = AppState.userLocation;
         
-        // Check if user is within NYC bounds (updated bounds)
+        // Check if user is within NYC bounds
         const nycBounds = {
             north: 40.9279,
             south: 40.4888, 
@@ -9848,7 +9875,7 @@ const db = firebase.firestore();
             const now = Date.now();
             
             if (!lastRecommendation || (now - parseInt(lastRecommendation)) > 86400000) { // 24 hours
-                showToast('💡 Try NYC Streets or NYC Aerial 2018 for higher resolution in this area!', 'info');
+                showToast('💡 Try NYC official maps for highest resolution in this area!', 'info');
                 localStorage.setItem('nycMapRecommendation', now.toString());
             }
         }
