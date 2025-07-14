@@ -83,6 +83,10 @@ const db = firebase.firestore();
 <!-- Google Fonts -->
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@300;400;500;600;700&display=swap">
 
+<!-- Mapillary Street View Dependencies -->
+<link href="https://unpkg.com/mapillary-js@4.1.1/dist/mapillary.css" rel="stylesheet">
+<script src="https://unpkg.com/mapillary-js@4.1.1/dist/mapillary.js"></script>
+
 <style>
     :root {
         --vh: 1vh;
@@ -4719,6 +4723,242 @@ const db = firebase.firestore();
     .signout-btn:active {
         transform: scale(0.95);
     }
+
+    /*********************************
+    * STREET VIEW MODE
+    *********************************/
+    .street-view-container {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 3000;
+        background: black;
+        display: none;
+    }
+
+    .street-view-container.active {
+        display: block;
+    }
+
+    .mapillary-viewer {
+        width: 100%;
+        height: 100%;
+    }
+
+    .street-view-controls {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        z-index: 3100;
+        display: flex;
+        gap: 10px;
+    }
+
+    .street-view-close {
+        width: 48px;
+        height: 48px;
+        background: rgba(255, 255, 255, 0.9);
+        border: none;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        color: var(--text-primary);
+        font-size: 18px;
+        transition: all var(--transition-normal);
+    }
+
+    .street-view-close:hover {
+        background: white;
+        transform: scale(1.1);
+    }
+
+    .street-view-button {
+        background: var(--gradient-primary);
+        color: white;
+        border: none;
+        padding: var(--spacing-sm) var(--spacing-md);
+        border-radius: var(--radius-md);
+        cursor: pointer;
+        font-size: 14px;
+        transition: all var(--transition-normal);
+    }
+
+    .street-view-button:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-lg);
+    }
+
+    /* Mapillary coverage layer */
+    .mapillary-coverage {
+        stroke: #05CB63;
+        stroke-width: 2;
+        fill: none;
+        opacity: 0.7;
+    }
+
+    /*********************************
+    * AR MODE
+    *********************************/
+    .ar-container {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 3000;
+        display: none;
+    }
+
+    .ar-container.active {
+        display: block;
+    }
+
+    #ar-camera {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    #ar-canvas {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+    }
+
+    .ar-controls {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        z-index: 3100;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .ar-info {
+        position: absolute;
+        bottom: 100px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(0, 0, 0, 0.7);
+        color: white;
+        padding: 10px 20px;
+        border-radius: 20px;
+        font-size: 14px;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .ar-crosshair {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 50px;
+        height: 50px;
+        border: 3px solid white;
+        border-radius: 50%;
+        opacity: 0.7;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+    }
+
+    .ar-utility-indicator {
+        position: absolute;
+        background: rgba(255, 255, 255, 0.9);
+        padding: 8px 12px;
+        border-radius: 8px;
+        font-size: 12px;
+        font-weight: 600;
+        pointer-events: none;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        backdrop-filter: blur(10px);
+        transform: translate(-50%, -100%);
+    }
+
+    .ar-utility-indicator.water { border-left: 4px solid var(--water-color); }
+    .ar-utility-indicator.gas { border-left: 4px solid var(--gas-color); }
+    .ar-utility-indicator.electric { border-left: 4px solid var(--electric-color); }
+    .ar-utility-indicator.sewer { border-left: 4px solid var(--sewer-color); }
+    .ar-utility-indicator.telecom { border-left: 4px solid var(--telecom-color); }
+
+    /* Add styles for the new buttons */
+    .view-mode-buttons {
+        position: absolute;
+        bottom: calc(env(safe-area-inset-bottom, 0) + 200px);
+        left: var(--spacing-md);
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-sm);
+        z-index: 500;
+    }
+
+    .view-mode-btn {
+        width: 48px;
+        height: 48px;
+        background: var(--bg-glass);
+        backdrop-filter: blur(20px) saturate(180%);
+        -webkit-backdrop-filter: blur(20px) saturate(180%);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-full);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all var(--transition-spring);
+        box-shadow: var(--shadow-md);
+        color: var(--text-primary);
+        font-size: 18px;
+    }
+
+    .view-mode-btn:hover {
+        transform: translateY(-2px) scale(1.05);
+        box-shadow: var(--shadow-lg);
+        background: var(--bg-secondary);
+    }
+
+    .view-mode-btn.active {
+        background: var(--gradient-primary);
+        color: white;
+        box-shadow: var(--shadow-lg), 0 0 20px rgba(102, 126, 234, 0.4);
+    }
+
+    .view-mode-btn i {
+        pointer-events: none;
+    }
+
+    /* Mobile responsive adjustments */
+    @media (max-width: 480px) {
+        .street-view-controls,
+        .ar-controls {
+            top: calc(env(safe-area-inset-top, 0) + 10px);
+            right: 10px;
+        }
+        
+        .view-mode-buttons {
+            bottom: calc(env(safe-area-inset-bottom, 0) + 180px);
+            left: 10px;
+        }
+        
+        .view-mode-btn {
+            width: 44px;
+            height: 44px;
+            font-size: 16px;
+        }
+        
+        .ar-info {
+            bottom: calc(env(safe-area-inset-bottom, 0) + 80px);
+            font-size: 12px;
+            padding: 8px 16px;
+        }
+    }
 </style>
 
 </head>
@@ -4996,6 +5236,16 @@ const db = firebase.firestore();
         </div>
     </div>
 
+    <!-- View Mode Buttons -->
+    <div class="view-mode-buttons">
+        <button class="view-mode-btn" id="street-view-btn" title="Street View">
+            <i class="fas fa-street-view"></i>
+        </button>
+        <button class="view-mode-btn" id="ar-mode-btn" title="AR View">
+            <i class="fas fa-camera"></i>
+        </button>
+    </div>
+
     <!-- Drawing UI -->
     <div class="drawing-ui" id="drawingUI">
         <h3>Drawing Utility Line</h3>
@@ -5188,11 +5438,7 @@ const db = firebase.firestore();
         <div class="settings-section">
             <h3>Map Style</h3>
             <div class="map-styles">
-                <button class="map-style-btn active" data-style="nyc-streets">NYC Streets</button>
-                <button class="map-style-btn" data-style="nyc-aerial-2018">NYC Aerial 2018</button>
-                <button class="map-style-btn" data-style="nyc-aerial-labels">NYC Aerial + Labels</button>
-                <button class="map-style-btn" data-style="nyc-aerial-2016">NYC Aerial 2016</button>
-                <button class="map-style-btn" data-style="streets">Streets</button>
+                <button class="map-style-btn active" data-style="streets">Streets</button>
                 <button class="map-style-btn" data-style="satellite">Satellite</button>
                 <button class="map-style-btn" data-style="satellite-hd">Satellite HD</button>
                 <button class="map-style-btn" data-style="usgs-hybrid">USGS Hybrid</button>
@@ -5390,12 +5636,6 @@ const db = firebase.firestore();
         alertTimeouts: new Map(),
         connectionCandidate: null,
         mapStyles: {
-            // Official NYC maps (prioritized at top)
-            'nyc-streets': 'https://maps{s}.nyc.gov/xyz/1.0.0/carto/basemap/{z}/{x}/{y}.jpg',
-            'nyc-aerial-2018': 'https://maps{s}.nyc.gov/xyz/1.0.0/photo/2018/{z}/{x}/{y}.png8',
-            'nyc-aerial-labels': 'nyc-aerial-with-labels', // Special marker for layer group
-            'nyc-aerial-2016': 'https://maps{s}.nyc.gov/xyz/1.0.0/photo/2016/{z}/{x}/{y}.png8',
-            // Standard maps
             streets: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
             satellite: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
             'satellite-hd': 'bing-satellite', // Special marker for Bing
@@ -5405,7 +5645,7 @@ const db = firebase.firestore();
             terrain: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
             dark: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png'
         },
-        currentMapStyle: 'nyc-streets',
+        currentMapStyle: 'streets',
         cloudSync: {
             enabled: false,
             lastSync: null,
@@ -6014,6 +6254,43 @@ const db = firebase.firestore();
         console.log('  3. Sign out and back in if needed');
         console.log('');
 
+        // Initialize Street View and AR modes
+        setTimeout(() => {
+            ViewModes.init();
+        }, 1000);
+
+        // Add debug function for testing AR mode
+        window.createARTestUtility = function() {
+            if (!AppState.userLocation) {
+                showToast('User location needed for test utility', 'warning');
+                return;
+            }
+
+            const testUtility = {
+                id: generateId(),
+                type: 'water',
+                lineType: 'main',
+                points: [
+                    L.latLng(AppState.userLocation[0] + 0.0001, AppState.userLocation[1] + 0.0001),
+                    L.latLng(AppState.userLocation[0] + 0.0002, AppState.userLocation[1] + 0.0002)
+                ],
+                size: '8',
+                depth: '4',
+                material: 'Cast Iron',
+                condition: 'Good',
+                dateAdded: new Date().toISOString(),
+                connections: [],
+                notes: [],
+                isSaved: true
+            };
+
+            AppState.utilities.push(testUtility);
+            createUtilityLine(testUtility);
+            showToast('Test utility created near your location for AR demo', 'success');
+            
+            return testUtility;
+        };
+
         // Enhanced keyboard handling for iOS
         const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
         if (isIOS) {
@@ -6558,31 +6835,11 @@ const db = firebase.firestore();
             zoomDelta: 0.25
         });
 
-        // Add default tile layer (NYC Streets)
-        const defaultStyle = AppState.currentMapStyle;
-        const defaultStyleUrl = AppState.mapStyles[defaultStyle];
-        
-        let defaultLayer;
-        if (defaultStyle.startsWith('nyc-')) {
-            // Use NYC map configuration
-            defaultLayer = L.tileLayer(defaultStyleUrl, {
-                attribution: 'NYC DoITT',
-                minNativeZoom: 8,
-                maxNativeZoom: 19,
-                maxZoom: 21,
-                subdomains: '1234',
-                bounds: L.latLngBounds([39.3682, -75.9374], [42.0329, -71.7187]),
-                keepBuffer: 8
-            });
-        } else {
-            // Use standard configuration
-            defaultLayer = L.tileLayer(defaultStyleUrl, {
-                maxZoom: 22,
-                maxNativeZoom: 19
-            });
-        }
-        
-        defaultLayer.addTo(AppState.map);
+        // Add tile layer
+        L.tileLayer(AppState.mapStyles[AppState.currentMapStyle], {
+            maxZoom: 22,
+            maxNativeZoom: 19
+        }).addTo(AppState.map);
 
         // Initialize utility layers
         const utilityTypes = ['water', 'gas', 'electric', 'sewer', 'telecom'];
@@ -6890,9 +7147,6 @@ const db = firebase.firestore();
         
         // Update app state
         AppState.userLocation = [processedLocation.lat, processedLocation.lng];
-        
-        // Check if user should be recommended NYC maps
-        setTimeout(() => checkNYCMapRecommendation(), 2000);
         
         // Create or update marker
         if (!AppState.userMarker) {
@@ -9019,9 +9273,6 @@ const db = firebase.firestore();
                         AppState.userLocation = [latitude, longitude];
                         console.log('Got user location:', AppState.userLocation);
                         
-                        // Check if user should be recommended NYC maps
-                        setTimeout(() => checkNYCMapRecommendation(), 2000);
-                        
                         // Update user marker if it exists
                         if (AppState.userMarker) {
                             AppState.userMarker.setLatLng([latitude, longitude]);
@@ -9750,21 +10001,10 @@ const db = firebase.firestore();
             btn.classList.toggle('active', btn.dataset.style === style);
         });
 
-        // Change map tiles - remove existing tile layers and map layer groups
+        // Change map tiles
         AppState.map.eachLayer(layer => {
             if (layer instanceof L.TileLayer || layer instanceof L.TileLayer.Bing) {
                 AppState.map.removeLayer(layer);
-            } else if (layer instanceof L.LayerGroup) {
-                // Only remove layer groups that contain tile layers (base maps)
-                let containsTileLayers = false;
-                layer.eachLayer(sublayer => {
-                    if (sublayer instanceof L.TileLayer) {
-                        containsTileLayers = true;
-                    }
-                });
-                if (containsTileLayers) {
-                    AppState.map.removeLayer(layer);
-                }
             }
         });
 
@@ -9779,29 +10019,6 @@ const db = firebase.firestore();
                 maxNativeZoom: 19,
                 keepBuffer: 8
             });
-        } else if (styleUrl === 'nyc-aerial-with-labels') {
-            // Create NYC Aerial + Labels layer group
-            const nycAerial = L.tileLayer('https://maps{s}.nyc.gov/xyz/1.0.0/photo/2018/{z}/{x}/{y}.png8', {
-                attribution: 'NYC DoITT 2018',
-                minNativeZoom: 8,
-                maxNativeZoom: 19,
-                maxZoom: 21,
-                subdomains: '1234',
-                bounds: L.latLngBounds([40.4888, -74.2759], [40.9279, -73.6896]),
-                keepBuffer: 8
-            });
-            
-            const nycLabels = L.tileLayer('https://maps{s}.nyc.gov/xyz/1.0.0/carto/label-lt/{z}/{x}/{y}.png8', {
-                attribution: 'NYC DoITT',
-                minNativeZoom: 8,
-                maxNativeZoom: 19,
-                maxZoom: 21,
-                subdomains: '1234',
-                bounds: L.latLngBounds([40.0341, -74.2727], [41.2919, -71.9101]),
-                keepBuffer: 8
-            });
-            
-            newLayer = L.layerGroup([nycAerial, nycLabels]);
         } else {
             // Use regular tile layer
             const layerOptions = {
@@ -9810,33 +10027,12 @@ const db = firebase.firestore();
                 keepBuffer: 8
             };
             
-            // Add specific attribution and options for known services
+            // Add specific attribution for known services
             if (style === 'usgs-hybrid') {
                 layerOptions.attribution = 'USGS National Map';
                 layerOptions.maxNativeZoom = 16;
             } else if (style === 'infrastructure' || style === 'satellite-clarity') {
                 layerOptions.attribution = '&copy; Esri';
-            } else if (style.startsWith('nyc-')) {
-                // Official NYC maps configuration
-                layerOptions.attribution = style.includes('aerial') ? 'NYC DoITT' : 'NYC DoITT';
-                layerOptions.minNativeZoom = 8;
-                layerOptions.maxNativeZoom = 19;
-                layerOptions.maxZoom = 21;
-                layerOptions.subdomains = '1234';
-                
-                // Set appropriate bounds based on map type
-                if (style.includes('aerial')) {
-                    layerOptions.bounds = L.latLngBounds([40.4888, -74.2759], [40.9279, -73.6896]);
-                } else {
-                    layerOptions.bounds = L.latLngBounds([39.3682, -75.9374], [42.0329, -71.7187]);
-                }
-                
-                // Add year to attribution for aerial photos
-                if (style === 'nyc-aerial-2018') {
-                    layerOptions.attribution = 'NYC DoITT 2018';
-                } else if (style === 'nyc-aerial-2016') {
-                    layerOptions.attribution = 'NYC DoITT 2016';
-                }
             }
             
             newLayer = L.tileLayer(styleUrl, layerOptions);
@@ -9845,40 +10041,6 @@ const db = firebase.firestore();
         newLayer.addTo(AppState.map);
         AppState.currentMapStyle = style;
         hapticFeedback(30);
-        
-        // Check if user should be notified about NYC maps
-        checkNYCMapRecommendation();
-    }
-
-    // Function to recommend NYC maps when user is in NYC area
-    function checkNYCMapRecommendation() {
-        // Only check if user location is available and not already using NYC maps
-        if (!AppState.userLocation || AppState.currentMapStyle.startsWith('nyc-')) {
-            return;
-        }
-        
-        const [lat, lng] = AppState.userLocation;
-        
-        // Check if user is within NYC bounds
-        const nycBounds = {
-            north: 40.9279,
-            south: 40.4888, 
-            east: -73.6896,
-            west: -74.2759
-        };
-        
-        if (lat >= nycBounds.south && lat <= nycBounds.north && 
-            lng >= nycBounds.west && lng <= nycBounds.east) {
-            
-            // Check if we've already shown this recommendation recently
-            const lastRecommendation = localStorage.getItem('nycMapRecommendation');
-            const now = Date.now();
-            
-            if (!lastRecommendation || (now - parseInt(lastRecommendation)) > 86400000) { // 24 hours
-                showToast('💡 Try NYC official maps for highest resolution in this area!', 'info');
-                localStorage.setItem('nycMapRecommendation', now.toString());
-            }
-        }
     }
 
     function toggleUtilityVisibility(toggle) {
@@ -13135,6 +13297,457 @@ const db = firebase.firestore();
             if (userData && !userData.achievements.includes('first_refine')) {
                 await ExperienceSystem.checkAchievements('refine');
             }
+        }
+    };
+
+    /*********************************
+    * STREET VIEW AND AR MODE SYSTEM
+    *********************************/
+    const ViewModes = {
+        mapillaryViewer: null,
+        arActive: false,
+        arAnimationFrame: null,
+        currentHeading: 0,
+        
+        init: function() {
+            console.log('🎬 Initializing Street View and AR modes...');
+            
+            // Create containers
+            this.createStreetViewContainer();
+            this.createARContainer();
+            
+            // Setup event listeners
+            this.setupEventListeners();
+            
+            // Setup device orientation tracking
+            this.setupOrientationTracking();
+            
+            console.log('✅ Street View and AR modes ready!');
+        },
+        
+        setupEventListeners: function() {
+            const streetViewBtn = document.getElementById('street-view-btn');
+            const arBtn = document.getElementById('ar-mode-btn');
+            
+            if (streetViewBtn) {
+                streetViewBtn.addEventListener('click', () => this.toggleStreetView());
+            }
+            
+            if (arBtn) {
+                arBtn.addEventListener('click', () => this.toggleARMode());
+            }
+        },
+        
+        setupOrientationTracking: function() {
+            if (window.DeviceOrientationEvent) {
+                if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+                    // iOS 13+ requires permission
+                    DeviceOrientationEvent.requestPermission()
+                        .then(response => {
+                            if (response === 'granted') {
+                                window.addEventListener('deviceorientation', (e) => this.handleOrientation(e));
+                            }
+                        })
+                        .catch(console.error);
+                } else {
+                    // Android and older iOS
+                    window.addEventListener('deviceorientation', (e) => this.handleOrientation(e));
+                }
+            }
+        },
+        
+        handleOrientation: function(event) {
+            if (event.alpha !== null) {
+                this.currentHeading = event.alpha;
+            } else if (event.webkitCompassHeading !== undefined) {
+                this.currentHeading = event.webkitCompassHeading;
+            }
+        },
+        
+        createStreetViewContainer: function() {
+            const container = document.createElement('div');
+            container.className = 'street-view-container';
+            container.innerHTML = `
+                <div class="street-view-controls">
+                    <button class="street-view-close" id="close-street-view">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div id="mapillary-viewer" class="mapillary-viewer"></div>
+            `;
+            document.body.appendChild(container);
+            
+            document.getElementById('close-street-view').addEventListener('click', () => {
+                this.closeStreetView();
+            });
+        },
+        
+        createARContainer: function() {
+            const container = document.createElement('div');
+            container.className = 'ar-container';
+            container.innerHTML = `
+                <video id="ar-camera" autoplay playsinline></video>
+                <canvas id="ar-canvas"></canvas>
+                <div class="ar-crosshair"></div>
+                <div class="ar-info">Point camera at ground to see utilities</div>
+                <div class="ar-controls">
+                    <button class="street-view-close" id="close-ar-mode">
+                        <i class="fas fa-times"></i>
+                    </button>
+                    <button class="street-view-close" id="ar-snapshot">
+                        <i class="fas fa-camera"></i>
+                    </button>
+                </div>
+            `;
+            document.body.appendChild(container);
+            
+            document.getElementById('close-ar-mode').addEventListener('click', () => {
+                this.closeARMode();
+            });
+            
+            document.getElementById('ar-snapshot').addEventListener('click', () => {
+                this.takeARSnapshot();
+            });
+        },
+        
+        toggleStreetView: async function() {
+            const container = document.querySelector('.street-view-container');
+            const streetViewBtn = document.getElementById('street-view-btn');
+            
+            if (container.classList.contains('active')) {
+                this.closeStreetView();
+                return;
+            }
+            
+            const currentLocation = AppState.map.getCenter();
+            
+            try {
+                streetViewBtn.classList.add('active');
+                showToast('Loading street view...', 'info');
+                
+                if (!this.mapillaryViewer && window.Mapillary) {
+                    // Initialize Mapillary viewer
+                    this.mapillaryViewer = new Mapillary.Viewer({
+                        accessToken: 'MLY|4142433049200173|72206abe5035a88d9b2475fafb5f45d5', // Public token
+                        container: 'mapillary-viewer',
+                        component: {
+                            cover: false,
+                            sequence: true,
+                            attribution: false
+                        }
+                    });
+                }
+                
+                if (this.mapillaryViewer) {
+                    // Load nearby images
+                    await this.mapillaryViewer.moveTo(null, {
+                        lat: currentLocation.lat,
+                        lng: currentLocation.lng
+                    });
+                    
+                    container.classList.add('active');
+                    showToast('Street view loaded', 'success');
+                    
+                    // Add utility overlays to street view
+                    this.addUtilityOverlaysToStreetView();
+                } else {
+                    throw new Error('Mapillary not available');
+                }
+                
+            } catch (error) {
+                console.error('Street view error:', error);
+                showToast('No street view available at this location', 'warning');
+                streetViewBtn.classList.remove('active');
+            }
+        },
+        
+        closeStreetView: function() {
+            const container = document.querySelector('.street-view-container');
+            const streetViewBtn = document.getElementById('street-view-btn');
+            
+            container.classList.remove('active');
+            streetViewBtn.classList.remove('active');
+        },
+        
+        addUtilityOverlaysToStreetView: function() {
+            // This would add utility overlays to the street view
+            // For now, just log that it's available
+            console.log('Street view with utility overlays would be implemented here');
+        },
+        
+        toggleARMode: async function() {
+            const container = document.querySelector('.ar-container');
+            const arBtn = document.getElementById('ar-mode-btn');
+            
+            if (this.arActive) {
+                this.closeARMode();
+                return;
+            }
+            
+            try {
+                arBtn.classList.add('active');
+                showToast('Initializing AR mode...', 'info');
+                
+                // Request camera permission
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        facingMode: 'environment',
+                        width: { ideal: 1920 },
+                        height: { ideal: 1080 }
+                    }
+                });
+                
+                const video = document.getElementById('ar-camera');
+                video.srcObject = stream;
+                
+                container.classList.add('active');
+                this.arActive = true;
+                
+                showToast('AR mode active - Point camera at ground', 'success');
+                
+                // Start AR rendering
+                this.startARRendering();
+                
+            } catch (error) {
+                console.error('Camera access denied:', error);
+                showToast('Camera access required for AR mode', 'error');
+                arBtn.classList.remove('active');
+            }
+        },
+        
+        closeARMode: function() {
+            const container = document.querySelector('.ar-container');
+            const video = document.getElementById('ar-camera');
+            const arBtn = document.getElementById('ar-mode-btn');
+            
+            if (video.srcObject) {
+                video.srcObject.getTracks().forEach(track => track.stop());
+            }
+            
+            container.classList.remove('active');
+            arBtn.classList.remove('active');
+            this.arActive = false;
+            
+            if (this.arAnimationFrame) {
+                cancelAnimationFrame(this.arAnimationFrame);
+            }
+            
+            // Clean up AR utility labels
+            document.querySelectorAll('.ar-utility-indicator').forEach(label => {
+                label.remove();
+            });
+        },
+        
+        startARRendering: function() {
+            const canvas = document.getElementById('ar-canvas');
+            const ctx = canvas.getContext('2d');
+            
+            // Set canvas size
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            
+            const render = () => {
+                if (!this.arActive) return;
+                
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                // Get current device location
+                if (AppState.userLocation) {
+                    const userPos = {
+                        lat: AppState.userLocation[0],
+                        lng: AppState.userLocation[1]
+                    };
+                    
+                    // Find nearby utilities (within 50 meters)
+                    const nearbyUtilities = this.findNearbyUtilitiesForAR(userPos, 50);
+                    
+                    // Render utility indicators
+                    nearbyUtilities.forEach(utility => {
+                        this.renderUtilityInAR(ctx, utility, userPos);
+                    });
+                }
+                
+                this.arAnimationFrame = requestAnimationFrame(render);
+            };
+            
+            render();
+        },
+        
+        findNearbyUtilitiesForAR: function(userPos, radius) {
+            const nearby = [];
+            
+            AppState.utilities.forEach(utility => {
+                if (utility.points && utility.points.length > 0) {
+                    // Check if any point is within radius
+                    for (const point of utility.points) {
+                        const distance = this.haversineDistance(userPos, point);
+                        if (distance <= radius) {
+                            nearby.push({
+                                ...utility,
+                                distance: distance,
+                                nearestPoint: point
+                            });
+                            break;
+                        }
+                    }
+                }
+            });
+            
+            return nearby;
+        },
+        
+        renderUtilityInAR: function(ctx, utility, userPos) {
+            // Calculate bearing and distance
+            const bearing = this.calculateBearing(userPos, utility.nearestPoint);
+            const distance = utility.distance;
+            
+            // Calculate relative angle from device heading
+            let relativeAngle = bearing - this.currentHeading;
+            if (relativeAngle < -180) relativeAngle += 360;
+            if (relativeAngle > 180) relativeAngle -= 360;
+            
+            // Only show if in front of camera (roughly 60 degree FOV)
+            if (Math.abs(relativeAngle) > 30) return;
+            
+            // Calculate screen position
+            const canvas = document.getElementById('ar-canvas');
+            const screenX = (canvas.width / 2) + (relativeAngle * (canvas.width / 60));
+            const depth = parseFloat(utility.depth) || 3;
+            const screenY = canvas.height / 2 + (depth * 20); // Lower = deeper
+            
+            // Draw utility indicator
+            ctx.save();
+            
+            // Draw line to indicate underground utility
+            ctx.strokeStyle = this.getUtilityColor(utility.type);
+            ctx.lineWidth = 4;
+            ctx.setLineDash([10, 5]);
+            ctx.beginPath();
+            ctx.moveTo(screenX - 30, screenY);
+            ctx.lineTo(screenX + 30, screenY);
+            ctx.stroke();
+            
+            // Draw depth indicator
+            ctx.fillStyle = 'white';
+            ctx.font = '14px Arial';
+            ctx.textAlign = 'center';
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 2;
+            
+            const depthText = `${depth}ft deep`;
+            const distanceText = `${Math.round(distance)}m away`;
+            
+            ctx.strokeText(depthText, screenX, screenY - 10);
+            ctx.fillText(depthText, screenX, screenY - 10);
+            
+            ctx.strokeText(distanceText, screenX, screenY + 25);
+            ctx.fillText(distanceText, screenX, screenY + 25);
+            
+            ctx.restore();
+            
+            // Add HTML overlay for detailed info
+            this.addARUtilityLabel(utility, screenX, screenY);
+        },
+        
+        calculateBearing: function(from, to) {
+            const lat1 = from.lat || from[0];
+            const lng1 = from.lng || from[1];
+            const lat2 = to.lat || to[0];
+            const lng2 = to.lng || to[1];
+            
+            const dLon = (lng2 - lng1) * Math.PI / 180;
+            const lat1Rad = lat1 * Math.PI / 180;
+            const lat2Rad = lat2 * Math.PI / 180;
+            
+            const y = Math.sin(dLon) * Math.cos(lat2Rad);
+            const x = Math.cos(lat1Rad) * Math.sin(lat2Rad) -
+                      Math.sin(lat1Rad) * Math.cos(lat2Rad) * Math.cos(dLon);
+            
+            const bearing = Math.atan2(y, x) * 180 / Math.PI;
+            return (bearing + 360) % 360;
+        },
+        
+        haversineDistance: function(pos1, pos2) {
+            const lat1 = pos1.lat || pos1[0];
+            const lng1 = pos1.lng || pos1[1];
+            const lat2 = pos2.lat || pos2[0];
+            const lng2 = pos2.lng || pos2[1];
+            
+            const R = 6371000; // Earth's radius in meters
+            const φ1 = lat1 * Math.PI / 180;
+            const φ2 = lat2 * Math.PI / 180;
+            const Δφ = (lat2 - lat1) * Math.PI / 180;
+            const Δλ = (lng2 - lng1) * Math.PI / 180;
+
+            const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+                      Math.cos(φ1) * Math.cos(φ2) *
+                      Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+            return R * c;
+        },
+        
+        getUtilityColor: function(type) {
+            const colors = {
+                water: '#00b4d8',
+                gas: '#ffd60a',
+                electric: '#ff006e',
+                sewer: '#a8763e',
+                telecom: '#b565d8'
+            };
+            return colors[type] || '#666';
+        },
+        
+        addARUtilityLabel: function(utility, x, y) {
+            // Create or update label
+            let label = document.getElementById(`ar-label-${utility.id}`);
+            if (!label) {
+                label = document.createElement('div');
+                label.id = `ar-label-${utility.id}`;
+                label.className = `ar-utility-indicator ${utility.type}`;
+                document.querySelector('.ar-container').appendChild(label);
+            }
+            
+            const size = utility.size ? `${utility.size}"` : 'Unknown';
+            const material = utility.material || 'Unknown';
+            
+            label.innerHTML = `
+                <div style="font-weight: bold;">${utility.type.toUpperCase()}</div>
+                <div style="font-size: 10px; opacity: 0.8;">${size} ${material}</div>
+            `;
+            
+            label.style.left = `${x}px`;
+            label.style.top = `${y - 50}px`;
+        },
+        
+        takeARSnapshot: function() {
+            const video = document.getElementById('ar-camera');
+            const canvas = document.getElementById('ar-canvas');
+            
+            // Create temporary canvas for snapshot
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = video.videoWidth || window.innerWidth;
+            tempCanvas.height = video.videoHeight || window.innerHeight;
+            const tempCtx = tempCanvas.getContext('2d');
+            
+            // Draw video frame
+            tempCtx.drawImage(video, 0, 0, tempCanvas.width, tempCanvas.height);
+            
+            // Draw AR overlay
+            tempCtx.drawImage(canvas, 0, 0, tempCanvas.width, tempCanvas.height);
+            
+            // Save image
+            tempCanvas.toBlob((blob) => {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `ar-utilities-${new Date().getTime()}.png`;
+                a.click();
+                URL.revokeObjectURL(url);
+            });
+            
+            showToast('AR snapshot saved', 'success');
+            hapticFeedback(100);
         }
     };
 
