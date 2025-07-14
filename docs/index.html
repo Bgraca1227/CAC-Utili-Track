@@ -5188,9 +5188,9 @@ const db = firebase.firestore();
         <div class="settings-section">
             <h3>Map Style</h3>
             <div class="map-styles">
-                <button class="map-style-btn" data-style="nyc-detailed">NYC Detailed</button>
-                <button class="map-style-btn" data-style="nyc-satellite-hd">NYC Satellite HD</button>
-                <button class="map-style-btn" data-style="nyc-dark">NYC Dark Mode</button>
+                <button class="map-style-btn" data-style="nyc-streets">NYC Streets</button>
+                <button class="map-style-btn" data-style="nyc-aerial-2018">NYC Aerial 2018</button>
+                <button class="map-style-btn" data-style="dark-mode">Dark Mode</button>
                 <button class="map-style-btn active" data-style="streets">Streets</button>
                 <button class="map-style-btn" data-style="satellite">Satellite</button>
                 <button class="map-style-btn" data-style="satellite-hd">Satellite HD</button>
@@ -5198,7 +5198,6 @@ const db = firebase.firestore();
                 <button class="map-style-btn" data-style="infrastructure">Infrastructure</button>
                 <button class="map-style-btn" data-style="satellite-clarity">Clarity</button>
                 <button class="map-style-btn" data-style="terrain">Terrain</button>
-                <button class="map-style-btn" data-style="dark">Dark</button>
             </div>
         </div>
 
@@ -5390,9 +5389,9 @@ const db = firebase.firestore();
         connectionCandidate: null,
         mapStyles: {
             // NYC-specific high resolution maps (prioritized at top)
-            'nyc-detailed': 'https://tiles.arcgis.com/tiles/yG5s3afENB5iO9fj/arcgis/rest/services/NYC_Planimetric/MapServer/tile/{z}/{y}/{x}',
-            'nyc-satellite-hd': 'https://clarity.maptiles.arcgis.com/arcgis/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-            'nyc-dark': 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+            'nyc-streets': 'https://maps.nyc.gov/xyz/1.0.0/carto/basemap/{z}/{x}/{y}.png',
+            'nyc-aerial-2018': 'https://maps.nyc.gov/xyz/1.0.0/photo/2018/{z}/{x}/{y}.png8',
+            'nyc-labels': 'https://maps.nyc.gov/xyz/1.0.0/carto/label-lt/{z}/{x}/{y}.png8',
             // Standard maps
             streets: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
             satellite: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
@@ -5401,9 +5400,10 @@ const db = firebase.firestore();
             'infrastructure': 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',
             'satellite-clarity': 'https://clarity.maptiles.arcgis.com/arcgis/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
             terrain: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
-            dark: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png'
+            'dark-mode': 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
         },
         currentMapStyle: 'streets',
+        currentLabelsLayer: null, // For NYC labels overlay
         cloudSync: {
             enabled: false,
             lastSync: null,
@@ -9734,6 +9734,12 @@ const db = firebase.firestore();
                 AppState.map.removeLayer(layer);
             }
         });
+        
+        // Clean up any existing labels layer
+        if (AppState.currentLabelsLayer) {
+            AppState.map.removeLayer(AppState.currentLabelsLayer);
+            AppState.currentLabelsLayer = null;
+        }
 
         // Handle special map layers
         let newLayer;
@@ -9760,18 +9766,25 @@ const db = firebase.firestore();
                 layerOptions.maxNativeZoom = 16;
             } else if (style === 'infrastructure' || style === 'satellite-clarity') {
                 layerOptions.attribution = '&copy; Esri';
-            } else if (style === 'nyc-detailed') {
+            } else if (style === 'nyc-streets') {
                 layerOptions.attribution = 'NYC DoITT';
                 layerOptions.maxZoom = 21;
-                layerOptions.maxNativeZoom = 21;
-                layerOptions.bounds = [[40.4774, -74.2591], [40.9176, -73.7004]]; // NYC bounds
-            } else if (style === 'nyc-satellite-hd') {
-                layerOptions.attribution = '&copy; Esri';
+                layerOptions.maxNativeZoom = 19;
+                layerOptions.bounds = [[40.4888, -74.2759], [40.9279, -73.6896]]; // NYC bounds
+            } else if (style === 'nyc-aerial-2018') {
+                layerOptions.attribution = 'NYC DoITT 2018';
                 layerOptions.maxZoom = 21;
-                layerOptions.maxNativeZoom = 20;
-            } else if (style === 'nyc-dark') {
+                layerOptions.maxNativeZoom = 19;
+                layerOptions.bounds = [[40.4888, -74.2759], [40.9279, -73.6896]]; // NYC bounds
+            } else if (style === 'nyc-labels') {
+                layerOptions.attribution = 'NYC DoITT';
+                layerOptions.maxZoom = 21;
+                layerOptions.maxNativeZoom = 19;
+                layerOptions.bounds = [[40.4888, -74.2759], [40.9279, -73.6896]]; // NYC bounds
+                layerOptions.opacity = 1;
+            } else if (style === 'dark-mode') {
                 layerOptions.attribution = '&copy; CARTO';
-                layerOptions.maxZoom = 21;
+                layerOptions.maxZoom = 20;
                 layerOptions.maxNativeZoom = 20;
                 layerOptions.subdomains = 'abcd';
             }
@@ -9780,6 +9793,29 @@ const db = firebase.firestore();
         }
         
         newLayer.addTo(AppState.map);
+        
+        // Add NYC labels overlay when using NYC Aerial 2018
+        if (style === 'nyc-aerial-2018') {
+            const labelsLayer = L.tileLayer(AppState.mapStyles['nyc-labels'], {
+                attribution: 'NYC DoITT',
+                maxZoom: 21,
+                maxNativeZoom: 19,
+                bounds: [[40.4888, -74.2759], [40.9279, -73.6896]],
+                opacity: 1,
+                zIndex: 100 // Ensure labels appear on top
+            });
+            labelsLayer.addTo(AppState.map);
+            
+            // Store reference to labels layer for cleanup
+            AppState.currentLabelsLayer = labelsLayer;
+        } else {
+            // Remove any existing labels layer when switching away from NYC Aerial
+            if (AppState.currentLabelsLayer) {
+                AppState.map.removeLayer(AppState.currentLabelsLayer);
+                AppState.currentLabelsLayer = null;
+            }
+        }
+        
         AppState.currentMapStyle = style;
         hapticFeedback(30);
         
@@ -9796,12 +9832,12 @@ const db = firebase.firestore();
         
         const [lat, lng] = AppState.userLocation;
         
-        // Check if user is within NYC bounds
+        // Check if user is within NYC bounds (updated bounds)
         const nycBounds = {
-            north: 40.9176,
-            south: 40.4774, 
-            east: -73.7004,
-            west: -74.2591
+            north: 40.9279,
+            south: 40.4888, 
+            east: -73.6896,
+            west: -74.2759
         };
         
         if (lat >= nycBounds.south && lat <= nycBounds.north && 
@@ -9812,7 +9848,7 @@ const db = firebase.firestore();
             const now = Date.now();
             
             if (!lastRecommendation || (now - parseInt(lastRecommendation)) > 86400000) { // 24 hours
-                showToast('💡 Try NYC Detailed maps for higher resolution in this area!', 'info');
+                showToast('💡 Try NYC Streets or NYC Aerial 2018 for higher resolution in this area!', 'info');
                 localStorage.setItem('nycMapRecommendation', now.toString());
             }
         }
