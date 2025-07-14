@@ -2271,23 +2271,24 @@ const db = firebase.firestore();
         }
     }
     
-    /* Premium Minimalist Proximity Alerts */
+    /* Premium Minimalist Proximity Alerts - Square Grid Layout */
     .proximity-alerts {
         position: absolute;
         top: calc(env(safe-area-inset-top, 0) + 120px);
         left: 24px;
         right: 24px;
         bottom: calc(env(safe-area-inset-bottom, 0) + 120px);
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 16px;
         z-index: 402;
         overflow-y: auto;
         pointer-events: none;
         transition: all 0.6s cubic-bezier(0.23, 1, 0.32, 1);
-        padding: 0;
+        padding: 8px;
         scrollbar-width: none;
         -ms-overflow-style: none;
+        grid-auto-rows: minmax(200px, auto);
     }
     
     .proximity-alerts::-webkit-scrollbar {
@@ -2317,10 +2318,13 @@ const db = firebase.firestore();
         animation: premiumAlertSlideIn 0.8s cubic-bezier(0.23, 1, 0.32, 1);
         position: relative;
         border: 0.5px solid rgba(255, 255, 255, 0.2);
-        transform-origin: top center;
+        transform-origin: center;
         transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
-        min-height: auto;
-        max-height: none;
+        aspect-ratio: 1;
+        min-height: 200px;
+        max-height: 200px;
+        display: flex;
+        flex-direction: column;
     }
     
     .proximity-alert:hover {
@@ -2375,12 +2379,14 @@ const db = firebase.firestore();
     }
     
     .alert-content {
-        padding: 20px;
+        padding: 16px;
         position: relative;
         z-index: 1;
         display: flex;
         flex-direction: column;
-        gap: 16px;
+        gap: 12px;
+        height: 100%;
+        justify-content: space-between;
     }
     
     .alert-header {
@@ -3416,16 +3422,38 @@ const db = firebase.firestore();
         margin-top: var(--spacing-lg);
     }
     
-    /* Responsive adjustments */
-    @media (min-width: 768px) {
+    /* Responsive adjustments for square grid layout */
+    @media (min-width: 1200px) {
+        .proximity-alerts {
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+        }
+        
+        .proximity-alert {
+            min-height: 220px;
+            max-height: 220px;
+        }
+        
+        .alert-content {
+            padding: 18px;
+        }
+    }
+    
+    @media (min-width: 768px) and (max-width: 1199px) {
+        .proximity-alerts {
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+        }
+        
+        .proximity-alert {
+            min-height: 200px;
+            max-height: 200px;
+        }
+        
         .bottom-controls {
             max-width: 640px;
             left: 50%;
             transform: translateX(-50%);
-        }
-        
-        .proximity-alerts {
-            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
         }
         
         .structure-menu {
@@ -3433,32 +3461,64 @@ const db = firebase.firestore();
         }
     }
     
-    @media (min-width: 1024px) {
+    @media (min-width: 480px) and (max-width: 767px) {
         .proximity-alerts {
-            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-        }
-    }
-    
-    @media (max-width: 480px) {
-        .proximity-alerts {
-            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            grid-template-columns: repeat(2, 1fr);
+            gap: 14px;
+            padding: 6px;
         }
         
         .proximity-alert {
-            min-height: 120px;
+            min-height: 180px;
+            max-height: 180px;
+        }
+        
+        .alert-content {
+            padding: 14px;
+            gap: 10px;
+        }
+        
+        .alert-utility-type {
+            font-size: 13px;
+        }
+        
+        .distance-value {
+            font-size: 16px;
+        }
+    }
+    
+    @media (max-width: 479px) {
+        .proximity-alerts {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            padding: 4px;
+        }
+        
+        .proximity-alert {
+            min-height: 160px;
             max-height: 160px;
         }
         
         .alert-content {
-            padding: 10px;
+            padding: 12px;
+            gap: 8px;
         }
         
         .alert-utility-type {
-            font-size: 14px;
+            font-size: 12px;
         }
         
         .distance-value {
-            font-size: 18px;
+            font-size: 14px;
+        }
+        
+        .distance-unit {
+            font-size: 10px;
+        }
+        
+        .alert-depth-banner {
+            font-size: 11px !important;
+            padding: 6px 8px !important;
         }
     }
     
@@ -9434,35 +9494,28 @@ const db = firebase.firestore();
                     <button class="alert-close" onclick="dismissProximityAlert('${utility.id}')" aria-label="Dismiss alert">
                         <i class="fas fa-times" aria-hidden="true"></i>
                     </button>
-                    </div>
+                </div>
                 
                 <div class="alert-utility-info">
-                    <h3 class="alert-utility-type">${utility.type}</h3>
+                    <h3 class="alert-utility-type">${utility.type.toUpperCase()}</h3>
                     <p class="alert-line-type">${utility.lineType} Line</p>
-                    ${utility.depth ? `<p class="alert-depth-banner" style="font-weight: bold; color: #fff; background: linear-gradient(135deg, #ff6b35, #ff8c42); margin: 4px 0; padding: 6px 12px; border-radius: 8px; font-size: 14px; text-align: center; box-shadow: 0 2px 8px rgba(255, 107, 53, 0.3); animation: depthPulse 2s ease-in-out infinite;">⚠️ DEPTH: ${utility.depth} FEET DEEP</p>` : ''}
                 </div>
                 
                 <div class="alert-distance-banner">
                     <span class="distance-value">${Math.round(distance / 0.3048)}</span>
                     <span class="distance-unit">FEET AWAY</span>
-            </div>
+                </div>
+                
+                ${utility.depth ? `<div class="alert-depth-banner" style="font-weight: bold; color: #fff; background: linear-gradient(135deg, #ff6b35, #ff8c42); margin: 4px 0; padding: 8px 12px; border-radius: 12px; font-size: 13px; text-align: center; box-shadow: 0 2px 8px rgba(255, 107, 53, 0.3); animation: depthPulse 2s ease-in-out infinite;">⚠️ DEPTH: ${utility.depth} FT</div>` : ''}
                 
                 <div class="alert-details">
                     <div class="detail-item">
                         <span class="detail-label">Size</span>
                         <span class="detail-value">${utility.size ? utility.size + '"' : 'N/A'}</span>
-                </div>
-                    <div class="detail-item">
-                        <span class="detail-label">Depth</span>
-                        <span class="detail-value">${utility.depth ? utility.depth + "'" : 'N/A'}</span>
-                </div>
+                    </div>
                     <div class="detail-item">
                         <span class="detail-label">Material</span>
                         <span class="detail-value">${utility.material || 'N/A'}</span>
-                </div>
-                    <div class="detail-item">
-                        <span class="detail-label">Condition</span>
-                        <span class="detail-value">${utility.condition || 'N/A'}</span>
                     </div>
                 </div>
             </div>
@@ -9470,8 +9523,8 @@ const db = firebase.firestore();
 
         alertsContainer.appendChild(alertDiv);
 
-        // Limit to 5 alerts
-        while (alertsContainer.children.length > 5) {
+        // Limit to 12 alerts for grid layout
+        while (alertsContainer.children.length > 12) {
             const firstChild = alertsContainer.firstChild;
             const utilityId = firstChild.id.replace('alert-', '');
             AppState.alertTimeouts.set(utilityId, Date.now());
