@@ -240,15 +240,16 @@ const db = firebase.firestore();
         top: 0;
         left: 0;
         right: 0;
-        /* Use negative bottom to extend beyond safe area */
-        bottom: calc(-1 * env(safe-area-inset-bottom, 0));
+        /* Use padding instead of negative bottom */
+        bottom: 0;
         width: 100vw;
-        height: calc(100vh + env(safe-area-inset-bottom, 0));
-        height: calc(-webkit-fill-available + env(safe-area-inset-bottom, 0));
+        height: 100vh;
+        height: -webkit-fill-available;
         overflow: hidden;
         background: #0a0a0f;
         margin: 0;
         padding: 0;
+        padding-bottom: env(safe-area-inset-bottom, 0);
         transform: translate3d(0, 0, 0);
         -webkit-transform: translate3d(0, 0, 0);
     }
@@ -259,13 +260,14 @@ const db = firebase.firestore();
         top: 0;
         left: 0;
         width: 100vw;
-        /* Extend map to cover the entire screen including safe area */
-        height: calc(100vh + env(safe-area-inset-bottom, 0));
-        height: calc(-webkit-fill-available + env(safe-area-inset-bottom, 0));
+        /* Use full height with padding for safe area */
+        height: 100vh;
+        height: -webkit-fill-available;
         z-index: 1;
         background: #0a0a0f;
         margin: 0;
         padding: 0;
+        padding-bottom: env(safe-area-inset-bottom, 0);
         transform: translate3d(0, 0, 0);
         -webkit-transform: translate3d(0, 0, 0);
     }
@@ -4273,16 +4275,18 @@ const db = firebase.firestore();
         .app-container {
             background-color: #0a0a0f !important;
             background: #0a0a0f !important;
-            /* Extend beyond safe area */
-            bottom: calc(-1 * env(safe-area-inset-bottom, 0)) !important;
-            height: calc(100vh + env(safe-area-inset-bottom, 0)) !important;
+            /* Use padding instead of negative bottom */
+            bottom: 0 !important;
+            padding-bottom: env(safe-area-inset-bottom, 0) !important;
+            height: 100vh !important;
         }
         
         #map {
             background-color: #0a0a0f !important;
             background: #0a0a0f !important;
-            /* Extend map to cover safe area */
-            height: calc(100vh + env(safe-area-inset-bottom, 0)) !important;
+            /* Use full height with padding */
+            height: 100vh !important;
+            padding-bottom: env(safe-area-inset-bottom, 0) !important;
         }
         
         /* Ensure no margins or padding that could show through */
@@ -8024,16 +8028,16 @@ const db = firebase.firestore();
                 return; // Don't interfere with other modes
             }
             
-            // Only prevent defaults outside of map to preserve pinch zoom
-            if (!e.target.closest('#map')) {
-                if (e.preventDefault) e.preventDefault();
-                if (e.stopPropagation) e.stopPropagation();
-            }
-            
-            // Allow multi-touch for pinch zoom on map - don't interfere with utility selection during pinch
+            // Add this at the beginning - Exit early for multi-touch
             if (e.touches && e.touches.length > 1) {
                 return; // Always allow pinch zoom gestures
             }
+            
+            // Prevent default for ALL events, not just non-map ones
+            if (e.cancelable) {
+                e.preventDefault();
+            }
+            e.stopPropagation();
             
             longPress = false;
             hasMoved = false;
@@ -11962,7 +11966,7 @@ const db = firebase.firestore();
         // Clear location visibility guardian
         if (window.locationVisibilityInterval) {
             clearInterval(window.locationVisibilityInterval);
-            window.locationVisibilityInterval = undefined;
+            delete window.locationVisibilityInterval;
         }
         
         // Clear refine markers if any exist
@@ -13001,84 +13005,65 @@ const db = firebase.firestore();
         }
     };
 
-    // Hook into existing utility creation function
-    const originalFinishDrawing = finishDrawing;
-    finishDrawing = async function() {
-        if (AppState.drawingPoints.length < 2) {
-            showToast('Need at least 2 points', 'warning');
-            return;
-        }
-
-        // Calculate distance for exp
-        const distance = ExperienceSystem.calculateUtilityDistance(AppState.drawingPoints);
-        const expGained = Math.round(distance / 10); // 1 exp per 10 meters
-
-        // Create utility data
-        const utilityData = {
-            id: generateId(),
-            type: AppState.selectedUtility,
-            lineType: AppState.lineType,
-            points: [...AppState.drawingPoints],
-            size: '',
-            depth: '',
-            material: '',
-            condition: '',
-            curbDistance: '',
-            dateAdded: new Date().toISOString(),
-            connections: [],
-            notes: [],
-            distance: distance, // Store distance for future reference
-            createdBy: firebase.auth().currentUser ? firebase.auth().currentUser.uid : null
-        };
-
-        // Add to state and map
-        AppState.utilities.push(utilityData);
-        createUtilityLine(utilityData);
+    // Hook into existing utility creation function - store original only once
+    if (!window.originalFinishDrawing) {
+        window.originalFinishDrawing = finishDrawing;
         
-        // Save immediately to Firestore
-        await saveUtilityToFirestore(utilityData);
+        // Override with experience system integration
+        finishDrawing = async function() {
+            // Call the original function first
+            await window.originalFinishDrawing.call(this);
+            
+            // If drawing was successful, add experience system tracking
+            if (AppState.utilities.length > 0) {
+                const lastUtility = AppState.utilities[AppState.utilities.length - 1];
+                
+                // Calculate distance for exp
+                const distance = ExperienceSystem.calculateUtilityDistance(lastUtility.points);
+                const expGained = Math.round(distance / 10); // 1 exp per 10 meters
+                
+                // Store distance for future reference
+                lastUtility.distance = distance;
+                lastUtility.createdBy = firebase.auth().currentUser ? firebase.auth().currentUser.uid : null;
 
-        // Update user stats and award exp
-        if (firebase.auth().currentUser) {
-            const userId = firebase.auth().currentUser.uid;
-            const userRef = firebase.firestore().collection('users').doc(userId);
-            
-            const updateData = {
-                totalUtilitiesDrawn: firebase.firestore.FieldValue.increment(1),
-                totalDistance: firebase.firestore.FieldValue.increment(distance),
-                lastActiveDate: firebase.firestore.FieldValue.serverTimestamp()
-            };
-            
-            // Update specific utility type count
-            updateData[`stats${utilityData.type.charAt(0).toUpperCase() + utilityData.type.slice(1)}`] = firebase.firestore.FieldValue.increment(1);
-            
-            // Set first utility date if not set
-            const userData = await ExperienceSystem.getUserData();
-            if (userData && !userData.firstUtilityDate) {
-                updateData.firstUtilityDate = firebase.firestore.FieldValue.serverTimestamp();
+                // Update user stats and award exp
+                if (firebase.auth().currentUser) {
+                    const userId = firebase.auth().currentUser.uid;
+                    const userRef = firebase.firestore().collection('users').doc(userId);
+                    
+                    const updateData = {
+                        totalUtilitiesDrawn: firebase.firestore.FieldValue.increment(1),
+                        totalDistance: firebase.firestore.FieldValue.increment(distance),
+                        lastActiveDate: firebase.firestore.FieldValue.serverTimestamp()
+                    };
+                    
+                    // Update specific utility type count
+                    updateData[`stats${lastUtility.type.charAt(0).toUpperCase() + lastUtility.type.slice(1)}`] = firebase.firestore.FieldValue.increment(1);
+                    
+                    // Set first utility date if not set
+                    const userData = await ExperienceSystem.getUserData();
+                    if (userData && !userData.firstUtilityDate) {
+                        updateData.firstUtilityDate = firebase.firestore.FieldValue.serverTimestamp();
+                    }
+                    
+                    await userRef.update(updateData);
+                    
+                    // Award exp
+                    await ExperienceSystem.awardExp(expGained, 'Utility drawn');
+                    
+                    // Check achievements
+                    await ExperienceSystem.checkAchievements('draw');
+                    
+                    // Log to audit
+                    await AuditLog.logAction('created', 'utility', lastUtility.id, {
+                        utilityType: lastUtility.type,
+                        lineType: lastUtility.lineType,
+                        distance: distance
+                    });
+                }
             }
-            
-            await userRef.update(updateData);
-            
-            // Award exp
-            await ExperienceSystem.awardExp(expGained, 'Utility drawn');
-            
-            // Check achievements
-            await ExperienceSystem.checkAchievements('draw');
-            
-            // Log to audit
-            await AuditLog.logAction('created', 'utility', utilityData.id, {
-                utilityType: utilityData.type,
-                lineType: utilityData.lineType,
-                distance: distance
-            });
-        }
-
-        // Show modal and reset drawing
-        showInfoModal(utilityData);
-        cancelDrawing();
-        hapticFeedback(100);
-    };
+        };
+    }
 
     // Hook into existing delete function
     const originalDeleteUtility = deleteUtility;
@@ -13229,4 +13214,5 @@ const db = firebase.firestore();
 </script>
 
 </body>
+</html>
 </html>
