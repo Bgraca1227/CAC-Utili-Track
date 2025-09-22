@@ -2095,20 +2095,20 @@ const db = firebase.firestore();
         top: calc(env(safe-area-inset-top, 0) + 24px);
         left: 50%;
         transform: translateX(-50%);
-        width: calc(100% - 48px);
-        max-width: 480px;
+        width: calc(100% - 120px);
+        max-width: 380px;
         padding: 16px 24px;
-        background: rgba(255, 255, 255, 0.08);
+        background: rgba(255, 255, 255, 0.75);
         backdrop-filter: blur(24px) saturate(180%);
         -webkit-backdrop-filter: blur(24px) saturate(180%);
         border-radius: 20px;
-        border: 0.5px solid rgba(255, 255, 255, 0.12);
+        border: 1px solid rgba(255, 255, 255, 0.6);
         box-shadow: 
-            0 16px 64px rgba(0, 0, 0, 0.08),
-            0 4px 16px rgba(0, 0, 0, 0.04),
-            inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            0 16px 64px rgba(0, 0, 0, 0.15),
+            0 4px 16px rgba(0, 0, 0, 0.1),
+            inset 0 1px 0 rgba(255, 255, 255, 0.8);
         color: rgba(0, 0, 0, 0.87);
-        z-index: 401;
+        z-index: 1600;
         display: flex;
         align-items: center;
         justify-content: space-between;
@@ -2116,13 +2116,13 @@ const db = firebase.firestore();
     }
     
     .excavation-header:hover {
-        background: rgba(255, 255, 255, 0.12);
-        border-color: rgba(255, 107, 53, 0.2);
+        background: rgba(255, 255, 255, 0.85);
+        border-color: rgba(255, 107, 53, 0.4);
         transform: translateX(-50%) translateY(-2px);
         box-shadow: 
-            0 20px 80px rgba(0, 0, 0, 0.12),
-            0 8px 32px rgba(0, 0, 0, 0.06),
-            inset 0 1px 0 rgba(255, 255, 255, 0.15);
+            0 20px 80px rgba(0, 0, 0, 0.18),
+            0 8px 32px rgba(0, 0, 0, 0.12),
+            inset 0 1px 0 rgba(255, 255, 255, 0.9);
     }
     
     .excavation-info {
@@ -2132,18 +2132,20 @@ const db = firebase.firestore();
     
     .excavation-info h2 {
         font-size: 16px;
-        font-weight: 600;
+        font-weight: 700;
         margin: 0 0 4px 0;
-        color: rgba(0, 0, 0, 0.87);
+        color: rgba(0, 0, 0, 0.95);
         letter-spacing: -0.2px;
+        text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
     }
     
     .excavation-info p {
         font-size: 13px;
-        font-weight: 400;
+        font-weight: 500;
         margin: 0;
-        color: rgba(0, 0, 0, 0.6);
+        color: rgba(0, 0, 0, 0.75);
         letter-spacing: -0.1px;
+        text-shadow: 0 1px 2px rgba(255, 255, 255, 0.6);
     }
     
     .excavation-toggle {
@@ -3516,10 +3518,24 @@ const db = firebase.firestore();
             font-size: 10px;
         }
         
-        .alert-depth-banner {
-            font-size: 11px !important;
-            padding: 6px 8px !important;
-        }
+                 .alert-depth-banner {
+             font-size: 11px !important;
+             padding: 6px 8px !important;
+         }
+         
+         .excavation-header {
+             width: calc(100% - 100px);
+             max-width: 300px;
+             padding: 14px 20px;
+         }
+         
+         .excavation-info h2 {
+             font-size: 14px;
+         }
+         
+         .excavation-info p {
+             font-size: 12px;
+         }
     }
     
     /* Prevent selection and zoom */
@@ -5558,7 +5574,6 @@ const db = firebase.firestore();
             userId: null,
             token: null
         },
-        needsOrientationPermission: false,
         // Cached DOM elements for performance
         elements: {
             drawingUI: null,
@@ -6956,33 +6971,60 @@ const db = firebase.firestore();
             }
         );
 
-        // Watch device orientation
+        // Watch device orientation - REQUEST PERMISSION IMMEDIATELY
         if (window.DeviceOrientationEvent) {
+            // Check if we need permission (iOS 13+)
             if (typeof DeviceOrientationEvent.requestPermission === 'function') {
-                AppState.needsOrientationPermission = true;
+                // Request permission right away
+                DeviceOrientationEvent.requestPermission()
+                    .then(permission => {
+                        if (permission === 'granted') {
+                            console.log('✅ Orientation permission granted');
+                            window.addEventListener('deviceorientation', handleDeviceOrientation);
+                            // Also listen to the absolute orientation event
+                            window.addEventListener('deviceorientationabsolute', handleDeviceOrientation);
+                        } else {
+                            console.log('❌ Orientation permission denied');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error requesting orientation permission:', error);
+                    });
             } else {
+                // No permission needed (Android, older iOS)
                 window.addEventListener('deviceorientation', handleDeviceOrientation);
+                window.addEventListener('deviceorientationabsolute', handleDeviceOrientation);
             }
         }
     }
 
     function handleDeviceOrientation(event) {
-        let heading = 0;
+        let heading = null;
         
-        if (event.webkitCompassHeading !== undefined) {
-            // iOS - webkitCompassHeading gives heading relative to magnetic north
+        // For absolute orientation event
+        if (event.absolute && event.alpha !== null) {
+            heading = 360 - event.alpha; // Convert to compass heading
+        }
+        // iOS with compass
+        else if (event.webkitCompassHeading !== undefined && event.webkitCompassHeading !== null) {
             heading = event.webkitCompassHeading;
-        } else if (event.alpha !== null) {
-            // Android - alpha gives rotation around z-axis
+        }
+        // Android or iOS without compass
+        else if (event.alpha !== null) {
+            // This is relative to device's initial orientation
+            // For better results, you might want to calibrate this
+            heading = 360 - event.alpha;
+            
+            // If we have absolute orientation, use it
             if (event.absolute) {
-                heading = event.alpha;
-            } else {
-                // If not absolute, we need to adjust for device orientation
                 heading = 360 - event.alpha;
             }
         }
         
-        updatePremiumDirectionIndicator(heading);
+        if (heading !== null) {
+            console.log('🧭 Raw heading:', heading);
+            updatePremiumDirectionIndicator(heading);
+        }
     }
 
     // ========== PREMIUM GPS TRACKING SYSTEM ==========
@@ -7172,7 +7214,7 @@ const db = firebase.firestore();
         }
         
         // Initialize direction indicator if orientation is available
-        if (window.DeviceOrientationEvent && !AppState.needsOrientationPermission) {
+        if (window.DeviceOrientationEvent) {
             setTimeout(() => {
                 if (window.orientation !== undefined) {
                     updatePremiumDirectionIndicator(window.orientation);
@@ -7443,19 +7485,6 @@ const db = firebase.firestore();
     }
 
     async function centerOnLocation() {
-        // Request orientation permission if needed (iOS 13+)
-        if (AppState.needsOrientationPermission) {
-            try {
-                const permission = await DeviceOrientationEvent.requestPermission();
-                if (permission === 'granted') {
-                    window.addEventListener('deviceorientation', handleDeviceOrientation);
-                    AppState.needsOrientationPermission = false;
-                }
-            } catch (error) {
-                console.error('Orientation permission denied');
-            }
-        }
-
         if (AppState.userLocation) {
             AppState.map.setView(AppState.userLocation, 18);
             showToast('Centered on your location', 'info');
