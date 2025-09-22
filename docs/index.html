@@ -7026,103 +7026,45 @@ const db = firebase.firestore();
             }
         );
 
-        // Watch device orientation - Enhanced for latest iOS versions
+        // Watch device orientation - Enhanced for iOS 26
         if (window.DeviceOrientationEvent) {
-            // Check if we need permission (iOS 13+)
+            // iOS 13+ always requires permission in standalone mode
             if (typeof DeviceOrientationEvent.requestPermission === 'function') {
-                // Always show button for iOS - latest versions require user interaction
-                console.log('📱 iOS detected - showing orientation permission button (required for latest iOS)');
+                // Always show button for iOS that requires permission
                 showOrientationPermissionButton();
                 
-                // Also try to detect if orientation is already available
-                setTimeout(() => {
-                    checkOrientationAvailability();
-                }, 1000);
+                // Try to add listeners anyway in case permission was previously granted
+                window.addEventListener('deviceorientationabsolute', handleDeviceOrientation, true);
+                window.addEventListener('deviceorientation', handleDeviceOrientation, true);
             } else {
-                // No permission needed (Android, older iOS)
-                console.log('🧭 Setting up orientation listeners (no permission required)');
-                window.addEventListener('deviceorientation', handleDeviceOrientation);
-                window.addEventListener('deviceorientationabsolute', handleDeviceOrientation);
-                
-                // Test if events are actually firing
-                setTimeout(() => {
-                    testOrientationEvents();
-                }, 2000);
+                // Non-iOS or older iOS
+                window.addEventListener('deviceorientationabsolute', handleDeviceOrientation, true);
+                window.addEventListener('deviceorientation', handleDeviceOrientation, true);
             }
-        } else {
-            console.log('❌ DeviceOrientationEvent not supported');
-            showToast('Device orientation not supported on this device', 'warning');
         }
     }
 
     function handleDeviceOrientation(event) {
         let heading = null;
         
-        // Enhanced debugging for iPhone 17 Pro Max
-        const deviceInfo = {
-            userAgent: navigator.userAgent,
-            isStandalone: window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true,
-            screenOrientation: screen.orientation ? screen.orientation.angle : window.orientation,
-            eventType: event.type
-        };
-        
-        console.log('🧭 Orientation event received:', {
-            alpha: event.alpha,
-            beta: event.beta,
-            gamma: event.gamma,
-            absolute: event.absolute,
-            webkitCompassHeading: event.webkitCompassHeading,
-            deviceInfo: deviceInfo
-        });
-        
-        // Enhanced iOS detection for latest versions
-        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-        const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
-        
-        // Priority 1: iOS with compass heading (most reliable for iOS)
-        if (event.webkitCompassHeading !== undefined && event.webkitCompassHeading !== null) {
+        // For iOS 13+ in standalone mode, webkitCompassHeading is most reliable
+        if (event.webkitCompassHeading !== undefined && event.webkitCompassHeading !== null && !isNaN(event.webkitCompassHeading)) {
             heading = event.webkitCompassHeading;
-            console.log('🧭 Method 1 - iOS webkitCompassHeading:', heading);
         }
-        // Priority 2: Absolute orientation (modern browsers, latest iOS)
-        else if (event.absolute === true && event.alpha !== null && !isNaN(event.alpha)) {
-            heading = 360 - event.alpha;
-            console.log('🧭 Method 2 - Absolute alpha:', heading);
-        }
-        // Priority 3: Standard alpha with iOS standalone compensation
+        // Fallback to alpha with proper conversion
         else if (event.alpha !== null && !isNaN(event.alpha)) {
-            if (isIOS && isStandalone) {
-                // Latest iOS standalone mode - enhanced compensation
-                const screenOrientation = screen.orientation ? screen.orientation.angle : (window.orientation || 0);
-                
-                // For iPhone 17 Pro Max, we may need different compensation
-                const isProMax = navigator.userAgent.includes('iPhone') && 
-                                (window.screen.width >= 428 || window.screen.height >= 428);
-                
-                if (isProMax) {
-                    // Special handling for Pro Max models
-                    heading = (360 - event.alpha) % 360;
-                    console.log('🧭 Method 3a - iPhone Pro Max alpha:', heading);
-                } else {
-                    // Standard iOS standalone handling
-                    heading = (360 - event.alpha + screenOrientation) % 360;
-                    console.log('🧭 Method 3b - iOS Standalone adjusted:', heading, 'screen orientation:', screenOrientation);
-                }
+            // iOS reports alpha differently in standalone vs browser
+            const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+            if (isStandalone) {
+                // In standalone, alpha is relative to device orientation at startup
+                heading = (360 - event.alpha) % 360;
             } else {
-                // Standard handling for other platforms
                 heading = 360 - event.alpha;
-                console.log('🧭 Method 3c - Standard alpha:', heading);
             }
         }
         
-        // Validate heading
         if (heading !== null && !isNaN(heading)) {
-            // Ensure heading is in 0-360 range
-            heading = ((heading % 360) + 360) % 360;
-            console.log('🧭 Final validated heading:', heading.toFixed(1), '°');
             updatePremiumDirectionIndicator(heading);
-        } else {
-            console.log('🧭 No valid heading data - event may not contain orientation info');
         }
     }
 
@@ -7136,10 +7078,7 @@ const db = firebase.firestore();
     }
 
     function requestOrientationPermission() {
-        console.log('🔐 Requesting orientation permission for latest iOS...');
-        
         if (typeof DeviceOrientationEvent.requestPermission === 'function') {
-            // Show loading state
             const button = document.getElementById('orientationPermissionBtn');
             if (button) {
                 button.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
@@ -7147,55 +7086,32 @@ const db = firebase.firestore();
             
             DeviceOrientationEvent.requestPermission()
                 .then(permission => {
-                    console.log('🔐 Permission response:', permission);
-                    
                     if (permission === 'granted') {
-                        console.log('✅ Orientation permission granted');
+                        // Add both listeners with explicit options for iOS 26
+                        window.addEventListener('deviceorientationabsolute', handleDeviceOrientation, true);
+                        window.addEventListener('deviceorientation', handleDeviceOrientation, true);
                         
-                        // Add both event listeners
-                        window.addEventListener('deviceorientation', handleDeviceOrientation, { passive: false });
-                        window.addEventListener('deviceorientationabsolute', handleDeviceOrientation, { passive: false });
-                        
-                        // Also try motion events for latest iOS
-                        if (window.DeviceMotionEvent && typeof DeviceMotionEvent.requestPermission === 'function') {
-                            DeviceMotionEvent.requestPermission().then(motionPermission => {
-                                if (motionPermission === 'granted') {
-                                    console.log('✅ Motion permission also granted');
-                                }
-                            }).catch(err => console.log('Motion permission error:', err));
+                        // Also request DeviceMotionEvent permission for iOS 26
+                        if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
+                            DeviceMotionEvent.requestPermission().catch(() => {});
                         }
                         
                         hideOrientationPermissionButton();
-                        showToast('🧭 Compass direction enabled!', 'success');
+                        showToast('Compass direction enabled!', 'success');
                         hapticFeedback(100);
-                        
-                        // Test immediately
-                        setTimeout(() => {
-                            testOrientationEvents();
-                        }, 500);
-                        
                     } else {
-                        console.log('❌ Orientation permission denied');
-                        showToast('❌ Direction indicator requires orientation permission. Please allow in Safari settings.', 'error');
-                        
-                        // Reset button
+                        showToast('Direction indicator requires orientation permission', 'error');
                         if (button) {
                             button.innerHTML = '<i class="fas fa-compass"></i>';
                         }
                     }
                 })
                 .catch(error => {
-                    console.error('❌ Error requesting orientation permission:', error);
-                    showToast('❌ Permission request failed. Try reloading the app.', 'error');
-                    
-                    // Reset button
+                    showToast('Permission request failed. Try reloading the app.', 'error');
                     if (button) {
                         button.innerHTML = '<i class="fas fa-compass"></i>';
                     }
                 });
-        } else {
-            console.log('❌ DeviceOrientationEvent.requestPermission not available');
-            showToast('❌ Orientation permission API not available', 'error');
         }
     }
 
@@ -7541,25 +7457,20 @@ const db = firebase.firestore();
     }
 
     function updatePremiumDirectionIndicator(heading) {
-        if (heading === null || heading === undefined || isNaN(heading)) {
-            console.log('🧭 Invalid heading received:', heading);
+        // More robust validation for iOS 26
+        if (heading === null || heading === undefined || isNaN(heading) || !isFinite(heading)) {
             return;
         }
         
-        // Normalize heading to 0-360 range
-        const normalizedHeading = ((heading % 360) + 360) % 360;
-        
-        console.log(`🧭 Normalized heading: ${normalizedHeading.toFixed(1)}°`);
+        // Ensure heading is in valid range
+        heading = ((heading % 360) + 360) % 360;
         
         // Apply sophisticated heading filtering
-        const filteredHeading = filterHeading(normalizedHeading);
+        const filteredHeading = filterHeading(heading);
         
         if (filteredHeading === null) {
-            console.log('🧭 Heading filtered out');
             return;
         }
-        
-        console.log(`🧭 Smooth heading: ${filteredHeading.toFixed(1)}°`);
         
         // Apply smooth rotation
         if (AppState.userMarker) {
@@ -7570,20 +7481,13 @@ const db = firebase.firestore();
                     // Use CSS transform for smooth rotation
                     arrow.style.transform = `rotate(${filteredHeading}deg)`;
                     arrow.style.transition = 'transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
-                    console.log(`🧭 Arrow rotated to ${filteredHeading.toFixed(1)}°`);
-                } else {
-                    console.log('🧭 Arrow element not found');
                 }
                 
                 const container = markerElement.querySelector('.location-container');
                 if (container) {
                     container.setAttribute('data-heading', filteredHeading.toFixed(0));
                 }
-            } else {
-                console.log('🧭 Marker element not found');
             }
-        } else {
-            console.log('🧭 User marker not found');
         }
     }
 
@@ -12259,64 +12163,19 @@ const db = firebase.firestore();
         const markerElement = AppState.userMarker.getElement();
         if (!markerElement) return;
         
-        // Store the current position to prevent any accidental changes
-        const lockedPosition = AppState.userMarker.getLatLng();
-        
-        // Force all visibility properties - NO POSITION CHANGES
-        markerElement.style.opacity = '1.0';
-        markerElement.style.visibility = 'visible';
-        markerElement.style.display = 'block';
-        markerElement.style.zIndex = '1000';
-        
-        // Ensure proper scaling with stable transform
-        const zoom = AppState.map.getZoom();
-        const scale = calculateUserLocationScale(zoom);
-        markerElement.style.transform = `scale(${scale})`;
-        markerElement.style.transformOrigin = 'center center';
-        
-        // Ensure container visibility and attributes - with stability check
-        const container = markerElement.querySelector('.location-container');
-        if (container) {
-            // Only update if visibility has changed to prevent flicker
-            if (container.style.opacity !== '1.0') {
-                container.style.opacity = '1.0';
-            }
-            if (container.style.visibility !== 'visible') {
-                container.style.visibility = 'visible';
-            }
-            if (container.style.display !== 'flex') {
-                container.style.display = 'flex';
-            }
-            
-            // Update visual attributes without touching position (only when needed)
-            if (AppState.gps) {
-                const currentQuality = container.getAttribute('data-gps-quality');
-                const currentMoving = container.getAttribute('data-moving');
-                
-                if (currentQuality !== AppState.gps.quality) {
-                    container.setAttribute('data-gps-quality', AppState.gps.quality);
-                }
-                if (currentMoving !== AppState.gps.isMoving.toString()) {
-                    container.setAttribute('data-moving', AppState.gps.isMoving.toString());
-                }
-            }
-        }
-        
-        // Verify position hasn't been accidentally changed by any operations
-        const currentPosition = AppState.userMarker.getLatLng();
-        if (lockedPosition.distanceTo(currentPosition) > 0.000001) {
-            console.warn('⚠️ Guardian detected position drift, restoring locked position');
-            AppState.userMarker.setLatLng(lockedPosition);
+        // Only update if actually invisible
+        if (markerElement.style.opacity !== '1.0') {
+            markerElement.style.opacity = '1.0';
+            markerElement.style.visibility = 'visible';
+            markerElement.style.display = 'block';
+            markerElement.style.zIndex = '1000';
         }
     }
-    
-    // Start periodic visibility check - reduced frequency to prevent blinking
+
+    // Start periodic visibility check - only when needed
     if (typeof window.locationVisibilityInterval === 'undefined') {
-        window.locationVisibilityInterval = setInterval(() => {
-            if (AppState.userMarker && AppState.map) {
-                ensureLocationMarkerVisibility();
-            }
-        }, 5000); // Check every 5 seconds instead of 2
+        // Only check when map events occur that might affect visibility
+        AppState.map.on('zoomend moveend', ensureLocationMarkerVisibility);
     }
     
     // Enhanced cleanup function for memory management
