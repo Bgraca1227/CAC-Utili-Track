@@ -1441,6 +1441,50 @@ const db = firebase.firestore();
         z-index: 100;
     }
     
+    /* Orientation Permission Button - iOS Standalone Mode */
+    .orientation-permission-btn {
+        width: 56px;
+        height: 56px;
+        background: var(--gradient-primary);
+        border: none;
+        border-radius: var(--radius-lg);
+        display: none; /* Hidden by default */
+        align-items: center;
+        justify-content: center;
+        box-shadow: var(--shadow-lg), 0 0 20px rgba(102, 126, 234, 0.4);
+        cursor: pointer;
+        transition: all var(--transition-spring);
+        animation: orientationPulse 2s ease-in-out infinite;
+        margin-bottom: var(--spacing-sm);
+    }
+    
+    .orientation-permission-btn.show {
+        display: flex;
+    }
+    
+    @keyframes orientationPulse {
+        0%, 100% {
+            box-shadow: var(--shadow-lg), 0 0 20px rgba(102, 126, 234, 0.4);
+        }
+        50% {
+            box-shadow: var(--shadow-xl), 0 0 30px rgba(102, 126, 234, 0.7);
+        }
+    }
+    
+    .orientation-permission-btn:hover {
+        transform: translateY(-2px) scale(1.05);
+        box-shadow: var(--shadow-xl), 0 0 25px rgba(102, 126, 234, 0.6);
+    }
+    
+    .orientation-permission-btn:active {
+        transform: scale(0.95);
+    }
+    
+    .orientation-permission-btn i {
+        font-size: 24px;
+        color: white;
+    }
+    
     /* Measurement Tools */
     .measurement-tools {
         display: flex;
@@ -1999,41 +2043,24 @@ const db = firebase.firestore();
         padding-right: 40px;
     }
     
-    /* Modern Dark Excavation Mode */
+    /* Premium Minimalist Excavation Mode */
     .excavation-overlay {
         position: fixed;
         inset: 0;
         background: 
-            radial-gradient(circle at center, rgba(255, 69, 0, 0.08) 0%, rgba(139, 0, 0, 0.05) 40%, transparent 70%),
-            linear-gradient(135deg, rgba(0, 0, 0, 0.7) 0%, rgba(20, 20, 20, 0.8) 50%, rgba(0, 0, 0, 0.9) 100%);
-        backdrop-filter: blur(2px) saturate(120%) contrast(110%);
-        -webkit-backdrop-filter: blur(2px) saturate(120%) contrast(110%);
+            radial-gradient(circle at center, rgba(255, 107, 53, 0.04) 0%, transparent 50%),
+            linear-gradient(180deg, rgba(255, 255, 255, 0.01) 0%, rgba(0, 0, 0, 0.02) 100%);
+        backdrop-filter: blur(0.5px) saturate(105%);
+        -webkit-backdrop-filter: blur(0.5px) saturate(105%);
         z-index: 400;
         opacity: 0;
         pointer-events: none;
-        transition: all 1s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        transition: all 0.8s cubic-bezier(0.23, 1, 0.32, 1);
     }
     
     .excavation-overlay.active {
         opacity: 1;
         pointer-events: auto;
-        animation: excavationModeEnter 1.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-    }
-    
-    @keyframes excavationModeEnter {
-        0% {
-            opacity: 0;
-            backdrop-filter: blur(0px);
-            background: transparent;
-        }
-        50% {
-            opacity: 0.7;
-            backdrop-filter: blur(1px);
-        }
-        100% {
-            opacity: 1;
-            backdrop-filter: blur(2px) saturate(120%) contrast(110%);
-        }
     }
     
     .excavation-overlay::before {
@@ -2041,149 +2068,107 @@ const db = firebase.firestore();
         position: absolute;
         inset: 0;
         background: 
-            radial-gradient(1200px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), 
-                rgba(255, 69, 0, 0.12) 0%, 
-                rgba(255, 140, 0, 0.06) 30%,
-                transparent 60%);
-        transition: opacity 0.6s ease;
+            radial-gradient(800px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), 
+                rgba(255, 107, 53, 0.06) 0%, 
+                transparent 40%);
+        transition: opacity 0.4s ease;
         opacity: 0;
-        pointer-events: none;
     }
     
     .excavation-overlay:hover::before {
         opacity: 1;
     }
     
-    /* Modern Tactical Radar Effect */
+    /* Premium Minimalist Radar Effect */
     .excavation-radar {
         position: absolute;
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%);
-        width: 800px;
-        height: 800px;
+        width: 600px;
+        height: 600px;
         pointer-events: none;
-        opacity: 0.9;
+        opacity: 0.7;
     }
     
     .radar-ring {
         position: absolute;
         inset: 0;
-        border: 2px solid transparent;
+        border: 0.5px solid rgba(255, 107, 53, 0.4);
         border-radius: 50%;
         opacity: 0;
-        background: linear-gradient(90deg, 
-            rgba(255, 69, 0, 0.6) 0%, 
-            rgba(255, 140, 0, 0.4) 25%, 
-            transparent 50%, 
-            rgba(255, 69, 0, 0.4) 75%, 
-            rgba(255, 69, 0, 0.6) 100%);
-        background-size: 200% 100%;
-        animation: tacticalRadarSweep 4s linear infinite;
-        filter: drop-shadow(0 0 10px rgba(255, 69, 0, 0.5));
+        animation: premiumRadarPulse 6s cubic-bezier(0.23, 1, 0.32, 1) infinite;
     }
     
     .radar-ring:nth-child(2) {
-        animation-delay: 1.3s;
-        opacity: 0.8;
-        border-width: 1.5px;
+        animation-delay: 2s;
+        border-color: rgba(255, 107, 53, 0.3);
     }
     
     .radar-ring:nth-child(3) {
-        animation-delay: 2.6s;
-        opacity: 0.6;
-        border-width: 1px;
+        animation-delay: 4s;
+        border-color: rgba(255, 107, 53, 0.2);
     }
     
-    @keyframes tacticalRadarSweep {
+    @keyframes premiumRadarPulse {
         0% {
-            transform: scale(0.2) rotate(0deg);
+            transform: scale(0.1);
             opacity: 0;
-            background-position: 0% center;
+            border-width: 0.5px;
         }
-        10% {
-            opacity: 0.8;
+        20% {
+            opacity: 0.6;
+            border-width: 1px;
         }
         50% {
-            transform: scale(0.7) rotate(180deg);
-            opacity: 0.6;
-            background-position: 100% center;
+            opacity: 0.4;
+            border-width: 0.5px;
         }
-        90% {
-            opacity: 0.3;
-            background-position: 200% center;
+        80% {
+            opacity: 0.1;
+            border-width: 0.25px;
         }
         100% {
-            transform: scale(1.2) rotate(360deg);
+            transform: scale(1);
             opacity: 0;
-            background-position: 300% center;
+            border-width: 0px;
         }
     }
     
-    /* Modern Tactical Header */
+    /* Premium Minimalist Header */
     .excavation-header {
         position: absolute;
-        top: calc(env(safe-area-inset-top, 0) + 20px);
+        top: calc(env(safe-area-inset-top, 0) + 24px);
         left: 50%;
         transform: translateX(-50%);
-        width: calc(100% - 80px);
-        max-width: 420px;
-        padding: 20px 28px;
-        background: 
-            linear-gradient(135deg, 
-                rgba(0, 0, 0, 0.95) 0%, 
-                rgba(20, 20, 20, 0.9) 50%, 
-                rgba(0, 0, 0, 0.95) 100%);
-        backdrop-filter: blur(20px) saturate(150%) contrast(120%);
-        -webkit-backdrop-filter: blur(20px) saturate(150%) contrast(120%);
-        border-radius: 16px;
-        border: 2px solid rgba(255, 69, 0, 0.3);
+        width: calc(100% - 120px);
+        max-width: 380px;
+        padding: 16px 24px;
+        background: rgba(255, 255, 255, 0.75);
+        backdrop-filter: blur(24px) saturate(180%);
+        -webkit-backdrop-filter: blur(24px) saturate(180%);
+        border-radius: 20px;
+        border: 1px solid rgba(255, 255, 255, 0.6);
         box-shadow: 
-            0 20px 60px rgba(0, 0, 0, 0.4),
-            0 8px 24px rgba(255, 69, 0, 0.2),
-            inset 0 1px 0 rgba(255, 255, 255, 0.1),
-            0 0 40px rgba(255, 69, 0, 0.15);
-        color: rgba(255, 255, 255, 0.95);
+            0 16px 64px rgba(0, 0, 0, 0.15),
+            0 4px 16px rgba(0, 0, 0, 0.1),
+            inset 0 1px 0 rgba(255, 255, 255, 0.8);
+        color: rgba(0, 0, 0, 0.87);
         z-index: 1600;
         display: flex;
         align-items: center;
         justify-content: space-between;
-        transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-        animation: excavationHeaderPulse 3s ease-in-out infinite;
-    }
-    
-    @keyframes excavationHeaderPulse {
-        0%, 100% {
-            border-color: rgba(255, 69, 0, 0.3);
-            box-shadow: 
-                0 20px 60px rgba(0, 0, 0, 0.4),
-                0 8px 24px rgba(255, 69, 0, 0.2),
-                inset 0 1px 0 rgba(255, 255, 255, 0.1),
-                0 0 40px rgba(255, 69, 0, 0.15);
-        }
-        50% {
-            border-color: rgba(255, 69, 0, 0.5);
-            box-shadow: 
-                0 20px 60px rgba(0, 0, 0, 0.4),
-                0 8px 24px rgba(255, 69, 0, 0.4),
-                inset 0 1px 0 rgba(255, 255, 255, 0.15),
-                0 0 60px rgba(255, 69, 0, 0.3);
-        }
+        transition: all 0.6s cubic-bezier(0.23, 1, 0.32, 1);
     }
     
     .excavation-header:hover {
-        background: 
-            linear-gradient(135deg, 
-                rgba(10, 10, 10, 0.98) 0%, 
-                rgba(30, 30, 30, 0.95) 50%, 
-                rgba(10, 10, 10, 0.98) 100%);
-        border-color: rgba(255, 140, 0, 0.6);
-        transform: translateX(-50%) translateY(-3px);
+        background: rgba(255, 255, 255, 0.85);
+        border-color: rgba(255, 107, 53, 0.4);
+        transform: translateX(-50%) translateY(-2px);
         box-shadow: 
-            0 25px 80px rgba(0, 0, 0, 0.5),
-            0 12px 32px rgba(255, 140, 0, 0.3),
-            inset 0 1px 0 rgba(255, 255, 255, 0.2),
-            0 0 80px rgba(255, 140, 0, 0.4);
+            0 20px 80px rgba(0, 0, 0, 0.18),
+            0 8px 32px rgba(0, 0, 0, 0.12),
+            inset 0 1px 0 rgba(255, 255, 255, 0.9);
     }
     
     .excavation-info {
@@ -2192,81 +2177,54 @@ const db = firebase.firestore();
     }
     
     .excavation-info h2 {
-        font-size: 18px;
-        font-weight: 800;
-        margin: 0 0 6px 0;
-        color: rgba(255, 255, 255, 0.95);
-        letter-spacing: 1px;
-        text-transform: uppercase;
-        text-shadow: 
-            0 0 20px rgba(255, 69, 0, 0.8),
-            0 2px 4px rgba(0, 0, 0, 0.5);
-        background: linear-gradient(135deg, 
-            rgba(255, 255, 255, 1) 0%, 
-            rgba(255, 140, 0, 1) 30%, 
-            rgba(255, 69, 0, 1) 70%, 
-            rgba(255, 255, 255, 1) 100%);
-        background-size: 300% 100%;
-        -webkit-background-clip: text;
-        background-clip: text;
-        -webkit-text-fill-color: transparent;
-        animation: excavationTextFlow 4s ease-in-out infinite;
-    }
-    
-    @keyframes excavationTextFlow {
-        0%, 100% { background-position: 0% center; }
-        50% { background-position: 100% center; }
+        font-size: 16px;
+        font-weight: 700;
+        margin: 0 0 4px 0;
+        color: rgba(0, 0, 0, 0.95);
+        letter-spacing: -0.2px;
+        text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
     }
     
     .excavation-info p {
-        font-size: 14px;
-        font-weight: 600;
+        font-size: 13px;
+        font-weight: 500;
         margin: 0;
-        color: rgba(255, 255, 255, 0.8);
-        letter-spacing: 0.5px;
-        text-shadow: 
-            0 0 10px rgba(255, 140, 0, 0.5),
-            0 1px 3px rgba(0, 0, 0, 0.7);
+        color: rgba(0, 0, 0, 0.75);
+        letter-spacing: -0.1px;
+        text-shadow: 0 1px 2px rgba(255, 255, 255, 0.6);
     }
     
     .excavation-toggle {
-        width: 44px;
-        height: 44px;
-        background: rgba(255, 255, 255, 0.1);
-        border: 2px solid rgba(255, 69, 0, 0.3);
+        width: 36px;
+        height: 36px;
+        background: rgba(0, 0, 0, 0.04);
+        border: none;
         border-radius: 12px;
-        color: rgba(255, 255, 255, 0.9);
+        color: rgba(0, 0, 0, 0.6);
         cursor: pointer;
         display: flex;
         align-items: center;
         justify-content: center;
-        transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-        font-size: 16px;
+        transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+        font-size: 14px;
         flex-shrink: 0;
         position: relative;
         overflow: hidden;
-        backdrop-filter: blur(10px);
-        -webkit-backdrop-filter: blur(10px);
     }
     
     .excavation-toggle::before {
         content: '';
         position: absolute;
         inset: 0;
-        background: linear-gradient(135deg, 
-            rgba(255, 69, 0, 0.2) 0%, 
-            rgba(255, 140, 0, 0.1) 100%);
+        background: linear-gradient(135deg, rgba(255, 107, 53, 0.1), rgba(255, 107, 53, 0.05));
         opacity: 0;
         transition: opacity 0.3s ease;
-        border-radius: 10px;
     }
     
     .excavation-toggle:hover {
-        background: rgba(255, 255, 255, 0.15);
-        border-color: rgba(255, 140, 0, 0.5);
-        color: rgba(255, 255, 255, 1);
+        background: rgba(0, 0, 0, 0.06);
+        color: rgba(0, 0, 0, 0.8);
         transform: scale(1.05);
-        box-shadow: 0 0 20px rgba(255, 69, 0, 0.3);
     }
     
     .excavation-toggle:hover::before {
@@ -2278,17 +2236,42 @@ const db = firebase.firestore();
     }
     
     .excavation-toggle.alerts-hidden {
-        background: rgba(255, 69, 0, 0.2);
-        border-color: rgba(255, 69, 0, 0.6);
-        color: rgba(255, 140, 0, 1);
-        box-shadow: 0 0 15px rgba(255, 69, 0, 0.4);
+        background: rgba(255, 107, 53, 0.1);
+        color: rgba(255, 107, 53, 0.8);
     }
     
     .excavation-toggle.alerts-hidden:hover {
-        background: rgba(255, 69, 0, 0.3);
-        border-color: rgba(255, 140, 0, 0.8);
-        color: rgba(255, 255, 255, 1);
-        box-shadow: 0 0 25px rgba(255, 69, 0, 0.6);
+        background: rgba(255, 107, 53, 0.15);
+        color: rgba(255, 107, 53, 1);
+    }
+    
+
+    
+    .excavation-header h2 {
+        font-size: 18px;
+        font-weight: 800;
+        margin-bottom: 4px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        text-shadow: 0 0 15px rgba(255, 0, 84, 0.8);
+        background: linear-gradient(135deg, #ffffff 0%, #ff0054 50%, #ffffff 100%);
+        background-size: 200% 100%;
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+        animation: headerShimmer 3s ease-in-out infinite;
+    }
+    
+    @keyframes headerShimmer {
+        0%, 100% { background-position: 200% center; }
+        50% { background-position: 0% center; }
+    }
+    
+    .excavation-header p {
+        font-size: 12px;
+        opacity: 0.9;
+        font-weight: 600;
+        color: rgba(255, 255, 255, 0.8);
     }
     
     /* Enhanced Utility Visibility During Excavation */
@@ -2336,24 +2319,24 @@ const db = firebase.firestore();
         }
     }
     
-    /* Modern Tactical Proximity Alerts - Dark Grid Layout */
+    /* Premium Minimalist Proximity Alerts - Square Grid Layout */
     .proximity-alerts {
         position: absolute;
-        top: calc(env(safe-area-inset-top, 0) + 140px);
-        left: 20px;
-        right: 20px;
-        bottom: calc(env(safe-area-inset-bottom, 0) + 140px);
+        top: calc(env(safe-area-inset-top, 0) + 120px);
+        left: 24px;
+        right: 24px;
+        bottom: calc(env(safe-area-inset-bottom, 0) + 120px);
         display: grid;
         grid-template-columns: repeat(4, 1fr);
-        gap: 18px;
+        gap: 16px;
         z-index: 402;
         overflow-y: auto;
         pointer-events: none;
-        transition: all 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-        padding: 12px;
+        transition: all 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+        padding: 8px;
         scrollbar-width: none;
         -ms-overflow-style: none;
-        grid-auto-rows: minmax(220px, auto);
+        grid-auto-rows: minmax(200px, auto);
     }
     
     .proximity-alerts::-webkit-scrollbar {
@@ -2371,71 +2354,49 @@ const db = firebase.firestore();
     }
     
     .proximity-alert {
-        background: 
-            linear-gradient(135deg, 
-                rgba(0, 0, 0, 0.9) 0%, 
-                rgba(20, 20, 20, 0.85) 50%, 
-                rgba(0, 0, 0, 0.95) 100%);
-        backdrop-filter: blur(15px) saturate(150%) contrast(120%);
-        -webkit-backdrop-filter: blur(15px) saturate(150%) contrast(120%);
-        border-radius: 16px;
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(20px) saturate(180%);
+        -webkit-backdrop-filter: blur(20px) saturate(180%);
+        border-radius: 20px;
         box-shadow: 
-            0 12px 40px rgba(0, 0, 0, 0.3),
-            0 4px 12px rgba(255, 69, 0, 0.2),
-            inset 0 1px 0 rgba(255, 255, 255, 0.1),
-            0 0 30px rgba(255, 69, 0, 0.15);
+            0 8px 32px rgba(0, 0, 0, 0.06),
+            0 2px 8px rgba(0, 0, 0, 0.04),
+            inset 0 1px 0 rgba(255, 255, 255, 0.8);
         overflow: hidden;
-        animation: tacticalAlertSlideIn 1s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        animation: premiumAlertSlideIn 0.8s cubic-bezier(0.23, 1, 0.32, 1);
         position: relative;
-        border: 2px solid rgba(255, 69, 0, 0.3);
+        border: 0.5px solid rgba(255, 255, 255, 0.2);
         transform-origin: center;
-        transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
         aspect-ratio: 1;
-        min-height: 220px;
-        max-height: 220px;
+        min-height: 200px;
+        max-height: 200px;
         display: flex;
         flex-direction: column;
     }
     
     .proximity-alert:hover {
-        transform: translateY(-6px) scale(1.03);
-        border-color: rgba(255, 140, 0, 0.6);
+        transform: translateY(-4px) scale(1.02);
         box-shadow: 
-            0 20px 60px rgba(0, 0, 0, 0.4),
-            0 8px 24px rgba(255, 140, 0, 0.3),
-            inset 0 1px 0 rgba(255, 255, 255, 0.15),
-            0 0 50px rgba(255, 140, 0, 0.4);
+            0 16px 64px rgba(0, 0, 0, 0.12),
+            0 4px 16px rgba(0, 0, 0, 0.08),
+            inset 0 1px 0 rgba(255, 255, 255, 0.9);
     }
     
     .proximity-alert.water::before { 
-        background: linear-gradient(135deg, 
-            rgba(0, 180, 216, 0.15) 0%, 
-            rgba(0, 180, 216, 0.08) 50%,
-            transparent 100%);
+        background: linear-gradient(135deg, rgba(0, 180, 216, 0.1), rgba(0, 180, 216, 0.05));
     }
     .proximity-alert.gas::before { 
-        background: linear-gradient(135deg, 
-            rgba(255, 214, 10, 0.15) 0%, 
-            rgba(255, 214, 10, 0.08) 50%,
-            transparent 100%);
+        background: linear-gradient(135deg, rgba(255, 214, 10, 0.1), rgba(255, 214, 10, 0.05));
     }
     .proximity-alert.electric::before { 
-        background: linear-gradient(135deg, 
-            rgba(255, 0, 110, 0.15) 0%, 
-            rgba(255, 0, 110, 0.08) 50%,
-            transparent 100%);
+        background: linear-gradient(135deg, rgba(255, 0, 110, 0.1), rgba(255, 0, 110, 0.05));
     }
     .proximity-alert.sewer::before { 
-        background: linear-gradient(135deg, 
-            rgba(168, 118, 62, 0.15) 0%, 
-            rgba(168, 118, 62, 0.08) 50%,
-            transparent 100%);
+        background: linear-gradient(135deg, rgba(168, 118, 62, 0.1), rgba(168, 118, 62, 0.05));
     }
     .proximity-alert.telecom::before { 
-        background: linear-gradient(135deg, 
-            rgba(181, 101, 216, 0.15) 0%, 
-            rgba(181, 101, 216, 0.08) 50%,
-            transparent 100%);
+        background: linear-gradient(135deg, rgba(181, 101, 216, 0.1), rgba(181, 101, 216, 0.05));
     }
     
     .proximity-alert::before {
@@ -2447,43 +2408,33 @@ const db = firebase.firestore();
         pointer-events: none;
     }
     
-    @keyframes tacticalAlertSlideIn {
+    @keyframes premiumAlertSlideIn {
         0% {
             opacity: 0;
-            transform: translateY(-40px) scale(0.8) rotateX(45deg);
-            filter: blur(6px);
-            border-color: transparent;
+            transform: translateY(-32px) scale(0.9);
+            filter: blur(4px);
         }
-        30% {
-            opacity: 0.6;
-            transform: translateY(-15px) scale(0.9) rotateX(15deg);
-            filter: blur(2px);
-            border-color: rgba(255, 69, 0, 0.2);
-        }
-        70% {
-            opacity: 0.9;
-            transform: translateY(-5px) scale(1.02) rotateX(5deg);
+        50% {
+            opacity: 0.7;
+            transform: translateY(-8px) scale(0.95);
             filter: blur(1px);
-            border-color: rgba(255, 69, 0, 0.25);
         }
         100% {
             opacity: 1;
-            transform: translateY(0) scale(1) rotateX(0deg);
+            transform: translateY(0) scale(1);
             filter: blur(0px);
-            border-color: rgba(255, 69, 0, 0.3);
         }
     }
     
     .alert-content {
-        padding: 18px;
+        padding: 16px;
         position: relative;
         z-index: 1;
         display: flex;
         flex-direction: column;
-        gap: 14px;
+        gap: 12px;
         height: 100%;
         justify-content: space-between;
-        color: rgba(255, 255, 255, 0.95);
     }
     
     .alert-header {
@@ -2532,34 +2483,29 @@ const db = firebase.firestore();
     }
     
     .alert-close {
-        width: 32px;
-        height: 32px;
+        width: 28px;
+        height: 28px;
         border: none;
-        background: rgba(255, 255, 255, 0.1);
-        border-radius: 10px;
+        background: rgba(0, 0, 0, 0.03);
+        border-radius: 8px;
         display: flex;
         align-items: center;
         justify-content: center;
         cursor: pointer;
-        transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-        color: rgba(255, 255, 255, 0.7);
-        font-size: 12px;
+        transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+        color: rgba(0, 0, 0, 0.4);
+        font-size: 11px;
         flex-shrink: 0;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        backdrop-filter: blur(5px);
-        -webkit-backdrop-filter: blur(5px);
     }
     
     .alert-close:hover {
-        background: rgba(255, 69, 0, 0.3);
-        border-color: rgba(255, 69, 0, 0.5);
-        color: rgba(255, 255, 255, 1);
-        transform: scale(1.1);
-        box-shadow: 0 0 15px rgba(255, 69, 0, 0.4);
+        background: rgba(0, 0, 0, 0.06);
+        color: rgba(0, 0, 0, 0.6);
+        transform: scale(1.05);
     }
     
     .alert-close:active {
-        transform: scale(0.9);
+        transform: scale(0.95);
     }
     
     .alert-utility-info {
@@ -2569,60 +2515,48 @@ const db = firebase.firestore();
     
     .alert-utility-type {
         font-size: 18px;
-        font-weight: 700;
-        color: rgba(255, 255, 255, 0.95);
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
+        font-weight: 600;
+        color: rgba(0, 0, 0, 0.87);
+        text-transform: capitalize;
+        letter-spacing: -0.3px;
         margin: 0 0 4px 0;
         line-height: 1.2;
-        text-shadow: 0 0 10px currentColor;
     }
     
     .alert-line-type {
         font-size: 13px;
-        color: rgba(255, 255, 255, 0.7);
-        font-weight: 600;
+        color: rgba(0, 0, 0, 0.6);
+        font-weight: 500;
         margin: 0;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+        text-transform: capitalize;
+        letter-spacing: -0.1px;
     }
     
     .alert-distance-banner {
         text-align: center;
         margin-bottom: 0;
-        padding: 14px 18px;
+        padding: 12px 16px;
         border-radius: 12px;
-        background: linear-gradient(135deg, 
-            rgba(255, 69, 0, 0.2) 0%, 
-            rgba(255, 140, 0, 0.15) 50%,
-            rgba(255, 69, 0, 0.1) 100%);
-        border: 2px solid rgba(255, 69, 0, 0.4);
-        box-shadow: 
-            inset 0 1px 0 rgba(255, 255, 255, 0.1),
-            0 0 20px rgba(255, 69, 0, 0.3);
+        background: linear-gradient(135deg, rgba(255, 107, 53, 0.08), rgba(255, 107, 53, 0.04));
+        border: 0.5px solid rgba(255, 107, 53, 0.12);
     }
     
     .distance-value {
         display: block;
-        font-size: 26px;
-        font-weight: 800;
+        font-size: 24px;
+        font-weight: 700;
         line-height: 1;
-        color: rgba(255, 255, 255, 1);
+        color: rgba(255, 107, 53, 0.9);
         margin-bottom: 4px;
         letter-spacing: -0.5px;
-        text-shadow: 
-            0 0 15px rgba(255, 69, 0, 0.8),
-            0 2px 4px rgba(0, 0, 0, 0.5);
     }
     
     .distance-unit {
-        font-size: 12px;
-        font-weight: 700;
-        letter-spacing: 1px;
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.5px;
         text-transform: uppercase;
-        color: rgba(255, 140, 0, 1);
-        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+        color: rgba(255, 107, 53, 0.7);
     }
     
     .alert-details {
@@ -2634,70 +2568,47 @@ const db = firebase.firestore();
     .detail-item {
         display: flex;
         flex-direction: column;
-        gap: 6px;
-        padding: 10px 14px;
-        background: rgba(255, 255, 255, 0.05);
-        border-radius: 10px;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        backdrop-filter: blur(5px);
-        -webkit-backdrop-filter: blur(5px);
+        gap: 4px;
+        padding: 8px 12px;
+        background: rgba(0, 0, 0, 0.02);
+        border-radius: 8px;
+        border: 0.5px solid rgba(0, 0, 0, 0.06);
     }
     
     .detail-label {
         font-size: 11px;
-        font-weight: 600;
-        color: rgba(255, 255, 255, 0.6);
+        font-weight: 500;
+        color: rgba(0, 0, 0, 0.5);
         text-transform: uppercase;
-        letter-spacing: 0.5px;
+        letter-spacing: 0.3px;
         margin: 0;
     }
     
     .detail-value {
-        font-size: 14px;
-        font-weight: 700;
-        color: rgba(255, 255, 255, 0.95);
+        font-size: 13px;
+        font-weight: 600;
+        color: rgba(0, 0, 0, 0.8);
         letter-spacing: -0.1px;
         margin: 0;
-        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
     }
     
-    /* Modern Exit Excavation Button */
+    /* Exit Excavation Button */
     .exit-excavation {
         position: absolute;
-        bottom: calc(env(safe-area-inset-bottom, 0) + 160px);
+        bottom: calc(env(safe-area-inset-bottom, 0) + 150px);
         left: 50%;
         transform: translateX(-50%);
-        padding: var(--spacing-lg) var(--spacing-2xl);
-        background: linear-gradient(135deg, 
-            rgba(255, 69, 0, 0.9) 0%, 
-            rgba(255, 140, 0, 0.8) 50%,
-            rgba(255, 69, 0, 0.9) 100%);
-        color: rgba(255, 255, 255, 1);
-        border: 2px solid rgba(255, 255, 255, 0.3);
+        padding: var(--spacing-md) var(--spacing-xl);
+        background: white;
+        color: var(--danger-color);
+        border: none;
         border-radius: var(--radius-full);
         font-size: 16px;
-        font-weight: 800;
+        font-weight: 700;
         cursor: pointer;
-        box-shadow: 
-            var(--shadow-xl),
-            0 0 40px rgba(255, 69, 0, 0.5),
-            inset 0 1px 0 rgba(255, 255, 255, 0.3);
+        box-shadow: var(--shadow-xl);
         transition: all var(--transition-spring);
         z-index: 403;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
-        backdrop-filter: blur(10px);
-        -webkit-backdrop-filter: blur(10px);
-    }
-    
-    .exit-excavation:hover {
-        transform: translateX(-50%) translateY(-3px) scale(1.05);
-        box-shadow: 
-            var(--shadow-xl),
-            0 0 60px rgba(255, 69, 0, 0.7),
-            inset 0 1px 0 rgba(255, 255, 255, 0.4);
-        border-color: rgba(255, 255, 255, 0.5);
     }
     
     .exit-excavation:active {
@@ -4662,69 +4573,6 @@ const db = firebase.firestore();
         color: white;
     }
 
-    /* Orientation Permission Button - iOS Standalone Mode */
-    .orientation-permission-btn {
-        position: fixed;
-        top: calc(env(safe-area-inset-top, 0) + 140px);
-        right: var(--spacing-md);
-        width: 56px;
-        height: 56px;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        border: 2px solid rgba(255, 255, 255, 0.2);
-        border-radius: var(--radius-lg);
-        display: none; /* Hidden by default */
-        align-items: center;
-        justify-content: center;
-        box-shadow: 
-            var(--shadow-xl), 
-            0 0 30px rgba(102, 126, 234, 0.4),
-            inset 0 1px 0 rgba(255, 255, 255, 0.2);
-        cursor: pointer;
-        z-index: 1001;
-        transition: all var(--transition-spring);
-        animation: orientationButtonPulse 2s ease-in-out infinite;
-    }
-    
-    @keyframes orientationButtonPulse {
-        0%, 100% {
-            box-shadow: 
-                var(--shadow-xl), 
-                0 0 30px rgba(102, 126, 234, 0.4),
-                inset 0 1px 0 rgba(255, 255, 255, 0.2);
-        }
-        50% {
-            box-shadow: 
-                var(--shadow-xl), 
-                0 0 50px rgba(102, 126, 234, 0.7),
-                inset 0 1px 0 rgba(255, 255, 255, 0.3);
-        }
-    }
-    
-    .orientation-permission-btn:hover {
-        transform: translateY(-3px) scale(1.05);
-        box-shadow: 
-            var(--shadow-xl), 
-            0 0 40px rgba(102, 126, 234, 0.6),
-            inset 0 1px 0 rgba(255, 255, 255, 0.3);
-    }
-    
-    .orientation-permission-btn:active {
-        transform: scale(0.95);
-    }
-    
-    .orientation-permission-btn i {
-        font-size: 24px;
-        color: white;
-        filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
-    }
-    
-    /* Show button only in iOS standalone mode when orientation permission is needed */
-    @media all and (display-mode: standalone) {
-        .orientation-permission-btn.show {
-            display: flex;
-        }
-    }
-
     /* Role Badge */
     .role-badge {
         position: fixed;
@@ -5318,6 +5166,10 @@ const db = firebase.firestore();
 
     <!-- Right Side Controls -->
     <div class="right-controls">
+        <!-- Orientation Permission Button (iOS Standalone Mode Only) -->
+        <button class="orientation-permission-btn" id="orientationPermissionBtn" title="Enable Compass Direction">
+            <i class="fas fa-compass"></i>
+        </button>
         <button class="control-btn" id="zoomInBtn">
             <i class="fas fa-plus"></i>
         </button>
@@ -5325,11 +5177,6 @@ const db = firebase.firestore();
             <i class="fas fa-minus"></i>
         </button>
     </div>
-
-    <!-- Orientation Permission Button (iOS Standalone Mode Only) -->
-    <button class="orientation-permission-btn" id="orientationPermissionBtn" title="Enable Compass Direction">
-        <i class="fas fa-compass"></i>
-    </button>
 
     <!-- Add Structure Button -->
     <div class="structure-container">
@@ -7206,29 +7053,49 @@ const db = firebase.firestore();
     function handleDeviceOrientation(event) {
         let heading = null;
         
-        // For absolute orientation event
-        if (event.absolute && event.alpha !== null) {
-            heading = 360 - event.alpha; // Convert to compass heading
-        }
-        // iOS with compass
-        else if (event.webkitCompassHeading !== undefined && event.webkitCompassHeading !== null) {
+        console.log('🧭 Orientation event received:', {
+            alpha: event.alpha,
+            beta: event.beta,
+            gamma: event.gamma,
+            absolute: event.absolute,
+            webkitCompassHeading: event.webkitCompassHeading
+        });
+        
+        // iOS with compass heading (most reliable for iOS)
+        if (event.webkitCompassHeading !== undefined && event.webkitCompassHeading !== null) {
             heading = event.webkitCompassHeading;
+            console.log('🧭 Using iOS webkitCompassHeading:', heading);
+        }
+        // For absolute orientation event (modern browsers)
+        else if (event.absolute && event.alpha !== null) {
+            heading = 360 - event.alpha; // Convert to compass heading
+            console.log('🧭 Using absolute alpha:', heading);
         }
         // Android or iOS without compass
         else if (event.alpha !== null) {
-            // This is relative to device's initial orientation
-            // For better results, you might want to calibrate this
-            heading = 360 - event.alpha;
+            // Check if we're in standalone mode on iOS
+            const isIOSStandalone = /iPad|iPhone|iPod/.test(navigator.userAgent) && 
+                                   (window.matchMedia('(display-mode: standalone)').matches || 
+                                    window.navigator.standalone === true);
             
-            // If we have absolute orientation, use it
-            if (event.absolute) {
+            if (isIOSStandalone) {
+                // iOS standalone mode - alpha is relative to initial orientation
+                // We need to account for the device's initial orientation
+                const orientation = screen.orientation ? screen.orientation.angle : window.orientation || 0;
+                heading = (360 - event.alpha + orientation) % 360;
+                console.log('🧭 iOS Standalone - adjusted heading:', heading, 'orientation:', orientation);
+            } else {
+                // Standard handling for other platforms
                 heading = 360 - event.alpha;
+                console.log('🧭 Using standard alpha:', heading);
             }
         }
         
         if (heading !== null) {
-            console.log('🧭 Raw heading:', heading);
+            console.log('🧭 Final heading:', heading);
             updatePremiumDirectionIndicator(heading);
+        } else {
+            console.log('🧭 No valid heading data received');
         }
     }
 
@@ -7550,15 +7417,23 @@ const db = firebase.firestore();
     }
 
     function updatePremiumDirectionIndicator(heading) {
-        if (heading === null || heading === undefined) return;
+        if (heading === null || heading === undefined || isNaN(heading)) {
+            console.log('🧭 Invalid heading received:', heading);
+            return;
+        }
         
         // Normalize heading to 0-360 range
         const normalizedHeading = ((heading % 360) + 360) % 360;
         
+        console.log(`🧭 Normalized heading: ${normalizedHeading.toFixed(1)}°`);
+        
         // Apply sophisticated heading filtering
         const filteredHeading = filterHeading(normalizedHeading);
         
-        if (filteredHeading === null) return;
+        if (filteredHeading === null) {
+            console.log('🧭 Heading filtered out');
+            return;
+        }
         
         console.log(`🧭 Smooth heading: ${filteredHeading.toFixed(1)}°`);
         
@@ -7568,14 +7443,23 @@ const db = firebase.firestore();
             if (markerElement) {
                 const arrow = markerElement.querySelector('.location-arrow');
                 if (arrow) {
+                    // Use CSS transform for smooth rotation
                     arrow.style.transform = `rotate(${filteredHeading}deg)`;
+                    arrow.style.transition = 'transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+                    console.log(`🧭 Arrow rotated to ${filteredHeading.toFixed(1)}°`);
+                } else {
+                    console.log('🧭 Arrow element not found');
                 }
                 
                 const container = markerElement.querySelector('.location-container');
                 if (container) {
                     container.setAttribute('data-heading', filteredHeading.toFixed(0));
                 }
+            } else {
+                console.log('🧭 Marker element not found');
             }
+        } else {
+            console.log('🧭 User marker not found');
         }
     }
 
@@ -7682,16 +7566,10 @@ const db = firebase.firestore();
         }
     }
 
-    // Separate scaling function for user location marker - more conservative scaling
+    // Fixed scaling function for user location marker - NO ZOOM SCALING
     function calculateUserLocationScale(zoom) {
-        // Very conservative scaling that ensures marker is always clearly visible
-        if (zoom >= 18) return 1.0;     // Full size at close zoom
-        if (zoom >= 16) return 1.0;     // Keep full size longer
-        if (zoom >= 14) return 0.9;     // 90% size
-        if (zoom >= 12) return 0.8;     // 80% size
-        if (zoom >= 10) return 0.8;     // Keep larger at medium zoom
-        if (zoom >= 8) return 0.8;      // Still clearly visible
-        return 0.8;                     // Minimum 80% size - always clearly visible
+        // Always return 1.0 - location icon should never change size
+        return 1.0;
     }
 
     // ========== UTILITY FUNCTIONS ==========
@@ -12064,6 +11942,45 @@ const db = firebase.firestore();
     }
     
     window.testLocationMarkerStability = testLocationMarkerStability;
+    
+    // Debug function to test orientation
+    function testOrientation() {
+        console.log('🧪 Testing orientation system...');
+        console.log('Device info:', {
+            userAgent: navigator.userAgent,
+            isStandalone: window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true,
+            hasDeviceOrientationEvent: !!window.DeviceOrientationEvent,
+            needsPermission: typeof DeviceOrientationEvent.requestPermission === 'function',
+            screenOrientation: screen.orientation ? screen.orientation.angle : window.orientation
+        });
+        
+        if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+            console.log('🔐 Permission required - requesting...');
+            requestOrientationPermission();
+        } else {
+            console.log('✅ No permission required');
+            // Test if events are being received
+            let eventCount = 0;
+            const testListener = (event) => {
+                eventCount++;
+                console.log(`🧭 Test event ${eventCount}:`, {
+                    alpha: event.alpha,
+                    webkitCompassHeading: event.webkitCompassHeading,
+                    absolute: event.absolute
+                });
+                
+                if (eventCount >= 5) {
+                    window.removeEventListener('deviceorientation', testListener);
+                    console.log('🧪 Orientation test complete');
+                }
+            };
+            
+            window.addEventListener('deviceorientation', testListener);
+            showToast('🧪 Testing orientation - check console for 5 events', 'info');
+        }
+    }
+    
+    window.testOrientation = testOrientation;
 
     // Debug function to fix invisible location marker
     function fixLocationMarker() {
