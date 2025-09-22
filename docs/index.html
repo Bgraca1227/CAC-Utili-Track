@@ -7026,76 +7026,103 @@ const db = firebase.firestore();
             }
         );
 
-        // Watch device orientation - Handle iOS standalone mode properly
+        // Watch device orientation - Enhanced for latest iOS versions
         if (window.DeviceOrientationEvent) {
             // Check if we need permission (iOS 13+)
             if (typeof DeviceOrientationEvent.requestPermission === 'function') {
-                // For iOS standalone mode, show button instead of auto-requesting
-                const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
-                                   window.navigator.standalone === true;
+                // Always show button for iOS - latest versions require user interaction
+                console.log('📱 iOS detected - showing orientation permission button (required for latest iOS)');
+                showOrientationPermissionButton();
                 
-                if (isStandalone) {
-                    console.log('📱 iOS Standalone mode detected - showing orientation permission button');
-                    showOrientationPermissionButton();
-                } else {
-                    // Not standalone, try auto-request
-                    requestOrientationPermission();
-                }
+                // Also try to detect if orientation is already available
+                setTimeout(() => {
+                    checkOrientationAvailability();
+                }, 1000);
             } else {
                 // No permission needed (Android, older iOS)
                 console.log('🧭 Setting up orientation listeners (no permission required)');
                 window.addEventListener('deviceorientation', handleDeviceOrientation);
                 window.addEventListener('deviceorientationabsolute', handleDeviceOrientation);
+                
+                // Test if events are actually firing
+                setTimeout(() => {
+                    testOrientationEvents();
+                }, 2000);
             }
+        } else {
+            console.log('❌ DeviceOrientationEvent not supported');
+            showToast('Device orientation not supported on this device', 'warning');
         }
     }
 
     function handleDeviceOrientation(event) {
         let heading = null;
         
+        // Enhanced debugging for iPhone 17 Pro Max
+        const deviceInfo = {
+            userAgent: navigator.userAgent,
+            isStandalone: window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true,
+            screenOrientation: screen.orientation ? screen.orientation.angle : window.orientation,
+            eventType: event.type
+        };
+        
         console.log('🧭 Orientation event received:', {
             alpha: event.alpha,
             beta: event.beta,
             gamma: event.gamma,
             absolute: event.absolute,
-            webkitCompassHeading: event.webkitCompassHeading
+            webkitCompassHeading: event.webkitCompassHeading,
+            deviceInfo: deviceInfo
         });
         
-        // iOS with compass heading (most reliable for iOS)
+        // Enhanced iOS detection for latest versions
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+        const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+        
+        // Priority 1: iOS with compass heading (most reliable for iOS)
         if (event.webkitCompassHeading !== undefined && event.webkitCompassHeading !== null) {
             heading = event.webkitCompassHeading;
-            console.log('🧭 Using iOS webkitCompassHeading:', heading);
+            console.log('🧭 Method 1 - iOS webkitCompassHeading:', heading);
         }
-        // For absolute orientation event (modern browsers)
-        else if (event.absolute && event.alpha !== null) {
-            heading = 360 - event.alpha; // Convert to compass heading
-            console.log('🧭 Using absolute alpha:', heading);
+        // Priority 2: Absolute orientation (modern browsers, latest iOS)
+        else if (event.absolute === true && event.alpha !== null && !isNaN(event.alpha)) {
+            heading = 360 - event.alpha;
+            console.log('🧭 Method 2 - Absolute alpha:', heading);
         }
-        // Android or iOS without compass
-        else if (event.alpha !== null) {
-            // Check if we're in standalone mode on iOS
-            const isIOSStandalone = /iPad|iPhone|iPod/.test(navigator.userAgent) && 
-                                   (window.matchMedia('(display-mode: standalone)').matches || 
-                                    window.navigator.standalone === true);
-            
-            if (isIOSStandalone) {
-                // iOS standalone mode - alpha is relative to initial orientation
-                // We need to account for the device's initial orientation
-                const orientation = screen.orientation ? screen.orientation.angle : window.orientation || 0;
-                heading = (360 - event.alpha + orientation) % 360;
-                console.log('🧭 iOS Standalone - adjusted heading:', heading, 'orientation:', orientation);
+        // Priority 3: Standard alpha with iOS standalone compensation
+        else if (event.alpha !== null && !isNaN(event.alpha)) {
+            if (isIOS && isStandalone) {
+                // Latest iOS standalone mode - enhanced compensation
+                const screenOrientation = screen.orientation ? screen.orientation.angle : (window.orientation || 0);
+                
+                // For iPhone 17 Pro Max, we may need different compensation
+                const isProMax = navigator.userAgent.includes('iPhone') && 
+                                (window.screen.width >= 428 || window.screen.height >= 428);
+                
+                if (isProMax) {
+                    // Special handling for Pro Max models
+                    heading = (360 - event.alpha) % 360;
+                    console.log('🧭 Method 3a - iPhone Pro Max alpha:', heading);
+                } else {
+                    // Standard iOS standalone handling
+                    heading = (360 - event.alpha + screenOrientation) % 360;
+                    console.log('🧭 Method 3b - iOS Standalone adjusted:', heading, 'screen orientation:', screenOrientation);
+                }
             } else {
                 // Standard handling for other platforms
                 heading = 360 - event.alpha;
-                console.log('🧭 Using standard alpha:', heading);
+                console.log('🧭 Method 3c - Standard alpha:', heading);
             }
         }
         
-        if (heading !== null) {
-            console.log('🧭 Final heading:', heading);
+        // Validate heading
+        if (heading !== null && !isNaN(heading)) {
+            // Ensure heading is in 0-360 range
+            heading = ((heading % 360) + 360) % 360;
+            console.log('🧭 Final validated heading:', heading.toFixed(1), '°');
             updatePremiumDirectionIndicator(heading);
         } else {
-            console.log('🧭 No valid heading data received');
+            console.log('🧭 No valid heading data - event may not contain orientation info');
         }
     }
 
@@ -7109,25 +7136,66 @@ const db = firebase.firestore();
     }
 
     function requestOrientationPermission() {
+        console.log('🔐 Requesting orientation permission for latest iOS...');
+        
         if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+            // Show loading state
+            const button = document.getElementById('orientationPermissionBtn');
+            if (button) {
+                button.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            }
+            
             DeviceOrientationEvent.requestPermission()
                 .then(permission => {
+                    console.log('🔐 Permission response:', permission);
+                    
                     if (permission === 'granted') {
                         console.log('✅ Orientation permission granted');
-                        window.addEventListener('deviceorientation', handleDeviceOrientation);
-                        window.addEventListener('deviceorientationabsolute', handleDeviceOrientation);
+                        
+                        // Add both event listeners
+                        window.addEventListener('deviceorientation', handleDeviceOrientation, { passive: false });
+                        window.addEventListener('deviceorientationabsolute', handleDeviceOrientation, { passive: false });
+                        
+                        // Also try motion events for latest iOS
+                        if (window.DeviceMotionEvent && typeof DeviceMotionEvent.requestPermission === 'function') {
+                            DeviceMotionEvent.requestPermission().then(motionPermission => {
+                                if (motionPermission === 'granted') {
+                                    console.log('✅ Motion permission also granted');
+                                }
+                            }).catch(err => console.log('Motion permission error:', err));
+                        }
+                        
                         hideOrientationPermissionButton();
-                        showToast('Compass direction enabled!', 'success');
+                        showToast('🧭 Compass direction enabled!', 'success');
                         hapticFeedback(100);
+                        
+                        // Test immediately
+                        setTimeout(() => {
+                            testOrientationEvents();
+                        }, 500);
+                        
                     } else {
                         console.log('❌ Orientation permission denied');
-                        showToast('Direction indicator requires orientation permission', 'warning');
+                        showToast('❌ Direction indicator requires orientation permission. Please allow in Safari settings.', 'error');
+                        
+                        // Reset button
+                        if (button) {
+                            button.innerHTML = '<i class="fas fa-compass"></i>';
+                        }
                     }
                 })
                 .catch(error => {
-                    console.error('Error requesting orientation permission:', error);
-                    showToast('Error requesting orientation permission', 'error');
+                    console.error('❌ Error requesting orientation permission:', error);
+                    showToast('❌ Permission request failed. Try reloading the app.', 'error');
+                    
+                    // Reset button
+                    if (button) {
+                        button.innerHTML = '<i class="fas fa-compass"></i>';
+                    }
                 });
+        } else {
+            console.log('❌ DeviceOrientationEvent.requestPermission not available');
+            showToast('❌ Orientation permission API not available', 'error');
         }
     }
 
@@ -7137,6 +7205,62 @@ const db = firebase.firestore();
             button.classList.remove('show');
             console.log('🧭 Orientation permission button hidden');
         }
+    }
+
+    function checkOrientationAvailability() {
+        console.log('🔍 Checking if orientation is already available...');
+        
+        // Test if we can get orientation data without explicit permission
+        let testEventReceived = false;
+        
+        const testHandler = (event) => {
+            testEventReceived = true;
+            console.log('✅ Orientation data available without explicit permission');
+            window.removeEventListener('deviceorientation', testHandler);
+            hideOrientationPermissionButton();
+        };
+        
+        window.addEventListener('deviceorientation', testHandler);
+        
+        // Remove test handler after 3 seconds if no event received
+        setTimeout(() => {
+            if (!testEventReceived) {
+                window.removeEventListener('deviceorientation', testHandler);
+                console.log('❌ No orientation data received - permission required');
+            }
+        }, 3000);
+    }
+
+    function testOrientationEvents() {
+        console.log('🧪 Testing if orientation events are firing...');
+        let eventCount = 0;
+        
+        const testHandler = (event) => {
+            eventCount++;
+            console.log(`🧭 Orientation event ${eventCount}:`, {
+                alpha: event.alpha,
+                beta: event.beta,
+                gamma: event.gamma,
+                webkitCompassHeading: event.webkitCompassHeading,
+                absolute: event.absolute
+            });
+            
+            if (eventCount >= 3) {
+                window.removeEventListener('deviceorientation', testHandler);
+                console.log('✅ Orientation events are working');
+                showToast('✅ Compass orientation is working!', 'success');
+            }
+        };
+        
+        window.addEventListener('deviceorientation', testHandler);
+        
+        setTimeout(() => {
+            if (eventCount === 0) {
+                window.removeEventListener('deviceorientation', testHandler);
+                console.log('❌ No orientation events received');
+                showToast('❌ Orientation events not working - check permissions', 'error');
+            }
+        }, 5000);
     }
 
     // ========== PREMIUM GPS TRACKING SYSTEM ==========
@@ -11981,6 +12105,104 @@ const db = firebase.firestore();
     }
     
     window.testOrientation = testOrientation;
+    
+    // Enhanced debug function for iPhone 17 Pro Max
+    function debugiPhone17ProMax() {
+        console.log('🔬 iPhone 17 Pro Max Debug Mode');
+        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        
+        // Device detection
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+        const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+        const isProMax = navigator.userAgent.includes('iPhone') && 
+                        (window.screen.width >= 428 || window.screen.height >= 428);
+        
+        console.log('📱 Device Info:');
+        console.log('  User Agent:', navigator.userAgent);
+        console.log('  Is iOS:', isIOS);
+        console.log('  Is Standalone:', isStandalone);
+        console.log('  Is Pro Max:', isProMax);
+        console.log('  Screen Size:', window.screen.width, 'x', window.screen.height);
+        console.log('  Viewport Size:', window.innerWidth, 'x', window.innerHeight);
+        console.log('');
+        
+        // Orientation API availability
+        console.log('🧭 Orientation API Info:');
+        console.log('  DeviceOrientationEvent available:', !!window.DeviceOrientationEvent);
+        console.log('  Permission API available:', typeof DeviceOrientationEvent?.requestPermission === 'function');
+        console.log('  DeviceMotionEvent available:', !!window.DeviceMotionEvent);
+        console.log('  Motion Permission API:', typeof DeviceMotionEvent?.requestPermission === 'function');
+        console.log('');
+        
+        // Screen orientation
+        if (screen.orientation) {
+            console.log('📐 Screen Orientation:');
+            console.log('  Angle:', screen.orientation.angle);
+            console.log('  Type:', screen.orientation.type);
+        } else {
+            console.log('📐 Legacy orientation:', window.orientation);
+        }
+        console.log('');
+        
+        // Test orientation events
+        console.log('🧪 Starting orientation event test...');
+        let eventCount = 0;
+        const maxEvents = 10;
+        
+        const debugHandler = (event) => {
+            eventCount++;
+            console.log(`🧭 Event ${eventCount}/${maxEvents}:`, {
+                type: event.type,
+                alpha: event.alpha?.toFixed(2),
+                beta: event.beta?.toFixed(2),
+                gamma: event.gamma?.toFixed(2),
+                absolute: event.absolute,
+                webkitCompassHeading: event.webkitCompassHeading?.toFixed(2),
+                timestamp: new Date().toLocaleTimeString()
+            });
+            
+            // Calculate all possible heading values
+            let headings = {};
+            
+            if (event.webkitCompassHeading !== undefined && event.webkitCompassHeading !== null) {
+                headings.webkit = event.webkitCompassHeading;
+            }
+            if (event.alpha !== null) {
+                headings.standard = 360 - event.alpha;
+                headings.direct = event.alpha;
+                if (event.absolute) {
+                    headings.absolute = 360 - event.alpha;
+                }
+            }
+            
+            console.log(`📊 Calculated headings:`, headings);
+            
+            if (eventCount >= maxEvents) {
+                window.removeEventListener('deviceorientation', debugHandler);
+                window.removeEventListener('deviceorientationabsolute', debugHandler);
+                console.log('🎉 Debug test complete!');
+                showToast('🎉 Debug test complete - check console', 'success');
+            }
+        };
+        
+        // Listen to both events
+        window.addEventListener('deviceorientation', debugHandler);
+        window.addEventListener('deviceorientationabsolute', debugHandler);
+        
+        showToast(`🔬 Debugging iPhone 17 Pro Max - collecting ${maxEvents} events`, 'info');
+        
+        // Auto-stop after 30 seconds
+        setTimeout(() => {
+            window.removeEventListener('deviceorientation', debugHandler);
+            window.removeEventListener('deviceorientationabsolute', debugHandler);
+            if (eventCount === 0) {
+                console.log('❌ No orientation events received in 30 seconds');
+                showToast('❌ No orientation events - check permissions', 'error');
+            }
+        }, 30000);
+    }
+    
+    window.debugiPhone17ProMax = debugiPhone17ProMax;
 
     // Debug function to fix invisible location marker
     function fixLocationMarker() {
